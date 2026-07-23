@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from typing import Optional, Union
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -450,6 +452,42 @@ async def _verify_api_token_org_boundary(
             )
 
 
+_activity_logger = logging.getLogger(__name__)
+
+
+def _resolve_org_id_from_request(request: Request) -> Optional[int]:
+    """Best-effort org id from the request path or query string.
+
+    Most dashboard/API routes carry org_id in the path (/orgs/{org_id}/...)
+    or as ?org_id=. Slug-only routes are skipped here — the login touch and
+    other org-scoped requests still cover those users.
+    """
+    raw = request.path_params.get("org_id")
+    if raw is None:
+        raw = request.query_params.get("org_id")
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _record_activity_from_request(request: Request, user_id: Optional[int]) -> None:
+    """Fire-and-forget: mark the authenticated user active for today. Never raises."""
+    try:
+        if not user_id:
+            return
+        org_id = _resolve_org_id_from_request(request)
+        if not org_id:
+            return
+        from src.services.security.activity import record_user_activity
+
+        asyncio.create_task(record_user_activity(org_id, user_id))
+    except Exception:
+        _activity_logger.debug("activity scheduling failed (non-fatal)", exc_info=True)
+
+
 async def get_current_user(
     request: Request,
     db_session: AsyncSession = Depends(get_db_session),
@@ -555,6 +593,7 @@ async def get_current_user(
         public_user = PublicUser(**user.model_dump())
         request.state.user = public_user
         request.state.is_api_token = False
+        _record_activity_from_request(request, public_user.id)
         return public_user
     else:
         return AnonymousUser()

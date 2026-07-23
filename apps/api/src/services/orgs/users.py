@@ -257,6 +257,17 @@ async def get_organization_users(
                 UserGroupRead.model_validate(ug)
             )
 
+        # Active-user status (current UTC month) for the users on this page.
+        from src.security.features_utils.active_users import (
+            get_visit_days_for_users,
+            current_utc_year_month,
+            ACTIVE_DAYS_THRESHOLD,
+        )
+        _year, _month = current_utc_year_month()
+        visit_days_map = await get_visit_days_for_users(
+            org_id, [uid for uid in user_ids if uid is not None], _year, _month, db_session
+        )
+
         for user in users:
             user_org = user_org_map.get(user.id)
             if not user_org:
@@ -272,11 +283,15 @@ async def get_organization_users(
             role_read = RoleRead.model_validate(role)
             usergroups = user_usergroups_map.get(user.id, [])
 
+            _days = visit_days_map.get(user.id, 0)
+
             org_user = OrganizationUser(
                 user=user_read,
                 role=role_read,
                 usergroups=usergroups,
                 joined_at=user_org.creation_date,
+                visit_days=_days,
+                is_active=_days >= ACTIVE_DAYS_THRESHOLD,
             )
 
             org_users_list.append(org_user)
@@ -287,6 +302,14 @@ async def get_organization_users(
         "page": page,
         "limit": limit,
     }
+
+    # Org-level active-user summary (all members, current UTC month) so the
+    # Users page can show "active this month / included limit (+overage)".
+    try:
+        from src.security.features_utils.active_users import get_active_user_summary
+        result["active_users_summary"] = await get_active_user_summary(org_id, db_session)
+    except Exception:
+        logging.debug("active_users_summary unavailable", exc_info=True)
 
     if in_group_total is not None:
         result["in_group_total"] = in_group_total

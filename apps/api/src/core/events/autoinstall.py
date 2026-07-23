@@ -7,6 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from cli import _install_async
 from config.config import get_learnhouse_config
 from src.db.organizations import Organization
+from src.db.user_activity import UserActivityDay  # noqa: F401 — register table on SQLModel.metadata
 from src.services.setup.setup import install_default_elements
 
 logger = logging.getLogger(__name__)

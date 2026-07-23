@@ -127,6 +127,17 @@ async def get_org_usage_and_limits(
             return False
         return usage >= limit
 
+    # Active-member overage (current UTC month). Billed dimension beyond the
+    # included member limit: active users (seen >=2 distinct days) at $1 each.
+    from src.security.features_utils.active_users import (
+        calculate_active_user_overage,
+        current_utc_year_month,
+    )
+    _ay, _am = current_utc_year_month()
+    active_overage = await calculate_active_user_overage(
+        org_id, _ay, _am, members_plan_limit if mode == 'saas' else 0, db_session
+    )
+
     response = {
         "org_id": org_id,
         "plan": org_plan,
@@ -137,6 +148,12 @@ async def get_org_usage_and_limits(
                 "limit": courses_limit if courses_limit > 0 else "unlimited",
                 "remaining": calc_remaining(courses_usage, courses_limit),
                 "limit_reached": is_limit_reached(courses_usage, courses_limit),
+            },
+            "active_members": {
+                "usage": active_overage["active_users"],
+                "limit": members_plan_limit if members_plan_limit > 0 else "unlimited",
+                "overage_units": active_overage["overage_units"],
+                "overage_usd": active_overage["overage_usd"],
             },
             "members": {
                 "usage": members_usage,
