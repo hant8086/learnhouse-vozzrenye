@@ -258,15 +258,20 @@ async def get_organization_users(
             )
 
         # Active-user status (current UTC month) for the users on this page.
+        # Display-only enrichment: never let it break the members listing.
         from src.security.features_utils.active_users import (
             get_visit_days_for_users,
             current_utc_year_month,
             ACTIVE_DAYS_THRESHOLD,
         )
-        _year, _month = current_utc_year_month()
-        visit_days_map = await get_visit_days_for_users(
-            org_id, [uid for uid in user_ids if uid is not None], _year, _month, db_session
-        )
+        visit_days_map: dict[int, int] = {}
+        try:
+            _year, _month = current_utc_year_month()
+            visit_days_map = await get_visit_days_for_users(
+                org_id, [uid for uid in user_ids if uid is not None], _year, _month, db_session
+            )
+        except Exception:
+            logging.debug("visit_days enrichment unavailable", exc_info=True)
 
         for user in users:
             user_org = user_org_map.get(user.id)
