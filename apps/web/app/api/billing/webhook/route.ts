@@ -15,6 +15,7 @@ import {
   markPackCancelingInternally,
 } from "@services/billing/packs";
 import { planForPriceId, getStripeSecretKey } from "@services/billing/stripe";
+import { billOverageForInvoice } from "@services/billing/activeUserBilling";
 import {
   sendPurchaseCompleteMail,
   sendPackActivatedMail,
@@ -91,6 +92,12 @@ export async function POST(request: Request) {
 
     if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
       await handleSubscriptionEvent(event.type, event.data.object);
+    }
+
+    // Add last month's active-user overage as a line on the draft renewal
+    // invoice before Stripe finalizes it (fires ~1h before finalization).
+    if (event.type === "invoice.created") {
+      await billOverageForInvoice(event.data.object);
     }
 
     return NextResponse.json({ result: event.type, ok: true });
