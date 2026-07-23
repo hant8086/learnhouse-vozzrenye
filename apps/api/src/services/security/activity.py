@@ -10,10 +10,15 @@ raise into a request path, and it is a no-op outside SaaS mode.
 import logging
 from datetime import date, datetime, timezone
 
+from typing import Optional
+
 from src.security.features_utils.usage import _is_non_saas
 from src.core.redis import get_redis_client
 
 logger = logging.getLogger(__name__)
+
+# Cache org slug/uuid -> id for a day; org identity is effectively immutable.
+_ORG_ID_CACHE_TTL = 86400
 
 
 def _seconds_until_utc_midnight() -> int:
@@ -46,19 +51,78 @@ async def _insert_activity_row(org_id: int, user_id: int, day: date) -> None:
             await session.rollback()  # already recorded today — no-op
 
 
-async def record_user_activity(org_id: int, user_id: int) -> None:
+async def _resolve_org_id(
+    org_id: Optional[int],
+    org_slug: Optional[str],
+    org_uuid: Optional[str],
+) -> Optional[int]:
+    """Resolve an org id from id / slug / uuid. Slug and uuid are cached in
+    Redis (org identity is effectively immutable) and otherwise looked up once
+    in a dedicated session. Runs in the background task, never on the request
+    critical path."""
+    if org_id:
+        return org_id
+
+    key_val = org_slug or org_uuid
+    if not key_val:
+        return None
+
+    r = get_redis_client()
+    cache_key = f"org_id_by_ref:{'slug' if org_slug else 'uuid'}:{key_val}"
+    if r is not None:
+        try:
+            cached = r.get(cache_key)
+            if cached is not None:
+                return int(cached)
+        except Exception:
+            logger.debug("org id cache read failed", exc_info=True)
+
+    from sqlmodel import select
+    from src.core.events.database import _async_session_factory
+    from src.db.organizations import Organization
+
+    async with _async_session_factory() as session:
+        if org_slug:
+            stmt = select(Organization.id).where(Organization.slug == org_slug)
+        else:
+            stmt = select(Organization.id).where(Organization.org_uuid == org_uuid)
+        resolved = (await session.execute(stmt)).scalars().first()
+
+    if resolved is not None and r is not None:
+        try:
+            r.set(cache_key, str(resolved), ex=_ORG_ID_CACHE_TTL)
+        except Exception:
+            logger.debug("org id cache write failed", exc_info=True)
+    return resolved
+
+
+async def record_user_activity(
+    user_id: int,
+    org_id: Optional[int] = None,
+    org_slug: Optional[str] = None,
+    org_uuid: Optional[str] = None,
+) -> None:
     """
     Mark (org, user) active for today's UTC date. Best-effort, never raises.
 
-    Cheap Redis SETNX day-key guards the DB so the insert runs at most once
-    per user/org/day; every other request is a single Redis round-trip. When
-    Redis is unavailable the DB insert still runs (idempotent via the unique
-    constraint), so tracking degrades gracefully rather than silently dropping.
+    The org may be given directly (org_id) or resolved from a slug/uuid route
+    param (learner content routes are slug/uuid-scoped) — resolution happens
+    here in the background task, off the request critical path. A cheap Redis
+    SETNX day-key then guards the DB so the insert runs at most once per
+    user/org/day. When Redis is unavailable the DB insert still runs
+    (idempotent via the unique constraint), so tracking degrades gracefully.
+
+    All activity capture is server-side: it cannot be blocked by ad/tracker
+    blockers, which only affect client-side third-party requests.
     """
     try:
         if _is_non_saas():
             return
-        if not org_id or not user_id:
+        if not user_id:
+            return
+
+        org_id = await _resolve_org_id(org_id, org_slug, org_uuid)
+        if not org_id:
             return
 
         today = datetime.now(timezone.utc).date()

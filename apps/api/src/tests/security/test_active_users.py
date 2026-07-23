@@ -175,7 +175,19 @@ class TestRecordActivity:
             called["db"] = True
 
         with _oss(), patch.object(activity, "_insert_activity_row", _fail_insert):
-            await activity.record_user_activity(ORG, 1)
+            await activity.record_user_activity(1, org_id=ORG)
+        assert called["db"] is False
+
+    async def test_no_org_ref_is_noop(self):
+        from src.services.security import activity
+        called = {"db": False}
+
+        async def _fail_insert(*a, **k):
+            called["db"] = True
+
+        # No org id/slug/uuid resolvable -> nothing recorded.
+        with _saas(), patch.object(activity, "_insert_activity_row", _fail_insert):
+            await activity.record_user_activity(1)
         assert called["db"] is False
 
     async def test_never_raises_on_failure(self):
@@ -186,4 +198,4 @@ class TestRecordActivity:
 
         # Even if the DB insert path explodes, the caller must not see it.
         with _saas(), patch.object(activity, "_insert_activity_row", _boom):
-            await activity.record_user_activity(ORG, 1)  # must not raise
+            await activity.record_user_activity(1, org_id=ORG)  # must not raise
