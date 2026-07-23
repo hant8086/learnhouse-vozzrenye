@@ -205,7 +205,6 @@ class TestRecordActivity:
 # Activity capture internals (src/services/security/activity.py)
 # ---------------------------------------------------------------------------
 
-from datetime import datetime, timezone  # noqa: E402
 from types import SimpleNamespace  # noqa: E402
 import asyncio  # noqa: E402
 
