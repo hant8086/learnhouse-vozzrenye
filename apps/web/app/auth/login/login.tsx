@@ -5,7 +5,7 @@ import FormLayout, {
 import * as Form from '@radix-ui/react-form'
 import { useFormik } from 'formik'
 import React, { useState, useEffect } from 'react'
-import { AlertTriangle, Info, Lock, Mail, Shield, X, Clock } from 'lucide-react'
+import { AlertTriangle, Info, Lock, Mail, Shield, X, Clock, Send, CheckCircle2 } from 'lucide-react'
 import { checkSSOEnabled, redirectToSSOLogin } from '@services/auth/sso'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -24,7 +24,7 @@ interface LoginClientProps {
 
 const LoginClient = (props: LoginClientProps) => {
   const { t } = useTranslation()
-  const { signIn, completeMfaLogin } = useAuth()
+  const { signIn, completeMfaLogin, requestMagicLink } = useAuth()
   const { track } = useLHAnalytics('public')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [ssoEnabled, setSsoEnabled] = useState(false)
@@ -61,6 +61,47 @@ const LoginClient = (props: LoginClientProps) => {
   const [useBackupCode, setUseBackupCode] = useState(false)
   const [mfaError, setMfaError] = useState('')
   const [mfaSubmitting, setMfaSubmitting] = useState(false)
+
+  // Passwordless "email me a login link" affordance. Toggled in place next to
+  // the credentials form; on success it flips to a "check your email"
+  // confirmation. Kept entirely separate from the password/2FA state above.
+  const [magicMode, setMagicMode] = useState(false)
+  const [magicEmail, setMagicEmail] = useState('')
+  const [magicSubmitting, setMagicSubmitting] = useState(false)
+  const [magicSent, setMagicSent] = useState(false)
+  const [magicError, setMagicError] = useState('')
+
+  const openMagicMode = () => {
+    // Seed from whatever they already typed in the password form.
+    setMagicEmail(formik.values.email)
+    setMagicError('')
+    setMagicSent(false)
+    setMagicMode(true)
+  }
+
+  const handleMagicLinkRequest = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    const email = magicEmail.trim()
+    if (!email || magicSubmitting) return
+    if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
+      setMagicError(t('validation.invalid_email'))
+      return
+    }
+
+    setMagicSubmitting(true)
+    setMagicError('')
+
+    const res = await requestMagicLink(email, props.org?.slug)
+    setMagicSubmitting(false)
+
+    if (res.rateLimited) {
+      setMagicError(res.detail)
+      return
+    }
+    // The backend answers generically whether or not the account exists, so a
+    // non-rate-limited response always advances to the confirmation state.
+    setMagicSent(true)
+  }
 
   // An admin magic link for a 2FA-enabled user lands here with a pending token
   // in the query string instead of a session (see /admin/{org}/auth/magic-consume).
@@ -292,6 +333,9 @@ const LoginClient = (props: LoginClientProps) => {
           redirect: false,
           email: values.email,
           password: values.password,
+          // Bind the session to this org when the login page is org-scoped, so
+          // the org's session/auth-method policy can enforce against it.
+          orgSlug: props.org?.slug,
           callbackUrl
         });
       } catch {
@@ -544,6 +588,117 @@ const LoginClient = (props: LoginClientProps) => {
                   </p>
                 </div>
               </>
+            ) : magicMode ? (
+              <>
+                {/* Passwordless "email me a link" step */}
+                <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">
+                  {t('auth.magic_title', { defaultValue: 'Sign in with a link' })}
+                </h1>
+                {magicSent ? (
+                  <>
+                    <div className="mt-8 flex flex-col items-center text-center">
+                      <div className="p-3 rounded-2xl bg-green-50 text-green-600">
+                        <CheckCircle2 size={28} />
+                      </div>
+                      <h2 className="mt-4 text-lg font-bold text-black">
+                        {t('auth.magic_sent_title', { defaultValue: 'Check your email' })}
+                      </h2>
+                      <p className="mt-2 text-black/45 text-[15px] font-medium max-w-sm">
+                        {t('auth.magic_sent_body', {
+                          defaultValue:
+                            'If an account exists for {{email}}, we just sent it a secure link to sign in. It expires shortly, so use it soon.',
+                          email: magicEmail.trim(),
+                        })}
+                      </p>
+                    </div>
+                    <div className="mt-8 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMagicMode(false)
+                          setMagicSent(false)
+                          setMagicError('')
+                        }}
+                        className="text-sm text-black/35 hover:text-black/60"
+                      >
+                        {t('auth.magic_back_to_login', { defaultValue: 'Back to sign in' })}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-black/45 text-[15px] font-medium">
+                      {t('auth.magic_subtitle', {
+                        defaultValue:
+                          'Enter your email and we’ll send you a link that signs you in — no password needed.',
+                      })}
+                    </p>
+                    <form onSubmit={handleMagicLinkRequest} className="mt-8">
+                      <label className="block text-[13px] font-semibold text-black/70 mb-1.5">
+                        {t('auth.email')}
+                      </label>
+                      <input
+                        type="email"
+                        value={magicEmail}
+                        onChange={(e) => {
+                          setMagicEmail(e.target.value)
+                          if (magicError) setMagicError('')
+                        }}
+                        autoFocus
+                        autoComplete="email"
+                        placeholder="you@example.com"
+                        disabled={magicSubmitting}
+                        className={`box-border w-full bg-neutral-50 text-black rounded-lg px-4 border inline-flex h-[44px] appearance-none items-center focus:outline-none focus:ring-2 focus:ring-black/5 transition-all placeholder:text-black/25 text-sm disabled:opacity-50 ${
+                          magicError
+                            ? 'border-red-300 focus:border-red-400'
+                            : 'border-neutral-200 focus:border-neutral-400'
+                        }`}
+                      />
+
+                      {magicError && (
+                        <p className="mt-2 text-red-600 text-xs flex items-start gap-1.5">
+                          <Info size={12} className="shrink-0 mt-0.5" />
+                          <span>{magicError}</span>
+                        </p>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={magicSubmitting || !magicEmail.trim()}
+                        className="box-border w-full inline-flex h-[44px] rounded-lg items-center justify-center bg-black hover:bg-black/85 text-white px-[15px] font-bold text-[14px] leading-none mt-4 transition-all disabled:opacity-50"
+                      >
+                        {magicSubmitting ? (
+                          <span className="flex items-center space-x-2">
+                            <span className="w-4 h-4 border-t-2 border-white rounded-full animate-spin" />
+                            <span>{t('common.loading')}</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Send size={15} />
+                            {t('auth.magic_send', { defaultValue: 'Email me a login link' })}
+                          </span>
+                        )}
+                      </button>
+                    </form>
+
+                    <div className="mt-6 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMagicMode(false)
+                          setMagicError('')
+                        }}
+                        disabled={magicSubmitting}
+                        className="text-sm text-black/35 hover:text-black/60 disabled:opacity-50"
+                      >
+                        {t('auth.magic_use_password', {
+                          defaultValue: 'Sign in with a password instead',
+                        })}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
             ) : (
               <>
             {/* Header */}
@@ -655,6 +810,16 @@ const LoginClient = (props: LoginClientProps) => {
                     <span>{ssoLoading ? t('common.loading') : t('auth.sign_in_with_sso')}</span>
                   </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={openMagicMode}
+                  disabled={isSubmitting}
+                  className="flex justify-center items-center w-full bg-white hover:bg-neutral-50 text-black space-x-3 font-medium p-3 rounded-lg border border-neutral-200 transition-all text-sm disabled:opacity-50"
+                >
+                  <Mail size={16} />
+                  <span>{t('auth.magic_send', { defaultValue: 'Email me a login link' })}</span>
+                </button>
               </div>
 
               {/* Sign Up Link */}

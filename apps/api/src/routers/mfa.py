@@ -33,7 +33,11 @@ from src.services.auth.mfa import (
     verify_and_consume_totp,
     verify_totp_code,
 )
-from src.services.auth.session import decode_mfa_pending_token, mint_session_tokens
+from src.services.auth.session import (
+    decode_mfa_pending_token,
+    decode_mfa_pending_provenance,
+    mint_session_tokens,
+)
 from src.services.orgs.mfa_policy import evaluate_mfa_compliance, get_org_mfa_policy
 from src.services.security.rate_limiting import check_rate_limit, get_client_ip
 from src.security.org_auth import is_org_admin
@@ -392,6 +396,11 @@ async def api_login_mfa(
 
     _check_mfa_rate_limit(request, "login", email)
 
+    # Provenance (how the user authenticated, which org for) was stamped into the
+    # pending token at the password/magic-link/SSO step; carry it into the real
+    # session so the org auth-method / sharing policy sees the true method.
+    pending_amr, pending_org_id = decode_mfa_pending_provenance(form.mfa_token)
+
     user = (
         await db_session.execute(select(User).where(User.email == email))
     ).scalars().first()
@@ -406,7 +415,7 @@ async def api_login_mfa(
         # The factor was removed between password step and code step. Nothing
         # left to verify, so fall through to a normal session rather than
         # stranding the user at a challenge they can never satisfy.
-        result = mint_session_tokens(user.email)
+        result = mint_session_tokens(user.email, pending_amr, pending_org_id)
     else:
         accepted = False
         if form.is_backup_code:
@@ -431,7 +440,7 @@ async def api_login_mfa(
                 },
             )
 
-        result = mint_session_tokens(user.email)
+        result = mint_session_tokens(user.email, pending_amr, pending_org_id)
 
     set_auth_cookies(response, result.access_token, result.refresh_token, request)
 
@@ -453,6 +462,10 @@ class OrgMFAPolicyUpdate(BaseModel):
     require_2fa: bool
     require_2fa_grace_days: int = 0
     exempt_external_auth: bool = True
+    # Auth-method / session-sharing policy. Optional so an older client that only
+    # sends the 2FA fields leaves these untouched.
+    allowed_auth_methods: Optional[list[str]] = None
+    allow_central_session_sharing: Optional[bool] = None
 
 
 @router.get(
@@ -539,6 +552,48 @@ async def api_set_org_mfa_policy(
     elif not form.require_2fa:
         security["require_2fa_enabled_at"] = None
 
+    # Auth-method / session-sharing policy, with self-lockout guards so an admin
+    # cannot save a policy that would refuse their own current session.
+    from src.security.session_context import POLICY_AUTH_METHODS, get_session_provenance
+    from src.security.superadmin import is_user_superadmin
+
+    is_super = await is_user_superadmin(user.id, db_session)
+    provenance = get_session_provenance()
+
+    if form.allowed_auth_methods is not None:
+        methods = [m for m in form.allowed_auth_methods if m in POLICY_AUTH_METHODS]
+        restrictive = bool(methods) and not set(POLICY_AUTH_METHODS).issubset(methods)
+        if (
+            restrictive
+            and not is_super
+            and provenance is not None
+            and provenance.amr in POLICY_AUTH_METHODS
+            and provenance.amr not in methods
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "AUTH_METHOD_SELF_LOCKOUT",
+                    "message": "That would lock you out — the method you're signed in with isn't in the allowed list. Keep it, or sign in with an allowed method first.",
+                },
+            )
+        security["allowed_auth_methods"] = methods
+
+    if form.allow_central_session_sharing is not None:
+        if (
+            form.allow_central_session_sharing is False
+            and not is_super
+            and (provenance is None or provenance.org_id != org_id)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "SESSION_SHARING_SELF_LOCKOUT",
+                    "message": "Sign in from this organization's own login page before turning off session sharing, otherwise your current session would be locked out.",
+                },
+            )
+        security["allow_central_session_sharing"] = form.allow_central_session_sharing
+
     toggles["security"] = security
     config["admin_toggles"] = toggles
     row.config = config
@@ -550,11 +605,15 @@ async def api_set_org_mfa_policy(
     await db_session.commit()
 
     policy = await get_org_mfa_policy(db_session, org_id)
+    from src.services.orgs.auth_policy import get_org_auth_policy
+    auth_policy = await get_org_auth_policy(db_session, org_id)
     return {
         "require_2fa": policy.require_2fa,
         "require_2fa_grace_days": policy.grace_days,
         "require_2fa_enabled_at": policy.enabled_at,
         "exempt_external_auth": policy.exempt_external_auth,
+        "allowed_auth_methods": auth_policy.allowed_auth_methods,
+        "allow_central_session_sharing": auth_policy.allow_central_session_sharing,
     }
 
 

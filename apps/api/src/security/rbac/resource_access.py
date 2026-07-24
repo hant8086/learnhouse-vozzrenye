@@ -808,8 +808,10 @@ class ResourceAccessChecker:
             return
 
         from src.services.orgs.mfa_policy import enforce_org_mfa_policy
+        from src.services.orgs.auth_policy import enforce_org_auth_policy
 
         await enforce_org_mfa_policy(self.db_session, user_id, org_id)
+        await enforce_org_auth_policy(self.db_session, user_id, org_id)
 
     async def _is_admin_or_maintainer(self, resource_uuid: str) -> bool:
         """Check if current user is admin/maintainer in the resource's organization."""

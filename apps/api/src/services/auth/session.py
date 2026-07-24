@@ -21,6 +21,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.users import User
 from src.security.auth import create_access_token, create_refresh_token, decode_jwt
+from src.security.session_context import AMR_CLAIM, SORG_CLAIM, session_claims
 from src.services.auth.mfa import is_mfa_active
 
 MFA_PENDING_PURPOSE = "mfa_pending"
@@ -40,9 +41,14 @@ class SessionIssueResult:
     refresh_token: Optional[str] = None
 
 
-def create_mfa_pending_token(email: str) -> str:
+def create_mfa_pending_token(
+    email: str, amr: Optional[str] = None, org_id: Optional[int] = None
+) -> str:
+    """Mint the interim token. It carries the session's provenance (``amr`` /
+    ``sorg``) so that when the second factor is completed at ``/auth/login/mfa``
+    the real session is minted with the same method and org it was started for."""
     return create_access_token(
-        data={"sub": email, "purpose": MFA_PENDING_PURPOSE},
+        data={"sub": email, "purpose": MFA_PENDING_PURPOSE, **session_claims(amr, org_id)},
         expires_delta=MFA_PENDING_TTL,
     )
 
@@ -59,24 +65,51 @@ def decode_mfa_pending_token(token: str) -> Optional[str]:
     return str(sub) if sub else None
 
 
-def mint_session_tokens(email: str) -> SessionIssueResult:
+def decode_mfa_pending_provenance(token: str) -> tuple[Optional[str], Optional[int]]:
+    """Return ``(amr, org_id)`` carried by a pending token, or ``(None, None)``.
+
+    Does not re-validate purpose/expiry — always call after
+    :func:`decode_mfa_pending_token` has confirmed the token is genuine.
+    """
+    payload = decode_jwt(token) or {}
+    org_raw = payload.get(SORG_CLAIM)
+    try:
+        org_id = int(org_raw) if org_raw is not None else None
+    except (TypeError, ValueError):
+        org_id = None
+    return payload.get(AMR_CLAIM), org_id
+
+
+def mint_session_tokens(
+    email: str, amr: Optional[str] = None, org_id: Optional[int] = None
+) -> SessionIssueResult:
     """Mint a real session unconditionally. Only for callers that have already
-    satisfied (or deliberately bypassed) the second factor."""
+    satisfied (or deliberately bypassed) the second factor.
+
+    ``amr`` records how the user authenticated and ``org_id`` records which org
+    the session was established for; both are stamped into the token so the
+    per-org auth-method / session-sharing policy can evaluate the session later.
+    """
+    claims = session_claims(amr, org_id)
     return SessionIssueResult(
         mfa_required=False,
-        access_token=create_access_token(data={"sub": email, "purpose": "session"}),
-        refresh_token=create_refresh_token(data={"sub": email, "purpose": "session"}),
+        access_token=create_access_token(data={"sub": email, "purpose": "session", **claims}),
+        refresh_token=create_refresh_token(data={"sub": email, "purpose": "session", **claims}),
     )
 
 
 async def issue_session_or_challenge(
     db_session: AsyncSession,
     user: User,
+    amr: Optional[str] = None,
+    org_id: Optional[int] = None,
 ) -> SessionIssueResult:
     """Mint a session, unless the user has a confirmed second factor — in which
-    case mint a short-lived pending token instead and demand a code."""
+    case mint a short-lived pending token instead and demand a code. Provenance
+    (``amr`` / ``org_id``) is carried through both branches."""
     if await is_mfa_active(db_session, user.id):
         return SessionIssueResult(
-            mfa_required=True, mfa_token=create_mfa_pending_token(user.email)
+            mfa_required=True,
+            mfa_token=create_mfa_pending_token(user.email, amr, org_id),
         )
-    return mint_session_tokens(user.email)
+    return mint_session_tokens(user.email, amr, org_id)

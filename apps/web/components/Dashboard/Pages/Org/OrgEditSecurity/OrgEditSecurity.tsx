@@ -69,6 +69,10 @@ type OrgSecurityPolicy = {
   require_2fa_grace_days: number
   require_2fa_enabled_at: string | null
   exempt_external_auth: boolean
+  // Which sign-in methods this org accepts. The full set = unrestricted.
+  allowed_auth_methods: string[]
+  // When off, a central learnhouse.io session can't carry members into this org.
+  allow_central_session_sharing: boolean
 }
 
 // The CALLING user's own compliance state — context only, not the policy.
@@ -97,11 +101,64 @@ const EXTERNAL_AUTH_METHODS = [
 
 const GRACE_OPTIONS = [0, 7, 14, 30]
 
+// The complete set of sign-in methods. Selecting all of them = unrestricted,
+// which is also what an absent policy falls back to. Kept in sync with the
+// backend's allowed_auth_methods contract.
+const ALL_AUTH_METHODS = ['password', 'magic_login', 'google', 'sso'] as const
+
+const AUTH_METHOD_OPTIONS: {
+  key: string
+  labelKey: string
+  labelDefault: string
+  hintKey: string
+  hintDefault: string
+}[] = [
+  {
+    key: 'password',
+    labelKey: 'dashboard.organization.security.method_password',
+    labelDefault: 'Email + password',
+    hintKey: 'dashboard.organization.security.method_password_hint',
+    hintDefault: 'Sign in with an email address and password.',
+  },
+  {
+    key: 'magic_login',
+    labelKey: 'dashboard.organization.security.method_magic_login',
+    labelDefault: 'Magic login link',
+    hintKey: 'dashboard.organization.security.method_magic_login_hint',
+    hintDefault: 'Sign in through a one-time link sent by email.',
+  },
+  {
+    key: 'google',
+    labelKey: 'dashboard.organization.security.method_google',
+    labelDefault: 'Google',
+    hintKey: 'dashboard.organization.security.method_google_hint',
+    hintDefault: 'Sign in with a Google account.',
+  },
+  {
+    key: 'sso',
+    labelKey: 'dashboard.organization.security.method_sso',
+    labelDefault: 'SSO',
+    hintKey: 'dashboard.organization.security.method_sso_hint',
+    hintDefault: 'Sign in through your configured single sign-on provider.',
+  },
+]
+
 const DEFAULT_POLICY: OrgSecurityPolicy = {
   require_2fa: false,
   require_2fa_grace_days: 0,
   require_2fa_enabled_at: null,
   exempt_external_auth: true,
+  allowed_auth_methods: [...ALL_AUTH_METHODS],
+  allow_central_session_sharing: true,
+}
+
+// Two string sets are equal regardless of order/dupes.
+const sameMethodSet = (a: string[], b: string[]): boolean => {
+  const sa = new Set(a)
+  const sb = new Set(b)
+  if (sa.size !== sb.size) return false
+  for (const v of sa) if (!sb.has(v)) return false
+  return true
 }
 
 const isExternalAuth = (signup_method: string | null): boolean =>
@@ -152,6 +209,11 @@ const OrgEditSecurity: React.FC = () => {
       require_2fa_grace_days: Math.max(0, Number(security.require_2fa_grace_days) || 0),
       require_2fa_enabled_at: security.require_2fa_enabled_at ?? null,
       exempt_external_auth: security.exempt_external_auth !== false,
+      // Absent → unrestricted (all methods) + central sharing on.
+      allowed_auth_methods: Array.isArray(security.allowed_auth_methods)
+        ? security.allowed_auth_methods
+        : [...ALL_AUTH_METHODS],
+      allow_central_session_sharing: security.allow_central_session_sharing !== false,
     }
   }, [org])
 
@@ -159,6 +221,8 @@ const OrgEditSecurity: React.FC = () => {
   const [draftRequire, setDraftRequire] = React.useState(savedPolicy.require_2fa)
   const [draftGrace, setDraftGrace] = React.useState(savedPolicy.require_2fa_grace_days)
   const [draftExempt, setDraftExempt] = React.useState(savedPolicy.exempt_external_auth)
+  const [draftMethods, setDraftMethods] = React.useState<string[]>(savedPolicy.allowed_auth_methods)
+  const [draftSharing, setDraftSharing] = React.useState(savedPolicy.allow_central_session_sharing)
 
   // Re-seed once the org config lands (it arrives asynchronously via OrgContext).
   const seededRef = React.useRef(false)
@@ -170,6 +234,8 @@ const OrgEditSecurity: React.FC = () => {
     setDraftRequire(savedPolicy.require_2fa)
     setDraftGrace(savedPolicy.require_2fa_grace_days)
     setDraftExempt(savedPolicy.exempt_external_auth)
+    setDraftMethods(savedPolicy.allowed_auth_methods)
+    setDraftSharing(savedPolicy.allow_central_session_sharing)
   }, [org, savedPolicy])
 
   const [compliance, setCompliance] = React.useState<ComplianceResponse | null>(null)
@@ -276,7 +342,17 @@ const OrgEditSecurity: React.FC = () => {
   const isDirty =
     draftRequire !== policy.require_2fa ||
     draftGrace !== policy.require_2fa_grace_days ||
-    draftExempt !== policy.exempt_external_auth
+    draftExempt !== policy.exempt_external_auth ||
+    !sameMethodSet(draftMethods, policy.allowed_auth_methods) ||
+    draftSharing !== policy.allow_central_session_sharing
+
+  const toggleMethod = (key: string, checked: boolean) => {
+    setSaveError(null)
+    setNeedsOwnMfa(false)
+    setDraftMethods((prev) =>
+      checked ? Array.from(new Set([...prev, key])) : prev.filter((m) => m !== key)
+    )
+  }
 
   const isTurningOn = draftRequire && !policy.require_2fa
 
@@ -297,6 +373,8 @@ const OrgEditSecurity: React.FC = () => {
         require_2fa: draftRequire,
         require_2fa_grace_days: draftGrace,
         exempt_external_auth: draftExempt,
+        allowed_auth_methods: draftMethods,
+        allow_central_session_sharing: draftSharing,
       })
 
       if (!res.success) {
@@ -313,11 +391,25 @@ const OrgEditSecurity: React.FC = () => {
         return
       }
 
-      const next = res.data as OrgSecurityPolicy
+      const raw = res.data as Partial<OrgSecurityPolicy>
+      // Normalize against the contract: an omitted methods list / sharing flag
+      // means unrestricted + sharing on.
+      const next: OrgSecurityPolicy = {
+        require_2fa: !!raw.require_2fa,
+        require_2fa_grace_days: Math.max(0, Number(raw.require_2fa_grace_days) || 0),
+        require_2fa_enabled_at: raw.require_2fa_enabled_at ?? null,
+        exempt_external_auth: raw.exempt_external_auth !== false,
+        allowed_auth_methods: Array.isArray(raw.allowed_auth_methods)
+          ? raw.allowed_auth_methods
+          : [...ALL_AUTH_METHODS],
+        allow_central_session_sharing: raw.allow_central_session_sharing !== false,
+      }
       setPolicy(next)
       setDraftRequire(next.require_2fa)
       setDraftGrace(next.require_2fa_grace_days)
       setDraftExempt(next.exempt_external_auth)
+      setDraftMethods(next.allowed_auth_methods)
+      setDraftSharing(next.allow_central_session_sharing)
       setConfirmOpen(false)
 
       if (orgslug) await revalidateTags(['organizations'], orgslug)
@@ -338,7 +430,7 @@ const OrgEditSecurity: React.FC = () => {
     } finally {
       setSaving(false)
     }
-  }, [orgId, orgslug, draftRequire, draftGrace, draftExempt, mfaFetch, t, queryClient, loadData])
+  }, [orgId, orgslug, draftRequire, draftGrace, draftExempt, draftMethods, draftSharing, mfaFetch, t, queryClient, loadData])
 
   const handleSaveClick = () => {
     // Turning the requirement ON is never one click — it can lock staff out.
@@ -774,6 +866,91 @@ const OrgEditSecurity: React.FC = () => {
           </div>
         </div>
 
+        {/* ---------------------------------------------------------------- */}
+        {/* Allowed sign-in methods + central session sharing.               */}
+        {/* Part of the SAME policy save below.                              */}
+        {/* ---------------------------------------------------------------- */}
+        <div className="pt-1 border-t border-gray-100 space-y-4">
+          <div>
+            <h3 className="font-bold text-gray-800">
+              {t('dashboard.organization.security.methods_title', {
+                defaultValue: 'Allowed sign-in methods',
+              })}
+            </h3>
+            <p className="text-sm text-gray-500 mt-0.5 max-w-2xl leading-relaxed">
+              {t('dashboard.organization.security.methods_description', {
+                defaultValue:
+                  'Choose how members are allowed to sign in to this organization. Leave every method checked to keep sign-in unrestricted.',
+              })}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {AUTH_METHOD_OPTIONS.map((m) => {
+              const checked = draftMethods.includes(m.key)
+              return (
+                <div key={m.key} className="flex items-start gap-3">
+                  <Checkbox
+                    id={`auth-method-${m.key}`}
+                    checked={checked}
+                    onCheckedChange={(value) => toggleMethod(m.key, value === true)}
+                    disabled={controlsDisabled}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor={`auth-method-${m.key}`} className="cursor-pointer">
+                      {t(m.labelKey, { defaultValue: m.labelDefault })}
+                    </Label>
+                    <p className="text-xs text-gray-500 leading-relaxed">
+                      {t(m.hintKey, { defaultValue: m.hintDefault })}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {draftMethods.length === 0 && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200/80 rounded-lg px-3 py-2">
+              {t('dashboard.organization.security.methods_empty_warning', {
+                defaultValue:
+                  'With no method selected, no one could sign in to this organization. Pick at least one.',
+              })}
+            </p>
+          )}
+
+          {/* Central session sharing */}
+          <div className="flex items-start justify-between gap-4 pt-1">
+            <div className="min-w-0">
+              <Label htmlFor="central-session-sharing" className="cursor-pointer">
+                {t('dashboard.organization.security.session_sharing_label', {
+                  defaultValue: 'Allow sharing sessions with learnhouse.io',
+                })}
+              </Label>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed max-w-xl">
+                {t('dashboard.organization.security.session_sharing_hint', {
+                  defaultValue:
+                    'When off, signing in at learnhouse.io won’t let members into this org — they must sign in again from this org’s login page using an allowed method.',
+                })}
+              </p>
+            </div>
+            <Switch
+              id="central-session-sharing"
+              checked={draftSharing}
+              onCheckedChange={(checked) => {
+                setDraftSharing(checked)
+                setSaveError(null)
+                setNeedsOwnMfa(false)
+              }}
+              disabled={controlsDisabled}
+              className="shrink-0 mt-1"
+              aria-label={t('dashboard.organization.security.session_sharing_label', {
+                defaultValue: 'Allow sharing sessions with learnhouse.io',
+              })}
+            />
+          </div>
+        </div>
+
         {/* Self-lockout warning: the backend refuses the change anyway. */}
         {draftRequire && adminHasOwnMfa === false && !needsOwnMfa && (
           <AdminMfaCallout href={accountSecurityHref} />
@@ -827,6 +1004,8 @@ const OrgEditSecurity: React.FC = () => {
                 setDraftRequire(policy.require_2fa)
                 setDraftGrace(policy.require_2fa_grace_days)
                 setDraftExempt(policy.exempt_external_auth)
+                setDraftMethods(policy.allowed_auth_methods)
+                setDraftSharing(policy.allow_central_session_sharing)
                 setSaveError(null)
                 setNeedsOwnMfa(false)
               }}

@@ -148,6 +148,23 @@ class SecurityAdminToggle(BaseModel):
     # and, for a SAML-only org, would be unsatisfiable.
     exempt_external_auth: bool = True
 
+    # Which sign-in methods this org accepts. Members of the org must have
+    # authenticated with one of these to access it. The default lists all
+    # methods, i.e. no restriction — the policy is a no-op until an admin removes
+    # one. Values are drawn from
+    # src.security.session_context.POLICY_AUTH_METHODS:
+    # "password" | "magic_login" | "google" | "sso". Empty list is treated as
+    # "unrestricted" too, so a mis-save can never lock every method out.
+    allowed_auth_methods: list[str] = Field(
+        default_factory=lambda: ["password", "magic_login", "google", "sso"]
+    )
+    # Whether a session established on the central apex (learnhouse.io) or for a
+    # different org may be used to access this org directly. Default True keeps
+    # today's behavior (one session works everywhere the user is a member). When
+    # False, a member arriving with a foreign/central session is refused and must
+    # sign in again from this org using an allowed method.
+    allow_central_session_sharing: bool = True
+
 
 class AdminToggles(BaseModel):
     security: SecurityAdminToggle = SecurityAdminToggle()

@@ -70,17 +70,28 @@ async def get_user_org_role(user_id: int, org_id: int, db_session: AsyncSession)
 
 
 async def enforce_org_mfa(user_id: int, org_id: int, db_session: AsyncSession) -> None:
-    """Apply the org's "require two-factor" policy, if it has one.
+    """Apply the org's per-access session policies, if it has any.
 
-    Kept separate from :func:`is_org_member` / :func:`is_org_admin` on purpose:
-    those are plain predicates and several call sites use them to *shape*
-    results (search scoping, admin-only fields) rather than to gate a request.
-    Raising from inside them would turn a "should I show this?" question into a
-    403. The policy therefore hangs off the ``require_*`` gates instead.
+    Despite the historical name, this is the single seam through which **all**
+    org-level session policies are enforced at a request gate:
+
+    * the "require two-factor" policy (:mod:`src.services.orgs.mfa_policy`), and
+    * the auth-method / session-sharing policy
+      (:mod:`src.services.orgs.auth_policy`) — which methods may access the org
+      and whether a central/foreign session is accepted.
+
+    Every ``require_*`` gate and every additive call site funnels through here,
+    so folding both policies in keeps them enforced in lockstep with one edit.
+    Kept out of :func:`is_org_member` / :func:`is_org_admin` on purpose: those are
+    plain predicates used to *shape* results (search scoping, admin-only fields),
+    and raising from inside them would turn a presentation decision into a 403.
+    Both policies are no-ops under default config.
     """
     from src.services.orgs.mfa_policy import enforce_org_mfa_policy
+    from src.services.orgs.auth_policy import enforce_org_auth_policy
 
     await enforce_org_mfa_policy(db_session, user_id, org_id)
+    await enforce_org_auth_policy(db_session, user_id, org_id)
 
 
 async def is_org_member_enforcing_mfa(user_id: int, org_id: int, db_session: AsyncSession) -> bool:

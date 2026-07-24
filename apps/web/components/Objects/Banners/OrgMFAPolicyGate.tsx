@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { usePathname } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { ShieldAlert, ShieldCheck, X, LogOut, ArrowRight } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, X, LogOut, ArrowRight, LogIn } from 'lucide-react'
 import { useOrgMembership } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { signOut } from '@components/Contexts/AuthContext'
@@ -42,6 +42,18 @@ export interface MFAComplianceState {
   exempt_reason: string | null
 }
 
+// The new org-scoped auth policy can refuse this request outright. When it does,
+// the org-policy endpoint answers 403 with one of these codes — we surface a
+// scoped "sign in to this org" call-to-action rather than failing fully open.
+export interface OrgAuthPolicyBlock {
+  code: 'AUTH_METHOD_NOT_ALLOWED' | 'SESSION_NOT_BOUND_TO_ORG'
+  message: string
+  allowed_methods?: string[]
+}
+
+// The compliance query result, optionally carrying an auth-policy block.
+export type OrgPolicyState = MFAComplianceState & { authBlock?: OrgAuthPolicyBlock }
+
 const COMPLIANT: MFAComplianceState = {
   required: false,
   satisfied: true,
@@ -54,15 +66,46 @@ const COMPLIANT: MFAComplianceState = {
 async function getOrgMFACompliance(
   org_id: number,
   access_token?: string
-): Promise<MFAComplianceState> {
+): Promise<OrgPolicyState> {
   const result = await fetch(
     `${getAPIUrl()}auth/mfa/org-policy/${org_id}`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
   )
   // Fail open on purpose: this endpoint only drives an advisory banner/blocker,
   // and `errorHandling()` would additionally force a sign-out on a spurious 401.
-  if (!result.ok) return COMPLIANT
-  return (await result.json()) as MFAComplianceState
+  if (!result.ok) {
+    // A 403 from the new auth-method / session-binding policy is NOT a spurious
+    // error — it's the org telling us this session can't be here. Surface it as a
+    // scoped re-sign-in prompt (still failing open for every other error).
+    if (result.status === 403) {
+      try {
+        const body = await result.json()
+        const detail = body?.detail
+        if (
+          detail?.code === 'AUTH_METHOD_NOT_ALLOWED' ||
+          detail?.code === 'SESSION_NOT_BOUND_TO_ORG'
+        ) {
+          return {
+            ...COMPLIANT,
+            authBlock: {
+              code: detail.code,
+              message:
+                typeof detail.message === 'string' && detail.message
+                  ? detail.message
+                  : 'You need to sign in to this organization to continue.',
+              allowed_methods: Array.isArray(detail.allowed_methods)
+                ? detail.allowed_methods
+                : undefined,
+            },
+          }
+        }
+      } catch {
+        /* unparseable 403 — fall through to fail-open */
+      }
+    }
+    return COMPLIANT
+  }
+  return (await result.json()) as OrgPolicyState
 }
 
 /** Cached per org, for the lifetime of the session. */
@@ -70,7 +113,7 @@ function useOrgMFACompliance(org_id?: number) {
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
 
-  return useQuery<MFAComplianceState>({
+  return useQuery<OrgPolicyState>({
     queryKey: ['mfa', 'org-policy', org_id],
     queryFn: () => getOrgMFACompliance(org_id as number, access_token),
     enabled: session?.status === 'authenticated' && !!org_id && !!access_token,
@@ -264,15 +307,57 @@ function BlockingInterstitial({
   )
 }
 
+// This org's policy refused the current session (wrong auth method, or a central
+// learnhouse.io session that isn't bound to this org). Send the user to THIS
+// org's own login page — never a global logout, since they may belong to other
+// orgs that are perfectly happy with their session.
+function OrgAuthMethodBanner({
+  message,
+  orgslug,
+}: {
+  message: string
+  orgslug: string
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="w-full bg-gradient-to-r from-indigo-500 to-violet-500 text-white">
+      <div className="w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-3">
+        <ShieldAlert size={20} className="flex-shrink-0" />
+        <p className="text-sm font-medium flex-1">{message}</p>
+        <a
+          href={getUriWithOrg(orgslug, '/login')}
+          className="flex items-center gap-1 text-sm font-bold bg-white/20 hover:bg-white/30 transition-colors rounded-lg px-3 py-1.5 whitespace-nowrap"
+        >
+          <LogIn size={14} />
+          {t('mfa.policy.sign_in_to_org', {
+            defaultValue: 'Sign in to this organization',
+          })}
+        </a>
+      </div>
+    </div>
+  )
+}
+
 export function OrgMFAPolicyGate() {
   const { org, orgslug } = useOrgMembership()
   const pathname = usePathname()
   const { data } = useOrgMFACompliance(org?.id)
 
-  // Nothing to show: still loading, policy off, or the user is compliant/exempt.
-  if (!data || !data.required || data.satisfied) return null
+  if (!data) return null
 
   const orgName = org?.name || orgslug
+
+  // The org's auth policy refused this session — prompt a scoped re-sign-in.
+  // Shown everywhere EXCEPT the org's own login route (where they fix it).
+  if (data.authBlock) {
+    const segments = (pathname || '').split('/').filter(Boolean)
+    const onLoginRoute = segments.includes('login')
+    if (onLoginRoute) return null
+    return <OrgAuthMethodBanner message={data.authBlock.message} orgslug={orgslug} />
+  }
+
+  // Nothing to show: policy off, or the user is compliant/exempt.
+  if (!data.required || data.satisfied) return null
 
   if (!data.blocking) {
     return (

@@ -70,6 +70,17 @@ export interface SignOutOptions {
   redirect?: boolean
 }
 
+// Result of a passwordless (magic link) request. The backend ALWAYS answers 200
+// with a generic `detail` so it never reveals whether the account exists — the
+// UI treats any non-rate-limited answer as "check your email". `rateLimited`
+// carries the 429 case so the caller can show a distinct retry message.
+export interface MagicLinkRequestResult {
+  ok: boolean
+  detail: string
+  rateLimited?: boolean
+  retryAfter?: number
+}
+
 // Session cache for performance (similar to NextAuth's 10s cache)
 interface SessionCache {
   data: Session
@@ -97,6 +108,15 @@ interface AuthContextValue {
     _mfaToken: string,
     _code: string,
     _options?: { isBackupCode?: boolean; callbackUrl?: string; redirect?: boolean }
+  ) => Promise<SignInResult>
+  // Passwordless (magic link) login. `requestMagicLink` sends the email; it never
+  // throws on the generic 200. `completeMagicLink` consumes the token from the
+  // link and either establishes a session or (for 2FA accounts) returns an
+  // mfa_token the login page can pick up — mirroring completeMfaLogin.
+  requestMagicLink: (_email: string, _orgSlug?: string) => Promise<MagicLinkRequestResult>
+  completeMagicLink: (
+    _token: string,
+    _options?: { callbackUrl?: string; redirect?: boolean }
   ) => Promise<SignInResult>
 }
 
@@ -615,6 +635,118 @@ export function SessionProvider({
     [establishSession]
   )
 
+  // Request a passwordless login link. The backend ALWAYS returns 200 with a
+  // generic detail (never revealing whether the account exists), except for a
+  // 429 rate-limit — so this never throws on the happy path.
+  const requestMagicLink = useCallback(
+    async (email: string, orgSlug?: string): Promise<MagicLinkRequestResult> => {
+      try {
+        const response = await fetch('/api/auth/magic-link/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, ...(orgSlug ? { org_slug: orgSlug } : {}) }),
+          credentials: 'include',
+        })
+
+        const data = await response.json().catch(() => ({}))
+
+        if (response.status === 429) {
+          const errorData = data.detail || data
+          return {
+            ok: false,
+            rateLimited: true,
+            detail:
+              errorData?.message ||
+              'Too many requests. Please wait a moment before trying again.',
+            retryAfter: errorData?.retry_after,
+          }
+        }
+
+        return {
+          ok: response.ok,
+          detail:
+            typeof data.detail === 'string'
+              ? data.detail
+              : 'If that account exists, a login link is on its way.',
+        }
+      } catch (error) {
+        console.error('Magic link request error:', error)
+        return { ok: false, detail: 'Could not reach the server. Please try again.' }
+      }
+    },
+    []
+  )
+
+  // Complete a passwordless login from the token embedded in the emailed link.
+  // Mirrors completeMfaLogin: on a 2FA account it hands back an mfa_token instead
+  // of a session; otherwise it runs the same establishSession path as every other
+  // flow. Cookies are set by the /api/auth proxy on the verify response.
+  const completeMagicLink = useCallback(
+    async (
+      token: string,
+      options: { callbackUrl?: string; redirect?: boolean } = {}
+    ): Promise<SignInResult> => {
+      const { callbackUrl = '/', redirect = true } = options
+
+      try {
+        const response = await fetch('/api/auth/magic-link/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+          credentials: 'include',
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          const errorData = data.detail || data
+          return {
+            ok: false,
+            error: JSON.stringify({
+              code: errorData?.code || 'UNKNOWN_ERROR',
+              message: errorData?.message || 'This link is no longer valid.',
+            }),
+            url: null,
+            status: response.status,
+          }
+        }
+
+        // Account carries a second factor — no session yet. Hand the pending
+        // token to the caller (the /auth/magic page forwards it to /login).
+        if (data.mfa_required && data.mfa_token) {
+          return {
+            ok: false,
+            error: null,
+            url: null,
+            status: response.status,
+            mfa_required: true,
+            mfa_token: data.mfa_token,
+          }
+        }
+
+        if (!data.tokens?.access_token) {
+          return {
+            ok: false,
+            error: JSON.stringify({ code: 'INVALID_RESPONSE', message: 'Invalid server response' }),
+            url: null,
+            status: 500,
+          }
+        }
+
+        return await establishSession(data, callbackUrl, redirect)
+      } catch (error) {
+        console.error('Magic link verification error:', error)
+        return {
+          ok: false,
+          error: JSON.stringify({ code: 'NETWORK_ERROR', message: 'Could not reach the server' }),
+          url: null,
+          status: 0,
+        }
+      }
+    },
+    [establishSession]
+  )
+
   // Sign in function
   const handleSignIn = useCallback(
     async (provider: string, options: SignInOptions = {}): Promise<SignInResult | void> => {
@@ -666,6 +798,10 @@ export function SessionProvider({
             body: new URLSearchParams({
               username: options.email || '',
               password: options.password || '',
+              // Bind the session to the org whose login page this came from, so
+              // org-scoped session policies can enforce against it. Omitted on the
+              // org-less apex login.
+              ...(options.orgSlug ? { org_slug: options.orgSlug } : {}),
             }),
             credentials: 'include',
           })
@@ -901,6 +1037,8 @@ export function SessionProvider({
     signIn: handleSignIn,
     signOut: handleSignOut,
     completeMfaLogin,
+    requestMagicLink,
+    completeMagicLink,
   }
 
   return (
@@ -1091,6 +1229,8 @@ export function useAuth() {
     signIn: context.signIn,
     signOut: context.signOut,
     completeMfaLogin: context.completeMfaLogin,
+    requestMagicLink: context.requestMagicLink,
+    completeMagicLink: context.completeMagicLink,
     refreshSession: context.refreshSession,
     // Convenience method to get valid access token (refreshes if needed)
     getAccessToken: async (): Promise<string | null> => {
