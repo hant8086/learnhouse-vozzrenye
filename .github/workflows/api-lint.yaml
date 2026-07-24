@@ -20,3 +20,8 @@ jobs:
         uses: chartboost/ruff-action@v1
         with:
           src: "./apps/api"
+          # Pin ruff to the version the project uses (apps/api). The action
+          # otherwise installs the latest ruff, and a newer release stopped
+          # honouring the [tool.ruff] lint.ignore config, failing every PR with
+          # thousands of pre-existing findings across the whole tree.
+          version: "0.15.9"
