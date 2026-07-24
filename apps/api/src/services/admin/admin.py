@@ -44,7 +44,7 @@ from src.services.email.utils import get_base_url_from_request
 from src.services.analytics.analytics import track
 from src.services.analytics import events as analytics_events
 from src.services.webhooks.dispatch import dispatch_webhooks
-from src.security.auth import create_access_token, create_refresh_token
+from src.security.auth import create_access_token
 from src.security.features_utils.plan_check import get_org_plan
 from src.security.features_utils.plans import plan_meets_requirement
 from src.security.features_utils.usage import (
