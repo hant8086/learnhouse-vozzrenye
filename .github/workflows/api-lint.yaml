@@ -20,3 +20,8 @@ jobs:
         uses: chartboost/ruff-action@v1
         with:
           src: "./apps/api"
+          # Pin to the ruff the project depends on (see apps/api/uv.lock). The
+          # action's default floats to the latest release, which drifted ahead
+          # (0.16.0) and enabled rules the repo config doesn't select, turning
+          # the check red repo-wide. Keep this in step with the pinned dev dep.
+          version: "0.15.9"

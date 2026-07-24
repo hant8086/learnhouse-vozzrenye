@@ -1757,8 +1757,10 @@ class TestMagicLinkConsume:
                 await consume_magic_link_token(token="t", db_session=db)
             assert exc.value.status_code == 410
 
-    @patch("src.services.admin.admin.create_refresh_token", return_value="refresh_x")
-    @patch("src.services.admin.admin.create_access_token", return_value="access_x")
+    # Session minting moved into issue_session_or_challenge, so the token
+    # factories are patched there, not on the admin module.
+    @patch("src.services.auth.session.create_refresh_token", return_value="refresh_x")
+    @patch("src.services.auth.session.create_access_token", return_value="access_x")
     async def test_sanitizes_bad_redirect_to_default(self, mock_access, mock_refresh, token_user, user, db):
         """An older token might have an unvalidated redirect_to. Consume must not honor an absolute URL."""
         with patch("src.security.auth.decode_jwt") as mock_decode:
