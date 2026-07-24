@@ -904,17 +904,6 @@ def is_role_dashboard_enabled(role: Role) -> bool:
 
 
 # ============================================================================
-# Purchased Member Seats (Redis)
-# ============================================================================
-
-def get_purchased_member_seats(org_id: int) -> int:
-    """Get purchased member seats from Redis."""
-    r = _get_redis_client()
-    val = r.get(f"member_seats_purchased:{org_id}")
-    return int(val) if val else 0
-
-
-# ============================================================================
 # AI Credit Management Functions (Redis)
 # ============================================================================
 

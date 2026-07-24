@@ -9,7 +9,6 @@ from src.security.features_utils.usage import (
     _get_actual_usage,
     _get_actual_admin_seat_count,
     _get_redis_client,
-    get_purchased_member_seats,
 )
 from src.core.deployment_mode import get_deployment_mode
 from src.security.features_utils.plans import (
@@ -111,7 +110,9 @@ async def get_org_usage_and_limits(
     courses_limit = courses_resolved["limit"]
     members_limit = members_resolved["limit"]
     members_plan_limit = 0 if mode != 'saas' else get_plan_limit(org_plan, "members")
-    members_purchased = 0 if mode != 'saas' else get_purchased_member_seats(org_id)
+    # Purchasable member-seat packs were retired in favour of active-user
+    # overage, so there is no purchased-seat capacity any more.
+    members_purchased = 0
     # admin_seats is not a resolvable feature in resolve_feature() (it has no
     # plan feature config), so resolve_feature would return limit=0 -> wrongly
     # reported as "unlimited". Read the real per-plan limit directly.

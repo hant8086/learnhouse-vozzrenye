@@ -190,7 +190,6 @@ class OrgPacksResponse(BaseModel):
 
 class PackSummaryResponse(BaseModel):
     ai_credits: int
-    member_seats: int
     active_pack_count: int
 
 
@@ -240,7 +239,7 @@ async def api_get_org_packs(
     summary="Get pack totals summary",
     description=(
         "Return aggregated totals from the organization's active packs "
-        "(AI credits, member seats, and active pack count). Only organization "
+        "(AI credits and active pack count). Only organization "
         "admins can view the summary."
     ),
     responses={

@@ -234,7 +234,7 @@ class TestOrgPacksRouter:
             return_value=True,
         ), patch(
             "src.routers.orgs.packs.get_org_pack_summary",
-            return_value={"ai_credits": 500, "member_seats": 0, "active_pack_count": 1},
+            return_value={"ai_credits": 500, "active_pack_count": 1},
         ):
             response = await client.get(f"/api/v1/orgs/{org.id}/packs/summary")
 
