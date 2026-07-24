@@ -241,6 +241,27 @@ class _FakeRedis:
         return self.store.get(key)
 
 
+class _BrokenRedis:
+    """Redis whose get and/or set raise. The cache is an optimisation — a dead
+    Redis must never break org resolution or activity capture."""
+
+    def __init__(self, fail_get=False, fail_set=False):
+        self.fail_get = fail_get
+        self.fail_set = fail_set
+        self.store = {}
+
+    def get(self, key):
+        if self.fail_get:
+            raise RuntimeError("redis down")
+        return self.store.get(key)
+
+    def set(self, key, value, **kwargs):
+        if self.fail_set:
+            raise RuntimeError("redis down")
+        self.store[key] = value
+        return True
+
+
 async def _count_rows(db, org_id):
     stmt = select(_func.count()).select_from(UserActivityDay).where(
         UserActivityDay.org_id == org_id
@@ -313,6 +334,51 @@ class TestActivityCapture:
         from src.services.security import activity
         assert await activity._resolve_org_id(None, None, None) is None
 
+    async def test_resolve_org_id_served_from_cache(self):
+        """A cached slug -> id mapping short-circuits the DB lookup entirely."""
+        from src.services.security import activity
+        cache = _FakeRedis(set_result=True)
+        cache.store["org_id_by_ref:slug:acme"] = "77"
+        with patch(
+            "src.services.security.activity.get_redis_client", return_value=cache
+        ):
+            # No session factory patched: a DB lookup here would blow up.
+            assert await activity._resolve_org_id(None, "acme", None) == 77
+
+    async def test_resolve_org_id_falls_back_when_cache_read_fails(self, db, org):
+        from src.services.security import activity
+        with _patch_session_factory(db), patch(
+            "src.services.security.activity.get_redis_client",
+            return_value=_BrokenRedis(fail_get=True),
+        ):
+            assert await activity._resolve_org_id(None, "test-org", None) == org.id
+
+    async def test_resolve_org_id_caches_the_lookup(self, db, org):
+        from src.services.security import activity
+        cache = _FakeRedis(set_result=True)
+        with _patch_session_factory(db), patch(
+            "src.services.security.activity.get_redis_client", return_value=cache
+        ):
+            assert await activity._resolve_org_id(None, None, "org_test") == org.id
+        assert cache.store["org_id_by_ref:uuid:org_test"] == str(org.id)
+
+    async def test_resolve_org_id_survives_cache_write_failure(self, db, org):
+        from src.services.security import activity
+        with _patch_session_factory(db), patch(
+            "src.services.security.activity.get_redis_client",
+            return_value=_BrokenRedis(fail_set=True),
+        ):
+            assert await activity._resolve_org_id(None, "test-org", None) == org.id
+
+    async def test_anonymous_user_is_noop(self, db, org):
+        """No user id (anonymous request) -> nothing recorded, even in SaaS."""
+        from src.services.security import activity
+        with _saas(), _patch_session_factory(db), patch(
+            "src.services.security.activity.get_redis_client", return_value=None
+        ):
+            await activity.record_user_activity(0, org_id=ORG)
+        assert await _count_rows(db, ORG) == 0
+
 
 # ---------------------------------------------------------------------------
 # Auth hook helpers (src/security/auth.py)
@@ -357,6 +423,28 @@ class TestAuthActivityHooks:
         req = SimpleNamespace(path_params={"org_id": "3"}, query_params={})
         # Must not raise and must not schedule anything.
         auth._record_activity_from_request(req, None)
+        await asyncio.sleep(0.01)
+
+    async def test_record_activity_without_org_ref_is_noop(self):
+        """Non org-scoped routes carry no org reference — nothing to record."""
+        from src.security import auth
+        scheduled = []
+
+        async def _fake_record(user_id, org_id=None, org_slug=None, org_uuid=None):
+            scheduled.append(user_id)
+
+        req = SimpleNamespace(path_params={}, query_params={})
+        with patch("src.services.security.activity.record_user_activity", _fake_record):
+            auth._record_activity_from_request(req, 88)
+            await asyncio.sleep(0.02)
+        assert scheduled == []
+
+    async def test_record_activity_swallows_scheduling_failure(self):
+        """Auth must never fail because activity capture did."""
+        from src.security import auth
+        # A request object missing path_params raises inside the helper.
+        req = SimpleNamespace(query_params={})
+        auth._record_activity_from_request(req, 88)  # must not raise
         await asyncio.sleep(0.01)
 
 
