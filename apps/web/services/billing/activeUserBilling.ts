@@ -34,6 +34,11 @@ const stripe: any = new Proxy(
 const OVERAGE_UNIT_AMOUNT = 100;
 // Only these plans carry active-user overage.
 const BILLABLE_PLANS = new Set(["standard", "pro"]);
+// How many complete prior calendar months each renewal invoice reconciles.
+// Billing the last month is the normal case; the extra lookback self-heals a
+// missed invoice.created webhook — the next renewal invoice catches up any
+// still-unbilled month. Idempotency (alreadyBilled) keeps it exactly-once.
+const OVERAGE_LOOKBACK_MONTHS = 3;
 
 type OverageSummary = {
   org_id: number;
@@ -65,17 +70,21 @@ export async function fetchActiveUserOverage(
   return res.json();
 }
 
-/** Calendar month immediately preceding a UTC date (the month whose usage a
- *  freshly-created invoice bills in arrears). */
-function previousCalendarMonth(dateUtc: Date): { year: number; month: number } {
+/** The `count` complete calendar months strictly before a UTC date's month,
+ *  oldest first. For Aug 15 with count=3 → [May, Jun, Jul]. */
+function completeMonthsBefore(dateUtc: Date, count: number): { year: number; month: number }[] {
+  const out: { year: number; month: number }[] = [];
   let year = dateUtc.getUTCFullYear();
-  let month = dateUtc.getUTCMonth() + 1; // 1-12
-  month -= 1;
-  if (month === 0) {
-    month = 12;
-    year -= 1;
+  let month = dateUtc.getUTCMonth() + 1; // current month, 1-12
+  for (let i = 0; i < count; i++) {
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+    out.push({ year, month });
   }
-  return { year, month };
+  return out.reverse();
 }
 
 function periodKey(year: number, month: number): string {
@@ -145,9 +154,12 @@ async function billOverage(params: {
 }
 
 /**
- * Webhook entry (invoice.created). Adds last month's active-user overage as a
- * line on this subscription invoice before it finalizes. Only acts on regular
- * subscription-cycle (renewal) invoices for a plan subscription.
+ * Webhook entry (invoice.created). Self-healing: adds a line for every complete
+ * prior calendar month (within OVERAGE_LOOKBACK_MONTHS) that has active-user
+ * overage and hasn't been billed yet, on this subscription invoice before it
+ * finalizes. The normal case bills last month; the lookback means a missed
+ * invoice.created webhook is caught up automatically on the next renewal
+ * invoice — no cron needed. Only acts on subscription-cycle (renewal) invoices.
  */
 export async function billOverageForInvoice(invoice: any): Promise<void> {
   // Renewals only: skip the first invoice (subscription_create), proration
@@ -159,70 +171,31 @@ export async function billOverageForInvoice(invoice: any): Promise<void> {
   const orgId = subscription?.metadata?.org_id;
   if (!orgId || subscription?.metadata?.type === "pack") return;
 
-  const { year, month } = previousCalendarMonth(new Date(invoice.created * 1000));
-  const result = await billOverage({
-    orgId,
-    customerId: invoice.customer,
-    currency: invoice.currency,
-    year,
-    month,
-    invoiceId: invoice.id,
-  });
-  console.log(
-    `[au-overage] invoice ${invoice.id} org ${orgId} ${periodKey(year, month)}:`,
-    JSON.stringify(result),
-  );
-}
-
-/**
- * Cron backstop. Bills last calendar month's active-user overage for every org
- * with a plan subscription, as a pending invoice item on its next invoice.
- * Idempotent with the webhook path (same period check + idempotency key).
- */
-export async function billAllActiveUserOverage(): Promise<{
-  orgsChecked: number;
-  billed: { orgId: string; units: number }[];
-  skipped: number;
-  errors: number;
-}> {
-  const { year, month } = previousCalendarMonth(new Date());
-  const billed: { orgId: string; units: number }[] = [];
-  let orgsChecked = 0;
-  let skipped = 0;
-  let errors = 0;
-
-  let startingAfter: string | undefined;
-  const seenOrgs = new Set<string>();
-  for (let page = 0; page < 50; page++) {
-    const res = await stripe.subscriptions.list({
-      status: "active",
-      limit: 100,
-      ...(startingAfter ? { starting_after: startingAfter } : {}),
-    });
-    for (const sub of res.data) {
-      const orgId = sub.metadata?.org_id;
-      if (!orgId || sub.metadata?.type === "pack") continue;
-      if (seenOrgs.has(String(orgId))) continue;
-      seenOrgs.add(String(orgId));
-      orgsChecked++;
-      try {
-        const result = await billOverage({
-          orgId: String(orgId),
-          customerId: sub.customer,
-          currency: sub.currency,
-          year,
-          month,
-        });
-        if (result.billed) billed.push({ orgId: String(orgId), units: result.overage_units ?? 0 });
-        else skipped++;
-      } catch (err) {
-        errors++;
-        console.error(`[au-overage cron] failed for org ${orgId}:`, err);
-      }
+  const periods = completeMonthsBefore(new Date(invoice.created * 1000), OVERAGE_LOOKBACK_MONTHS);
+  let failed = false;
+  for (const { year, month } of periods) {
+    try {
+      const result = await billOverage({
+        orgId,
+        customerId: invoice.customer,
+        currency: invoice.currency,
+        year,
+        month,
+        invoiceId: invoice.id,
+      });
+      console.log(
+        `[au-overage] invoice ${invoice.id} org ${orgId} ${periodKey(year, month)}:`,
+        JSON.stringify(result),
+      );
+    } catch (err) {
+      failed = true;
+      console.error(
+        `[au-overage] failed for invoice ${invoice.id} org ${orgId} ${periodKey(year, month)}:`,
+        err,
+      );
     }
-    if (!res.has_more) break;
-    startingAfter = res.data[res.data.length - 1]?.id;
   }
-
-  return { orgsChecked, billed, skipped, errors };
+  // Surface a failure so Stripe retries the webhook; already-billed months are
+  // skipped on retry (alreadyBilled + idempotency key), so retries are safe.
+  if (failed) throw new Error(`active-user overage billing failed for invoice ${invoice.id}`);
 }
