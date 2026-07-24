@@ -7,13 +7,20 @@ import "server-only";
  * included member limit. This module pulls that number and adds it as a single
  * line on the org's existing subscription invoice — no separate charge.
  *
- * Primary path: the `invoice.created` webhook (billOverageForInvoice) adds the
- * line to that specific draft invoice before Stripe finalizes it. A cron
- * (billAllActiveUserOverage) is a backstop for any invoice that missed the
- * hook. Both are idempotent per (org, year, month).
+ * The `invoice.created` webhook (billOverageForInvoice) adds the line to that
+ * specific draft invoice before Stripe finalizes it. Each renewal invoice
+ * reconciles every complete month it covers, so a missed webhook is caught up
+ * on the next one. Idempotent per (org, year, month).
  */
 import { getServerAPIUrl } from "@services/config/config";
 import { getStripeSecretKey } from "@services/billing/stripe";
+import {
+  completeMonthsBefore,
+  intervalMonths,
+  invoiceSubscriptionId,
+  monthStartUnix,
+  periodKey,
+} from "./activeUserBillingUtils";
 
 let _stripeClient: any = null;
 const stripe: any = new Proxy(
@@ -34,11 +41,13 @@ const stripe: any = new Proxy(
 const OVERAGE_UNIT_AMOUNT = 100;
 // Only these plans carry active-user overage.
 const BILLABLE_PLANS = new Set(["standard", "pro"]);
-// How many complete prior calendar months each renewal invoice reconciles.
-// Billing the last month is the normal case; the extra lookback self-heals a
-// missed invoice.created webhook — the next renewal invoice catches up any
-// still-unbilled month. Idempotency (alreadyBilled) keeps it exactly-once.
-const OVERAGE_LOOKBACK_MONTHS = 3;
+// A renewal invoice reconciles every complete month of its own billing interval
+// (1 for monthly, 12 for annual) plus this buffer, so a missed invoice.created
+// webhook is caught up on the next renewal invoice. Idempotency (alreadyBilled)
+// keeps it exactly-once.
+const OVERAGE_LOOKBACK_BUFFER_MONTHS = 2;
+// Hard ceiling, so an odd interval can't fan out into an unbounded month scan.
+const OVERAGE_MAX_LOOKBACK_MONTHS = 15;
 
 type OverageSummary = {
   org_id: number;
@@ -70,32 +79,24 @@ export async function fetchActiveUserOverage(
   return res.json();
 }
 
-/** The `count` complete calendar months strictly before a UTC date's month,
- *  oldest first. For Aug 15 with count=3 → [May, Jun, Jul]. */
-function completeMonthsBefore(dateUtc: Date, count: number): { year: number; month: number }[] {
-  const out: { year: number; month: number }[] = [];
-  let year = dateUtc.getUTCFullYear();
-  let month = dateUtc.getUTCMonth() + 1; // current month, 1-12
-  for (let i = 0; i < count; i++) {
-    month -= 1;
-    if (month === 0) {
-      month = 12;
-      year -= 1;
-    }
-    out.push({ year, month });
-  }
-  return out.reverse();
-}
-
-function periodKey(year: number, month: number): string {
-  return `${year}-${String(month).padStart(2, "0")}`;
-}
-
-/** True if this org/period was already billed (webhook or a prior cron run),
- *  so retries and the cron backstop never double-charge. */
-async function alreadyBilled(customerId: string, period: string): Promise<boolean> {
-  const items = await stripe.invoiceItems.list({ customer: customerId, limit: 100 });
-  return items.data.some(
+/** True if this org/period was already billed, so webhook retries and the
+ *  lookback overlap between consecutive invoices never double-charge.
+ *  A period's item can only be created after that month ends, so scanning from
+ *  the start of the month is complete — and keeps the page count small. */
+async function alreadyBilled(
+  customerId: string,
+  year: number,
+  month: number,
+): Promise<boolean> {
+  const period = periodKey(year, month);
+  const items = await stripe.invoiceItems
+    .list({
+      customer: customerId,
+      created: { gte: monthStartUnix(year, month) },
+      limit: 100,
+    })
+    .autoPagingToArray({ limit: 1000 });
+  return items.some(
     (it: any) => it?.metadata?.type === "au_overage" && it?.metadata?.au_period === period,
   );
 }
@@ -103,7 +104,7 @@ async function alreadyBilled(customerId: string, period: string): Promise<boolea
 /**
  * Core: add the overage line for one org/month. When invoiceId is given the
  * item attaches to that specific (draft) invoice; otherwise it becomes a
- * pending item on the customer's next invoice (cron backstop).
+ * pending item on the customer's next invoice.
  */
 async function billOverage(params: {
   orgId: string;
@@ -121,7 +122,7 @@ async function billOverage(params: {
   if (summary.overage_units <= 0) return { billed: false, reason: "no overage" };
 
   const period = periodKey(year, month);
-  if (await alreadyBilled(customerId, period)) {
+  if (await alreadyBilled(customerId, year, month)) {
     return { billed: false, reason: "already billed" };
   }
 
@@ -155,29 +156,37 @@ async function billOverage(params: {
 
 /**
  * Webhook entry (invoice.created). Self-healing: adds a line for every complete
- * prior calendar month (within OVERAGE_LOOKBACK_MONTHS) that has active-user
- * overage and hasn't been billed yet, on this subscription invoice before it
- * finalizes. The normal case bills last month; the lookback means a missed
- * invoice.created webhook is caught up automatically on the next renewal
- * invoice — no cron needed. Only acts on subscription-cycle (renewal) invoices.
+ * prior calendar month this invoice's billing interval covers that has
+ * active-user overage and isn't billed yet, on the draft invoice before it
+ * finalizes. Monthly subscriptions bill last month (plus a buffer); annual ones
+ * reconcile the whole year. A missed invoice.created webhook is caught up
+ * automatically on the next renewal invoice — no cron needed. Only acts on
+ * subscription-cycle (renewal) invoices.
  */
 export async function billOverageForInvoice(invoice: any): Promise<void> {
   // Renewals only: skip the first invoice (subscription_create), proration
   // updates, and manual invoices.
   if (invoice?.billing_reason !== "subscription_cycle") return;
-  if (!invoice?.subscription || !invoice?.customer) return;
+  const subscriptionId = invoiceSubscriptionId(invoice);
+  const customerId =
+    typeof invoice?.customer === "string" ? invoice.customer : invoice?.customer?.id;
+  if (!subscriptionId || !customerId) return;
 
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const orgId = subscription?.metadata?.org_id;
   if (!orgId || subscription?.metadata?.type === "pack") return;
 
-  const periods = completeMonthsBefore(new Date(invoice.created * 1000), OVERAGE_LOOKBACK_MONTHS);
+  const lookback = Math.min(
+    intervalMonths(subscription) + OVERAGE_LOOKBACK_BUFFER_MONTHS,
+    OVERAGE_MAX_LOOKBACK_MONTHS,
+  );
+  const periods = completeMonthsBefore(new Date(invoice.created * 1000), lookback);
   let failed = false;
   for (const { year, month } of periods) {
     try {
       const result = await billOverage({
         orgId,
-        customerId: invoice.customer,
+        customerId,
         currency: invoice.currency,
         year,
         month,
