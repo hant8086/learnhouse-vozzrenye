@@ -127,7 +127,30 @@ class FeatureAdminToggle(BaseModel):
     disabled: bool = False
 
 
+class SecurityAdminToggle(BaseModel):
+    """Org-wide security policy.
+
+    Lives in the config JSON blob, so enabling it needs no migration.
+
+    ``require_2fa_enabled_at`` is the anchor the grace period counts from. Each
+    member's personal deadline is
+    ``max(require_2fa_enabled_at, their join date) + require_2fa_grace_days``;
+    without the ``max`` a member who joins after the policy was set would land
+    with an already-expired deadline and be locked out on their first day.
+    """
+
+    require_2fa: bool = False
+    require_2fa_grace_days: int = 0
+    # ISO timestamp of when an admin last switched require_2fa on.
+    require_2fa_enabled_at: Optional[str] = None
+    # Users authenticated by an external IdP already presented whatever factors
+    # that IdP demands; requiring a second app-level TOTP on top is redundant
+    # and, for a SAML-only org, would be unsatisfiable.
+    exempt_external_auth: bool = True
+
+
 class AdminToggles(BaseModel):
+    security: SecurityAdminToggle = SecurityAdminToggle()
     ai: AIAdminToggle = AIAdminToggle()
     analytics: FeatureAdminToggle = FeatureAdminToggle()
     api: FeatureAdminToggle = FeatureAdminToggle()

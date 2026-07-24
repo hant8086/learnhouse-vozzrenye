@@ -24,7 +24,7 @@ interface LoginClientProps {
 
 const LoginClient = (props: LoginClientProps) => {
   const { t } = useTranslation()
-  const { signIn } = useAuth()
+  const { signIn, completeMfaLogin } = useAuth()
   const { track } = useLHAnalytics('public')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [ssoEnabled, setSsoEnabled] = useState(false)
@@ -53,15 +53,99 @@ const LoginClient = (props: LoginClientProps) => {
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [retryAfter, setRetryAfter] = useState<number | null>(null)
 
+  // Second-factor challenge. When mfaToken is set the credentials form is
+  // replaced in place by the code step — same route, so the ?next redirect and
+  // the org context survive without being threaded through a navigation.
+  const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const [mfaCode, setMfaCode] = useState('')
+  const [useBackupCode, setUseBackupCode] = useState(false)
+  const [mfaError, setMfaError] = useState('')
+  const [mfaSubmitting, setMfaSubmitting] = useState(false)
+
+  // An admin magic link for a 2FA-enabled user lands here with a pending token
+  // in the query string instead of a session (see /admin/{org}/auth/magic-consume).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('mfa_token')
+    if (token) setMfaToken(token)
+  }, [])
+
   // Honor a post-login redirect via ?next / ?redirect, sanitized to an
   // internal same-origin path (no open-redirect), defaulting to /home.
   // Forward it through the cross-domain /redirect_from_auth handoff.
   const buildCallbackUrl = () => {
     const params = new URLSearchParams(window.location.search)
-    const raw = params.get('next') ?? params.get('redirect')
+    // `redirect_to` is what the magic-link consume endpoint forwards when it
+    // bounces a 2FA-enabled user here instead of signing them straight in.
+    const raw = params.get('next') ?? params.get('redirect') ?? params.get('redirect_to')
     const dest = raw && /^\/(?!\/)/.test(raw) ? raw : '/home'
     return `${window.location.origin}/redirect_from_auth?next=${encodeURIComponent(dest)}`
   }
+
+  const handleMfaSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!mfaToken || mfaSubmitting) return
+
+    const code = mfaCode.trim()
+    if (!code) return
+
+    setMfaSubmitting(true)
+    setMfaError('')
+
+    const callbackUrl = buildCallbackUrl()
+    const res = await completeMfaLogin(mfaToken, code, {
+      isBackupCode: useBackupCode,
+      callbackUrl,
+      redirect: false,
+    })
+
+    if (res.ok) {
+      track(AnalyticsEvent.LoginSucceeded, { method: 'credentials_mfa' })
+      window.location.href = callbackUrl
+      return
+    }
+
+    let code_ = null
+    let message = t('auth.mfa_invalid_code', {
+      defaultValue: "That code isn't right. Check your device's clock is set automatically, then try the next code.",
+    })
+    try {
+      const parsed = JSON.parse(res.error || '{}')
+      code_ = parsed.code ?? null
+      if (parsed.message) message = parsed.message
+    } catch {
+      // keep the default message
+    }
+
+    track(AnalyticsEvent.LoginFailed, { method: 'credentials_mfa', error_type: code_ })
+
+    if (code_ === 'MFA_SESSION_EXPIRED') {
+      // The pending token died. Returning to the password step is the only way
+      // forward — keeping the code field up would let them retry forever
+      // against a token that can never be accepted.
+      setMfaToken(null)
+      setMfaCode('')
+      setUseBackupCode(false)
+      setErrorType('MFA_SESSION_EXPIRED')
+      setError(message)
+      setShowErrorModal(true)
+      turnstileRef.current?.reset()
+    } else {
+      setMfaError(message)
+      setMfaCode('')
+    }
+
+    setMfaSubmitting(false)
+  }
+
+  // Auto-submit once six digits are in — every authenticator app produces
+  // exactly six, so making the user reach for a button is pure friction.
+  // Backup codes are excluded: they are variable-shaped and pasted.
+  useEffect(() => {
+    if (mfaToken && !useBackupCode && !mfaSubmitting && mfaCode.length === 6) {
+      handleMfaSubmit()
+    }
+  }, [mfaCode, useBackupCode, mfaSubmitting, mfaToken]) // eslint-disable-line
 
   const handleGoogleSignIn = () => {
     track(AnalyticsEvent.LoginGoogleClicked)
@@ -223,6 +307,20 @@ const LoginClient = (props: LoginClientProps) => {
         return
       }
 
+      // Password accepted, second factor outstanding. Must be checked before
+      // the res.error branch below: this result carries error === null, so it
+      // would otherwise fall through to the success path and redirect an
+      // unauthenticated user.
+      if (res && res.mfa_required && res.mfa_token) {
+        track(AnalyticsEvent.LoginSubmitted, { has_sso_enabled: ssoEnabled, mfa_required: true })
+        setMfaToken(res.mfa_token)
+        setMfaCode('')
+        setMfaError('')
+        setIsSubmitting(false)
+        setSubmitting(false)
+        return
+      }
+
       if (res && res.error) {
         let loginErrorType: string | null = null
         // Try to parse the error message for error codes
@@ -349,6 +447,105 @@ const LoginClient = (props: LoginClientProps) => {
 
         <div className="flex-1 flex items-center justify-center px-6 md:px-12 lg:px-20">
           <div className="w-full max-w-[420px] py-10">
+            {mfaToken ? (
+              <>
+                {/* Second-factor challenge */}
+                <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">
+                  {t('auth.mfa_title', { defaultValue: 'Two-step verification' })}
+                </h1>
+                <p className="mt-2 text-black/45 text-[15px] font-medium">
+                  {useBackupCode
+                    ? t('auth.mfa_subtitle_backup', { defaultValue: 'Enter one of the backup codes you saved.' })
+                    : t('auth.mfa_subtitle', { defaultValue: 'Enter the 6-digit code from your authenticator app.' })}
+                </p>
+
+                <form onSubmit={handleMfaSubmit} className="mt-8">
+                  <label className="block text-[13px] font-semibold text-black/70 mb-1.5">
+                    {useBackupCode
+                      ? t('auth.mfa_backup_code', { defaultValue: 'Backup code' })
+                      : t('auth.mfa_code', { defaultValue: 'Verification code' })}
+                  </label>
+                  <input
+                    type="text"
+                    value={mfaCode}
+                    onChange={(e) => {
+                      setMfaCode(
+                        useBackupCode
+                          ? e.target.value.toUpperCase()
+                          : e.target.value.replace(/\D/g, '').slice(0, 6)
+                      )
+                      if (mfaError) setMfaError('')
+                    }}
+                    autoFocus
+                    autoComplete="one-time-code"
+                    inputMode={useBackupCode ? 'text' : 'numeric'}
+                    placeholder={useBackupCode ? 'XXXXX-XXXXX' : '000000'}
+                    disabled={mfaSubmitting}
+                    className={`box-border w-full bg-neutral-50 text-black rounded-lg px-4 border inline-flex h-[44px] appearance-none items-center focus:outline-none focus:ring-2 focus:ring-black/5 transition-all placeholder:text-black/25 disabled:opacity-50 ${
+                      useBackupCode
+                        ? 'text-sm tracking-normal'
+                        : 'text-lg tracking-[0.4em] font-semibold'
+                    } ${mfaError ? 'border-red-300 focus:border-red-400' : 'border-neutral-200 focus:border-neutral-400'}`}
+                  />
+
+                  {mfaError && (
+                    <p className="mt-2 text-red-600 text-xs flex items-start gap-1.5">
+                      <Info size={12} className="shrink-0 mt-0.5" />
+                      <span>{mfaError}</span>
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={mfaSubmitting || !mfaCode.trim()}
+                    className="box-border w-full inline-flex h-[44px] rounded-lg items-center justify-center bg-black hover:bg-black/85 text-white px-[15px] font-bold text-[14px] leading-none mt-4 transition-all disabled:opacity-50"
+                  >
+                    {mfaSubmitting ? (
+                      <span className="flex items-center space-x-2">
+                        <span className="w-4 h-4 border-t-2 border-white rounded-full animate-spin" />
+                        <span>{t('common.loading')}</span>
+                      </span>
+                    ) : (
+                      t('auth.mfa_verify', { defaultValue: 'Verify' })
+                    )}
+                  </button>
+                </form>
+
+                <div className="mt-6 space-y-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseBackupCode(!useBackupCode)
+                      setMfaCode('')
+                      setMfaError('')
+                    }}
+                    disabled={mfaSubmitting}
+                    className="text-sm text-black font-semibold hover:underline disabled:opacity-50"
+                  >
+                    {useBackupCode
+                      ? t('auth.mfa_use_authenticator', { defaultValue: 'Use your authenticator app instead' })
+                      : t('auth.mfa_use_backup', { defaultValue: 'Use a backup code instead' })}
+                  </button>
+                  <p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMfaToken(null)
+                        setMfaCode('')
+                        setMfaError('')
+                        setUseBackupCode(false)
+                        turnstileRef.current?.reset()
+                      }}
+                      disabled={mfaSubmitting}
+                      className="text-sm text-black/35 hover:text-black/60 disabled:opacity-50"
+                    >
+                      {t('auth.mfa_back_to_login', { defaultValue: 'Back to sign in' })}
+                    </button>
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
             {/* Header */}
             <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">{t('auth.welcome_back')}</h1>
             <p className="mt-2 text-black/45 text-[15px] font-medium">{t('auth.enter_credentials')}</p>
@@ -468,6 +665,8 @@ const LoginClient = (props: LoginClientProps) => {
                 </Link>
               </p>
             </div>
+              </>
+            )}
           </div>
         </div>
     </AuthLayout>

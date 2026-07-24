@@ -58,6 +58,11 @@ export interface SignInResult {
   error: string | null
   url: string | null
   status: number
+  // Set when the password was correct but the account carries a second factor.
+  // `ok` stays false — nothing is authenticated yet — and the caller must hand
+  // `mfa_token` back to completeMfaLogin() along with a code.
+  mfa_required?: boolean
+  mfa_token?: string
 }
 
 export interface SignOutOptions {
@@ -88,6 +93,11 @@ interface AuthContextValue {
   refreshSession: (_force?: boolean) => Promise<string | null>
   signIn: (_provider: string, _options?: SignInOptions) => Promise<SignInResult | void>
   signOut: (_options?: SignOutOptions) => Promise<void>
+  completeMfaLogin: (
+    _mfaToken: string,
+    _code: string,
+    _options?: { isBackupCode?: boolean; callbackUrl?: string; redirect?: boolean }
+  ) => Promise<SignInResult>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -504,6 +514,107 @@ export function SessionProvider({
     }
   }, [refetchInterval, status, refreshSession])
 
+  // Establish a client-side session from a token-bearing auth response.
+  // Shared by password login and by second-factor completion so the two cannot
+  // drift apart — a session established one way must be identical to the other.
+  const establishSession = useCallback(
+    async (data: any, callbackUrl: string, redirect: boolean): Promise<SignInResult> => {
+      const newSession: Session = {
+        user: data.user,
+        roles: [],
+        tokens: {
+          access_token: data.tokens.access_token,
+          refresh_token: data.tokens.refresh_token,
+          expiry: data.tokens.expiry,
+        },
+      }
+
+      setSession(newSession)
+      setAccessToken(data.tokens.access_token)
+      setTokenExpiry(data.tokens.expiry || null)
+      setStatus('authenticated')
+      sessionCacheRef.current = { data: newSession, timestamp: Date.now() }
+
+      // Fetch full session with roles
+      const fullSession = await fetchUserSession(data.tokens.access_token, data.tokens.expiry)
+      if (fullSession) {
+        fullSession.tokens = newSession.tokens
+        setSession(fullSession)
+        sessionCacheRef.current = { data: fullSession, timestamp: Date.now() }
+      }
+
+      // Notify other tabs
+      broadcastChannelRef.current?.postMessage({ type: 'LOGIN' })
+
+      if (redirect) {
+        window.location.href = safeRedirectUrl(callbackUrl)
+      }
+
+      return { ok: true, error: null, url: callbackUrl, status: 200 }
+    },
+    [fetchUserSession]
+  )
+
+  // Complete a login that stopped at the second-factor challenge.
+  const completeMfaLogin = useCallback(
+    async (
+      mfaToken: string,
+      code: string,
+      options: { isBackupCode?: boolean; callbackUrl?: string; redirect?: boolean } = {}
+    ): Promise<SignInResult> => {
+      const { isBackupCode = false, callbackUrl = '/', redirect = true } = options
+
+      try {
+        const response = await fetch('/api/auth/login/mfa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mfa_token: mfaToken,
+            code,
+            is_backup_code: isBackupCode,
+          }),
+          credentials: 'include',
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          const errorData = data.detail || data
+          return {
+            ok: false,
+            error: JSON.stringify({
+              code: errorData?.code || 'UNKNOWN_ERROR',
+              message: errorData?.message || 'Verification failed',
+              retry_after: errorData?.retry_after,
+            }),
+            url: null,
+            status: response.status,
+          }
+        }
+
+        if (!data.tokens?.access_token) {
+          return {
+            ok: false,
+            error: JSON.stringify({ code: 'INVALID_RESPONSE', message: 'Invalid server response' }),
+            url: null,
+            status: 500,
+          }
+        }
+
+        return await establishSession(data, callbackUrl, redirect)
+      } catch (error) {
+        console.error('MFA verification error:', error)
+        return {
+          ok: false,
+          error: JSON.stringify({ code: 'NETWORK_ERROR', message: 'Could not reach the server' }),
+          url: null,
+          status: 0,
+        }
+      }
+    },
+    [establishSession]
+  )
+
   // Sign in function
   const handleSignIn = useCallback(
     async (provider: string, options: SignInOptions = {}): Promise<SignInResult | void> => {
@@ -577,6 +688,20 @@ export function SessionProvider({
             }
           }
 
+          // Password was correct but the account has a second factor. No
+          // session exists yet — hand the pending token to the caller, which
+          // collects a code and calls completeMfaLogin().
+          if (data.mfa_required && data.mfa_token) {
+            return {
+              ok: false,
+              error: null,
+              url: null,
+              status: response.status,
+              mfa_required: true,
+              mfa_token: data.mfa_token,
+            }
+          }
+
           // Validate response structure
           if (!data.tokens?.access_token) {
             return {
@@ -587,45 +712,7 @@ export function SessionProvider({
             }
           }
 
-          // Login successful
-          const newSession: Session = {
-            user: data.user,
-            roles: [],
-            tokens: {
-              access_token: data.tokens.access_token,
-              refresh_token: data.tokens.refresh_token,
-              expiry: data.tokens.expiry,
-            },
-          }
-
-          setSession(newSession)
-          setAccessToken(data.tokens.access_token)
-          setTokenExpiry(data.tokens.expiry || null)
-          setStatus('authenticated')
-          sessionCacheRef.current = {
-            data: newSession,
-            timestamp: Date.now(),
-          }
-
-          // Fetch full session with roles
-          const fullSession = await fetchUserSession(data.tokens.access_token, data.tokens.expiry)
-          if (fullSession) {
-            fullSession.tokens = newSession.tokens
-            setSession(fullSession)
-            sessionCacheRef.current = {
-              data: fullSession,
-              timestamp: Date.now(),
-            }
-          }
-
-          // Notify other tabs
-          broadcastChannelRef.current?.postMessage({ type: 'LOGIN' })
-
-          if (redirect) {
-            window.location.href = safeRedirectUrl(callbackUrl)
-          }
-
-          return { ok: true, error: null, url: callbackUrl, status: 200 }
+          return await establishSession(data, callbackUrl, redirect)
         }
 
         if (provider === 'google') {
@@ -704,7 +791,7 @@ export function SessionProvider({
         }
       }
     },
-    [fetchUserSession]
+    [fetchUserSession, establishSession]
   )
 
   // Sign out function
@@ -813,6 +900,7 @@ export function SessionProvider({
     refreshSession,
     signIn: handleSignIn,
     signOut: handleSignOut,
+    completeMfaLogin,
   }
 
   return (
@@ -1002,6 +1090,7 @@ export function useAuth() {
     accessToken: context.accessToken,
     signIn: context.signIn,
     signOut: context.signOut,
+    completeMfaLogin: context.completeMfaLogin,
     refreshSession: context.refreshSession,
     // Convenience method to get valid access token (refreshes if needed)
     getAccessToken: async (): Promise<string | null> => {

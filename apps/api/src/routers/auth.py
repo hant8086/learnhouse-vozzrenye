@@ -46,6 +46,7 @@ from src.services.users.email_verification import (
     verify_email_token,
     resend_verification_email,
 )
+from src.services.auth.session import issue_session_or_challenge
 
 
 def get_token_expiry_ms() -> Optional[int]:
@@ -445,22 +446,26 @@ async def login(
     client_ip = get_client_ip(request)
     await update_login_info(user, client_ip, db_session)
 
-    # Step 6: Issue tokens
-    access_token = create_access_token(
-        data={"sub": username},
-        expires_delta=JWT_ACCESS_TOKEN_EXPIRES
-    )
-    refresh_token = create_refresh_token(data={"sub": username})
+    # Step 6: Issue a session — unless the account carries a second factor, in
+    # which case this returns a short-lived pending token instead and the caller
+    # must complete /auth/login/mfa. No cookies and no user object are returned
+    # on that branch: nothing is authenticated until the code is verified.
+    issue = await issue_session_or_challenge(db_session, user)
+    if issue.mfa_required:
+        return {
+            "mfa_required": True,
+            "mfa_token": issue.mfa_token,
+        }
 
-    set_auth_cookies(response, access_token, refresh_token, request)
+    set_auth_cookies(response, issue.access_token, issue.refresh_token, request)
 
     user = UserRead.model_validate(user)
 
     result = {
         "user": user,
         "tokens": {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+            "access_token": issue.access_token,
+            "refresh_token": issue.refresh_token,
             "expiry": get_token_expiry_ms(),
         },
     }
@@ -715,20 +720,26 @@ async def api_verify_email(
         org_uuid=body.org_uuid,
     )
 
-    # Auto sign-in: issue a session exactly like /login (sub = email).
-    access_token = create_access_token(
-        data={"sub": user.email},
-        expires_delta=JWT_ACCESS_TOKEN_EXPIRES,
-    )
-    refresh_token = create_refresh_token(data={"sub": user.email})
-    set_auth_cookies(response, access_token, refresh_token, request)
+    # Auto sign-in: issue a session exactly like /login (sub = email), and go
+    # through the same second-factor gate. A brand-new user cannot have MFA yet,
+    # but an existing user re-verifying their address can — and without this the
+    # verification link would be a way around their own second factor.
+    issue = await issue_session_or_challenge(db_session, user)
+    if issue.mfa_required:
+        return {
+            "message": message,
+            "mfa_required": True,
+            "mfa_token": issue.mfa_token,
+        }
+
+    set_auth_cookies(response, issue.access_token, issue.refresh_token, request)
 
     return {
         "message": message,
         "user": UserRead.model_validate(user),
         "tokens": {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+            "access_token": issue.access_token,
+            "refresh_token": issue.refresh_token,
             "expiry": get_token_expiry_ms(),
         },
     }
