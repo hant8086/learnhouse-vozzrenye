@@ -12,6 +12,7 @@ import { getUriWithOrg } from '@services/config/config'
 import { useTranslation } from 'react-i18next'
 import { BookCopy, LogIn } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import { Reveal, RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
 
 interface LandingClassicProps {
   courses: any[]
@@ -33,7 +34,7 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
       <GeneralWrapperStyled>
         {/* Courses */}
         <div className="flex flex-col space-y-2">
-          <div className="flex items-center justify-between">
+          <Reveal className="flex items-center justify-between" direction="none">
             <TypeOfContentTitle title={t('courses.courses')} type="cou" />
             <AuthenticatedClientElement
               ressourceType="courses"
@@ -45,12 +46,12 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
                 <NewCourseButton />
               </Link>
             </AuthenticatedClientElement>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          </Reveal>
+          <RevealGroup className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {displayedCourses.map((course: any) => (
-              <div key={course.course_uuid} className="flex">
+              <RevealItem key={course.course_uuid} className="flex">
                 <CourseThumbnail course={course} orgslug={orgslug} />
-              </div>
+              </RevealItem>
             ))}
             {courses.length === 0 && (
               <div className="col-span-full flex flex-col justify-center items-center py-12 px-4 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
@@ -89,7 +90,7 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
                 )}
               </div>
             )}
-          </div>
+          </RevealGroup>
           {hasMoreCourses && (
             <div className="mt-4 text-center">
               <Link
