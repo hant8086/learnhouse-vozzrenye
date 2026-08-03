@@ -6,24 +6,13 @@ name: Build Community Images
 # anything new at the repo root still triggers a build. The list is spelled out
 # twice because GitHub Actions does not support YAML anchors — keep both copies
 # in sync.
+# Vozzrenye fork: build our own image on pushes to `prod` only (our production
+# branch = upstream release + our edits). Manual runs via workflow_dispatch.
 on:
+  workflow_dispatch:
   push:
     branches:
       - prod
-      - dev
-      - main
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'apps/cli/**'
-      - 'apps/e2e/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - 'LICENSE'
-  pull_request:
-    branches:
-      - prod
-      - dev
-      - main
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -43,7 +32,9 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: learnhouse/app
+  # Vozzrenye fork: push to OUR GHCR namespace (github.actor/GITHUB_TOKEN can only
+  # write packages under this repo's owner). Resolves to hant8086/learnhouse-vozzrenye.
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
@@ -86,17 +77,15 @@ jobs:
             LEARNHOUSE_PUBLIC=true
           cache-from: type=gha,scope=${{ steps.prep.outputs.platform_pair }}
           cache-to: type=gha,mode=max,scope=${{ steps.prep.outputs.platform_pair }}
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=${{ github.event_name == 'push' }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
-        if: github.event_name == 'push'
         run: |
           mkdir -p ${{ runner.temp }}/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       - name: Upload digest
-        if: github.event_name == 'push'
         uses: actions/upload-artifact@v7
         with:
           name: digests-${{ steps.prep.outputs.platform_pair }}
@@ -107,7 +96,6 @@ jobs:
   merge:
     name: Create multi-platform manifest
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     needs: build
     steps:
       - name: Download digests
