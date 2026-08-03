@@ -315,7 +315,7 @@ export const OrgMenu = (props: any) => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <a
-                        href="https://docs.learnhouse.app"
+                        href="https://vozzrenye.pro"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"
@@ -326,7 +326,7 @@ export const OrgMenu = (props: any) => {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <a
-                        href="https://learnhouse.app"
+                        href="https://vozzrenye.pro"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"
