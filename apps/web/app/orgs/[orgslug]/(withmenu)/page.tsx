@@ -4,7 +4,6 @@ import { getOrgThumbnailMediaDirectory, getOrgOgImageMediaDirectory } from '@ser
 import { getOrgSeoConfig, buildPageTitle } from '@/lib/seo/utils'
 import { getServerCanonicalUrl } from '@/lib/seo/utils.server'
 import HomeClient from './home-client'
-import StaticLegalFooter from '@components/Footers/StaticLegalFooter'
 
 type MetadataProps = {
   params: Promise<{ orgslug: string }>
@@ -77,15 +76,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 
 const OrgHomePage = async (params: any) => {
   const orgslug = (await params.params).orgslug
-  return (
-    <>
-      <HomeClient orgslug={orgslug} />
-      {/* Rendered here, in the server component, rather than inside the client
-          landing: this is the public homepage, and Google's OAuth review needs
-          the privacy-policy link to be present in the delivered HTML. */}
-      <StaticLegalFooter className="mt-10" />
-    </>
-  )
+  return <HomeClient orgslug={orgslug} />
 }
 
 export default OrgHomePage

@@ -16,6 +16,7 @@ import { PageViewTracker } from '@components/Analytics/PageViewTracker'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { usePlan } from '@components/Hooks/usePlan'
 import { getGoogleFontUrl, DEFAULT_FONT } from '@/lib/fonts'
+import StaticLegalFooter from '@components/Footers/StaticLegalFooter'
 
 // Helper to convert hex to rgba
 const hexToRgba = (hex: string, alpha: number): string => {
@@ -151,6 +152,14 @@ export default function RootLayout(
         </PodcastPlayerProvider>
       </OrgJoinBannerProvider>
       </SessionGate>
+      {/* Deliberately OUTSIDE SessionGate.
+          The gate renders <PageLoading /> instead of its children whenever the
+          session status is 'loading', which is exactly the state during server
+          rendering — so everything inside it is absent from the delivered HTML.
+          Google's OAuth review requires the homepage to link to the privacy
+          policy, and it fetches that page without running our JavaScript, so
+          the link has to survive outside the gate. */}
+      <StaticLegalFooter />
     </>
   )
 }
