@@ -330,6 +330,25 @@ export default async function proxy(req: NextRequest) {
   }
 
   // -------------------------------------------------------------------------
+  // 2b. Legal pages — instance-level, pass through without an org rewrite
+  //
+  //     /privacy and /terms describe the deployment, not an org: one policy
+  //     governs the whole instance. Without this branch they fall through to
+  //     the tenant catch-all at the bottom, get rewritten to
+  //     /orgs/{slug}/privacy, and 404 — the same trap documented for the
+  //     emailed magic links below.
+  //
+  //     They must also stay readable while signed out: Google's OAuth
+  //     verification fetches the privacy policy anonymously and rejects the app
+  //     if the link from the homepage does not resolve to a readable policy.
+  // -------------------------------------------------------------------------
+  if (pathname === '/privacy' || pathname === '/terms') {
+    const response = NextResponse.rewrite(new URL(`${pathname}${search}`, req.url))
+    setInstanceCookies(response, instance)
+    return response
+  }
+
+  // -------------------------------------------------------------------------
   // 3. Auth pages — resolve tenant for cookie context, rewrite to /auth
   // -------------------------------------------------------------------------
   const authPaths = ['/login', '/signup', '/reset', '/forgot', '/verify-email']

@@ -154,17 +154,36 @@ export const OrgMenu = (props: any) => {
         <div className="flex items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center space-x-5 md:w-auto w-full">
             <div className="logo flex md:w-auto w-full justify-center">
-              <Link href={getUriWithOrg(orgslug, '/')}>
+              <Link href={getUriWithOrg(orgslug, '/')} aria-label={org?.name || 'Vozzrenye'}>
                 <div className="flex w-auto h-9 rounded-md items-center m-auto py-1 justify-center">
                   {org?.logo_image ? (
                     <img
                       src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
-                      alt="Learnhouse"
+                      alt={org?.name || 'Vozzrenye'}
                       style={{ width: 'auto', height: '100%' }}
                       className="rounded-md"
                     />
                   ) : (
                     <LearnHouseLogo logoFilter={colors.logoFilter} />
+                  )}
+                  {/* Wordmark. The mark alone does not say who this is, so the
+                      org name sits beside it, separated by a hairline rather
+                      than a heavier divider. Taken from org config, never
+                      hardcoded, so a differently branded org stays correct.
+                      Hidden below `sm` where the bar has no room for it. */}
+                  {org?.name && (
+                    <span className="hidden sm:flex items-center">
+                      <span
+                        className="mx-3 h-5 w-px shrink-0"
+                        style={{ backgroundColor: 'var(--color-line-strong)' }}
+                        aria-hidden="true"
+                      />
+                      <span
+                        className={`text-[15px] font-semibold tracking-tight whitespace-nowrap ${colors.text}`}
+                      >
+                        {org.name}
+                      </span>
+                    </span>
                   )}
                 </div>
               </Link>

@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { BookCopy, LogIn } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { Reveal, RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
+import { CopyrightFooter } from '@components/Footers/LegalFooters'
 
 interface LandingClassicProps {
   courses: any[]
@@ -103,6 +104,10 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
           )}
         </div>
       </GeneralWrapperStyled>
+      {/* The org landing is the public homepage. Google's OAuth verification
+          requires the homepage to link to the privacy policy, so the legal
+          footer belongs here and not only on the auth screens. */}
+      <CopyrightFooter year={new Date().getFullYear()} className="mt-10" />
     </div>
   )
 }

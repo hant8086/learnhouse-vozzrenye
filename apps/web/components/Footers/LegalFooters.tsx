@@ -6,15 +6,19 @@
 // CopyrightFooter — the "© {year} LearnHouse, Inc." line for app surfaces
 //                (the apex /home hub, the onboarding page, …).
 //
-// Legal pages live on the marketing/platform site, so links resolve via
-// getPlatformUrl() with a sensible public fallback.
+// The legal pages are served by this app, at /terms and /privacy. They used to
+// point at the marketing site, but those paths are a client-side catch-all
+// there and silently returned the landing page instead of a policy.
+//
+// Same-origin is also what Google's OAuth verification wants: the privacy
+// policy must be hosted on the domain that hosts the homepage and be linked
+// from it. Keeping these relative guarantees the two can never drift apart.
 import React from 'react'
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
-import { getPlatformUrl } from '@services/config/config'
 
-const TERMS_URL = getPlatformUrl('/terms') || 'https://vozzrenye.pro/terms'
-const PRIVACY_URL = getPlatformUrl('/privacy') || 'https://vozzrenye.pro/privacy'
+const TERMS_URL = '/terms'
+const PRIVACY_URL = '/privacy'
 
 export function AuthFooter({ className = '' }: { className?: string }) {
   const { t } = useTranslation()
@@ -24,8 +28,6 @@ export function AuthFooter({ className = '' }: { className?: string }) {
         {t('auth.terms_text', { defaultValue: "By continuing, you agree to Vozzrenye's" })}{' '}
         <Link
           href={TERMS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
           className="text-black/50 hover:text-black/70 transition-colors"
         >
           {t('auth.terms_of_service', { defaultValue: 'Terms of Service' })}
@@ -33,8 +35,6 @@ export function AuthFooter({ className = '' }: { className?: string }) {
         {t('auth.and', { defaultValue: 'and' })}{' '}
         <Link
           href={PRIVACY_URL}
-          target="_blank"
-          rel="noopener noreferrer"
           className="text-black/50 hover:text-black/70 transition-colors"
         >
           {t('auth.privacy_policy', { defaultValue: 'Privacy Policy' })}
@@ -67,16 +67,12 @@ export function CopyrightFooter({
         <nav className="flex items-center gap-x-5">
           <Link
             href={TERMS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
             className={`${link} transition-colors`}
           >
             {t('auth.terms_of_service', { defaultValue: 'Terms of Service' })}
           </Link>
           <Link
             href={PRIVACY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
             className={`${link} transition-colors`}
           >
             {t('auth.privacy_policy', { defaultValue: 'Privacy Policy' })}

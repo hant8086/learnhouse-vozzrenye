@@ -41,6 +41,7 @@ export function getMenuColorClasses(primaryColor: string) {
     return {
       text: 'text-gray-700',
       textMuted: 'text-gray-500',
+      linkHover: 'hover:text-amber-800',
       hoverBg: 'hover:bg-gray-100',
       iconBtn: 'hover:bg-gray-100 text-gray-600',
       searchBg:
@@ -61,6 +62,7 @@ export function getMenuColorClasses(primaryColor: string) {
     return {
       text: 'text-gray-900',
       textMuted: 'text-gray-700',
+      linkHover: 'hover:text-amber-800',
       hoverBg: 'hover:bg-black/10',
       iconBtn: 'hover:bg-black/10 text-gray-800',
       searchBg:
@@ -78,6 +80,9 @@ export function getMenuColorClasses(primaryColor: string) {
   return {
     text: 'text-white',
     textMuted: 'text-white/70',
+    // On a dark bar the deep signal would sink; the lighter step keeps the
+    // same accent legible.
+    linkHover: 'hover:text-amber-400',
     hoverBg: 'hover:bg-white/10',
     iconBtn: 'hover:bg-white/10 text-white',
     searchBg:
