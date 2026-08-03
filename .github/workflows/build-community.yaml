@@ -66,6 +66,15 @@ jobs:
         run: |
           echo "platform_pair=$(echo '${{ matrix.platform }}' | tr '/' '-')" >> $GITHUB_OUTPUT
 
+      # Vozzrenye build stamp: BASE = upstream release from apps/web/package.json;
+      # BUILD = <run_number>-<sha7> (auto-increments each build, ties to the commit).
+      - name: Compute build stamp
+        id: stamp
+        run: |
+          BASE=$(node -p "require('./apps/web/package.json').version")
+          echo "base=$BASE" >> $GITHUB_OUTPUT
+          echo "build=${{ github.run_number }}-$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v7
@@ -75,6 +84,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           build-args: |
             LEARNHOUSE_PUBLIC=true
+            VOZZRENYE_BASE=${{ steps.stamp.outputs.base }}
+            VOZZRENYE_BUILD=${{ steps.stamp.outputs.build }}
           cache-from: type=gha,scope=${{ steps.prep.outputs.platform_pair }}
           cache-to: type=gha,mode=max,scope=${{ steps.prep.outputs.platform_pair }}
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true

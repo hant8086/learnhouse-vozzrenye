@@ -22,6 +22,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Remove .env files to avoid leaking secrets into the build
 RUN rm -f .env*
 
+# Vozzrenye build stamp — inlined into the web bundle at build time so the admin
+# UI can show which image is live (see DashLeftMenu.tsx). Defaults keep local
+# `bun run build` working; CI overrides them (build-community.yaml).
+ARG VOZZRENYE_BASE=1.3.4
+ARG VOZZRENYE_BUILD=dev
+ENV NEXT_PUBLIC_VOZZRENYE_BASE=$VOZZRENYE_BASE
+ENV NEXT_PUBLIC_VOZZRENYE_BUILD=$VOZZRENYE_BUILD
+
 RUN bun run build
 
 # ───────────────────────────────────────────────

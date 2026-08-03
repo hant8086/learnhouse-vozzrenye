@@ -85,6 +85,13 @@ import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 import OnboardingSidebarBox from '@components/Dashboard/Onboarding/OnboardingSidebarBox'
 import { useOnboarding } from '@components/Hooks/useOnboarding'
 
+// Vozzrenye build stamp. Baked into the image at build time via NEXT_PUBLIC_*
+// build-args (see Dockerfile frontend-builder + build-community.yaml). BASE is the
+// upstream LearnHouse release we fork from; BUILD is our CI build id
+// (`<run_number>-<sha7>`). Both fall back to 'dev' / the pinned release locally.
+const VOZZRENYE_BASE = process.env.NEXT_PUBLIC_VOZZRENYE_BASE || '1.3.4'
+const VOZZRENYE_BUILD = process.env.NEXT_PUBLIC_VOZZRENYE_BUILD || 'dev'
+
 // Scattered night-sky starfield for the free-plan upgrade box. Fixed positions
 // (top/left %) so the constellation is stable across renders; `north` is the
 // brighter amber guide star. dim/bright drive the idle twinkle amplitude.
@@ -1268,6 +1275,16 @@ function DashLeftMenu() {
             </button>
           </HoverMenu>
         </div>
+
+        {/* Vozzrenye build stamp — our fork build id + upstream base version, so
+            we can confirm at a glance which image is actually live. Hidden when the
+            sidebar is collapsed. */}
+        {!isCollapsed && (
+          <div className="mt-2 pt-2 px-3 border-t border-white/[0.06] text-[10px] leading-snug text-white/25 select-none">
+            <div>Vozzrenye · build {VOZZRENYE_BUILD}</div>
+            <div className="text-white/20">LearnHouse v{VOZZRENYE_BASE}</div>
+          </div>
+        )}
       </div>
     </nav>
 
