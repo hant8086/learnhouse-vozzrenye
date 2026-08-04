@@ -12,7 +12,7 @@
 export const OPERATOR_NAME = 'Vozzrenye'
 
 /** Monitored mailbox for privacy requests and legal notices. */
-export const CONTACT_EMAIL = 'support@vozzrenye.pro'
+export const CONTACT_EMAIL = 'hant8086@gmail.com'
 
 /** Jurisdiction whose law governs the Terms. */
 export const GOVERNING_LAW = ''
@@ -22,3 +22,34 @@ export const LAST_UPDATED = '2026-08-03'
 
 /** The domain the service runs on — must match the OAuth consent screen. */
 export const SERVICE_DOMAIN = 'platform.vozzrenye.pro'
+
+/**
+ * Licence applied to learning material that is explicitly published as open.
+ *
+ * ⚠️ A substantive choice, not a derived fact — confirm before relying on it.
+ *
+ * CC BY-SA 4.0 was picked because it expresses the intent exactly and needs no
+ * bespoke wording:
+ *  - BY  — reuse must credit the source, which is the attribution requirement;
+ *  - SA  — derivatives stay open, mirroring the AGPL copyleft on the software
+ *          side, so the open contour cannot be quietly enclosed;
+ *  - §2(b)(2) of the licence grants NO trademark rights, so the brand
+ *          reservation below is native to the licence rather than bolted on.
+ *
+ * A licence is only granted where material is explicitly marked as open.
+ * Everything else — paid courses, member-only material — is all rights
+ * reserved. Silence is not a grant.
+ */
+export const OPEN_CONTENT_LICENSE = 'CC BY-SA 4.0'
+export const OPEN_CONTENT_LICENSE_URL =
+  'https://creativecommons.org/licenses/by-sa/4.0/'
+
+/**
+ * Names reserved as marks. Neither the AGPL (which §7(e) lets us decline to
+ * grant trademark rights under) nor the content licence transfers these.
+ *
+ * The distinction that matters, and which the Terms spell out: naming the
+ * project to credit it is required by attribution, so it is always permitted.
+ * Adopting the names as your own identity is not.
+ */
+export const BRAND_NAMES = ['Воззрение', 'Vozzrenye', 'Технология Просветления']

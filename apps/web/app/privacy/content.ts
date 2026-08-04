@@ -56,6 +56,18 @@ export const privacyRu: LegalContent = {
       ],
     },
     {
+      id: 'email-signup',
+      heading: 'Регистрация и вход по электронной почте',
+      body: [
+        'Обычный способ доступа к платформе — учётная запись с адресом электронной почты и паролем. Вход через Google является альтернативой и не обязателен.',
+        'При регистрации вы указываете адрес электронной почты, имя пользователя, имя и фамилию и задаёте пароль. Если администратор настроил дополнительные поля регистрации, вы отвечаете и на них.',
+        'Пароль сохраняется только в виде хеша Argon2. Мы не храним его в открытом виде, не можем его прочитать и не сможем сообщить вам, если вы его забудете, — только помочь задать новый.',
+        'Адрес электронной почты служит вашим логином, опознаёт учётную запись и используется для служебных сообщений о ней: подтверждения адреса и восстановления пароля. Рекламных и маркетинговых рассылок мы не ведём.',
+        'Учётная запись действует сразу после регистрации: подтверждение адреса в текущей конфигурации не является обязательным условием входа.',
+        'Внешний почтовый сервис к платформе сейчас не подключён, поэтому письма фактически не отправляются и ваш адрес не передаётся почтовому провайдеру. Когда отправка писем будет включена, провайдер станет обработчиком персональных данных и будет назван на этой странице.',
+      ],
+    },
+    {
       id: 'google',
       heading: 'Вход через Google',
       body: [
@@ -191,6 +203,18 @@ export const privacyEn: LegalContent = {
         },
         'Learning data: courses and activities you open, your progress, assignment submissions and grades, certificates you earn, and messages you post in discussions.',
         'Audit records: the platform keeps an append-only record of significant events (sign-in and sign-out, assignment submission, grading, certificate issuance). Each entry stores the event type, timestamp, IP address and browser User-Agent string.',
+      ],
+    },
+    {
+      id: 'email-signup',
+      heading: 'Registering and signing in with email',
+      body: [
+        'The ordinary way onto the platform is an account with an email address and a password. Signing in with Google is an alternative, not a requirement.',
+        'When you register you provide an email address, a username, a first and last name, and choose a password. If your administrator has configured additional signup fields, you answer those too.',
+        'The password is stored only as an Argon2 hash. We do not keep it in readable form, we cannot read it, and if you forget it we cannot tell you what it was — only help you set a new one.',
+        'Your email address is your login, identifies your account, and is used for messages about that account: verifying the address and resetting the password. We do not send marketing email.',
+        'Your account works immediately after registration: as currently configured, verifying your address is not a condition of signing in.',
+        'No external email service is connected to the platform at present, so no messages are actually dispatched and your address is not passed to an email provider. If email delivery is switched on, that provider becomes a data processor and will be named on this page.',
       ],
     },
     {

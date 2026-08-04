@@ -1,10 +1,16 @@
 import type { LegalContent } from '@components/Legal/LegalDocument'
 import {
+  BRAND_NAMES,
   CONTACT_EMAIL,
   GOVERNING_LAW,
+  OPEN_CONTENT_LICENSE,
+  OPEN_CONTENT_LICENSE_URL,
   OPERATOR_NAME,
   SERVICE_DOMAIN,
 } from '@components/Legal/legalConfig'
+
+const brandsRu = BRAND_NAMES.map((n) => '«' + n + '»').join(', ')
+const brandsEn = BRAND_NAMES.map((n) => '“' + n + '”').join(', ')
 
 /**
  * Terms of service copy.
@@ -57,9 +63,18 @@ export const termsRu: LegalContent = {
     },
     {
       id: 'account',
-      heading: 'Учётная запись',
+      heading: 'Учётная запись: когда она нужна',
       body: [
-        'Для работы с платформой нужна учётная запись. Вы обязуетесь указывать достоверные данные и поддерживать их в актуальном состоянии.',
+        'Учётная запись нужна не всегда. Объём того, что вы сообщаете о себе, определяется тем, к какому материалу вы обращаетесь.',
+        {
+          list: [
+            'Открытый материал: просмотр не требует ни регистрации, ни входа, ни сообщения каких-либо личных данных. Достаточно открыть страницу.',
+            'Материал, доступный после входа: нужна учётная запись, то есть адрес электронной почты и пароль — либо вход через Google. С этого момента ваши действия связываются с вашим профилем: прогресс, сданные задания, оценки.',
+            'Платный материал: помимо учётной записи потребуются данные, необходимые для оформления и подтверждения оплаты.',
+          ],
+        },
+        'Иными словами, личные данные запрашиваются ровно тогда, когда без них нельзя опознать, кому принадлежит доступ, прогресс или оплата, — и не раньше.',
+        'Если учётная запись у вас есть, вы обязуетесь указывать достоверные данные и поддерживать их в актуальном состоянии.',
         'Вы отвечаете за сохранность пароля и за все действия, совершённые под вашей учётной записью. Заметив несанкционированный доступ, немедленно сообщите нам.',
         'Учётная запись личная. Передавать её другому лицу нельзя.',
         'Платформа не предназначена для лиц младше 16 лет.',
@@ -75,7 +90,7 @@ export const termsRu: LegalContent = {
             'нарушать закон и права других людей;',
             'пытаться получить доступ к чужим учётным записям, данным или служебным частям системы;',
             'нарушать работу платформы, создавать чрезмерную нагрузку, обходить ограничения доступа и меры безопасности;',
-            'массово выгружать учебные материалы, копировать и распространять их без разрешения правообладателя;',
+            'массово выгружать материалы, не помеченные как открытые, копировать и распространять их без разрешения правообладателя (к открытым материалам это не относится — их можно использовать на условиях их лицензии);',
             'размещать вредоносный код, спам, а также оскорбительные или незаконные материалы;',
             'выдавать себя за другого человека или организацию.',
           ],
@@ -84,10 +99,23 @@ export const termsRu: LegalContent = {
     },
     {
       id: 'content',
-      heading: 'Материалы и права на них',
+      heading: 'Материалы, лицензии и название',
       body: [
-        'Права на учебные материалы принадлежат их авторам и правообладателям. Доступ к материалам даётся вам для личного обучения и не передаёт вам прав на них.',
-        'Права на материалы, которые вы сами загружаете или пишете — ответы на задания, сообщения в обсуждениях, файлы, — остаются вашими. Вы предоставляете нам ограниченное право хранить, воспроизводить и показывать их в объёме, необходимом для работы платформы: чтобы преподаватель увидел вашу работу, а система сохранила ваш прогресс.',
+        'Здесь сходятся три разных вещи, и их важно не смешивать: программа, на которой работает платформа; учебные материалы, размещённые на ней; и название проекта. Каждая живёт по своим правилам.',
+        'Программа — свободная, под AGPL-3.0. Об этом отдельный раздел ниже.',
+        `Открытые материалы. Материал, явно помеченный как открытый, публикуется на условиях ${OPEN_CONTENT_LICENSE} (${OPEN_CONTENT_LICENSE_URL}). Его можно свободно читать, копировать, переводить, перерабатывать и распространять, в том числе в коммерческих целях, при трёх условиях:`,
+        {
+          list: [
+            'указать источник — название проекта и ссылку на оригинал;',
+            'отметить, что вы внесли изменения, если вы их вносили;',
+            'распространять производный материал на тех же условиях, не закрывая его.',
+          ],
+        },
+        'Всё остальное. Материал, не помеченный как открытый, — платные курсы, материалы для участников, чужие работы — защищён полностью. Доступ к нему даётся вам для личного обучения и никаких прав не передаёт. Отсутствие пометки означает «все права защищены», а не разрешение: молчание разрешением не является.',
+        `Название. ${brandsRu} — это наименования проекта. Ни AGPL, ни ${OPEN_CONTENT_LICENSE} прав на них не передают: свободные лицензии касаются кода и текстов, а не имени, под которым они выпущены.`,
+        'Отсюда следует различие, которое обычно и вызывает путаницу. Назвать проект, чтобы указать на источник, не только можно, но и нужно — этого прямо требует условие об указании источника: «по материалам проекта Воззрение», «на основе Технологии Просветления», со ссылкой на оригинал. Это добросовестное упоминание, и оно ничем не ограничено.',
+        'Чего делать нельзя — присваивать имя. Нельзя выдавать свой проект, курс, сообщество, сайт или продукт за Воззрение или Технологию Просветления, использовать эти названия как собственное имя, в названии домена или в качестве товарного знака, а также подавать своё изложение так, будто оно исходит от нас, одобрено или проверено нами. Проще говоря: ссылаться на источник — да, представляться источником — нет.',
+        'Ваши материалы. Права на то, что загружаете или пишете вы — ответы на задания, сообщения в обсуждениях, файлы, — остаются вашими. Вы предоставляете нам ограниченное право хранить, воспроизводить и показывать их в объёме, необходимом для работы платформы: чтобы преподаватель увидел вашу работу, а система сохранила ваш прогресс. Публикуя материал под открытой лицензией, вы подтверждаете, что вправе это сделать.',
         'Вы отвечаете за то, что имеете право размещать всё, что размещаете.',
       ],
     },
@@ -105,7 +133,8 @@ export const termsRu: LegalContent = {
       body: [
         'Платформа построена на LearnHouse — свободном программном обеспечении под лицензией GNU Affero General Public License версии 3 (AGPL-3.0) — с нашими изменениями.',
         `В соответствии с разделом 13 AGPL-3.0 пользователи, взаимодействующие с программой по сети, имеют право получить соответствующий исходный код изменённой версии. Чтобы его получить, напишите на ${CONTACT_EMAIL}.`,
-        'Лицензия распространяется на код платформы, но не на размещённые на ней учебные материалы и не на пользовательские данные.',
+        'Лицензия распространяется на код платформы, но не на размещённые на ней учебные материалы, не на пользовательские данные и не на название проекта: раздел 7(e) AGPL-3.0 прямо позволяет не передавать права на наименования, и мы ими пользуемся.',
+        'То есть форк платформы можно поднять свободно — это и есть смысл AGPL, — но он должен называться своим именем, а не нашим.',
       ],
     },
     {
@@ -171,9 +200,18 @@ export const termsEn: LegalContent = {
     },
     {
       id: 'account',
-      heading: 'Your account',
+      heading: 'When an account is needed',
       body: [
-        'You need an account to use the platform. You agree to give accurate information and keep it current.',
+        'An account is not always required. How much you tell us about yourself depends on what you are reading.',
+        {
+          list: [
+            'Open material: viewing it requires no registration, no sign-in and no personal details at all. Opening the page is enough.',
+            'Material behind sign-in: this needs an account — an email address and a password, or Google sign-in. From that point your activity is tied to your profile: progress, submissions, grades.',
+            'Paid material: beyond an account, this needs the details required to take and confirm payment.',
+          ],
+        },
+        'In short, personal data is asked for exactly when it is needed to know whose access, whose progress or whose payment this is — and not before.',
+        'If you do have an account, you agree to give accurate information and keep it current.',
         'You are responsible for keeping your password safe and for activity carried out under your account. Tell us immediately if you notice unauthorised access.',
         'Accounts are personal and may not be transferred to someone else.',
         'The platform is not intended for people under 16.',
@@ -189,7 +227,7 @@ export const termsEn: LegalContent = {
             'break the law or infringe anyone else’s rights;',
             'attempt to reach other people’s accounts or data, or the internal parts of the system;',
             'disrupt the platform, place excessive load on it, or circumvent access controls and security measures;',
-            'bulk-download learning material, or copy and redistribute it without the rightsholder’s permission;',
+            'bulk-download material not marked as open, or copy and redistribute it without the rightsholder’s permission (this does not apply to open material, which you may use on the terms of its licence);',
             'upload malware or spam, or post abusive or unlawful material;',
             'impersonate another person or organisation.',
           ],
@@ -198,10 +236,23 @@ export const termsEn: LegalContent = {
     },
     {
       id: 'content',
-      heading: 'Content and rights',
+      heading: 'Material, licences and the name',
       body: [
-        'Learning material belongs to its authors and rightsholders. Access is granted to you for your own learning and transfers no rights in the material itself.',
-        'Content you create or upload — assignment answers, discussion posts, files — remains yours. You grant us a limited right to store, reproduce and display it to the extent needed to operate the platform: so an instructor can see your work and the system can record your progress.',
+        'Three separate things meet here and are worth keeping apart: the software the platform runs on, the learning material published on it, and the name of the project. Each is governed by its own rules.',
+        'The software is free software under the AGPL-3.0. It has its own section below.',
+        `Open material. Material explicitly marked as open is published under ${OPEN_CONTENT_LICENSE} (${OPEN_CONTENT_LICENSE_URL}). You may read, copy, translate, adapt and redistribute it, including commercially, on three conditions:`,
+        {
+          list: [
+            'credit the source — name the project and link to the original;',
+            'state that you made changes, if you made any;',
+            'release adaptations on the same terms, without closing them off.',
+          ],
+        },
+        'Everything else. Material not marked as open — paid courses, member-only material, other people’s work — is fully reserved. Access is granted for your own learning and transfers no rights. The absence of a mark means “all rights reserved”, not permission: silence is not a grant.',
+        `The name. ${brandsEn} are the names of the project. Neither the AGPL nor ${OPEN_CONTENT_LICENSE} transfers any right in them: free licences cover code and text, not the name they were released under.`,
+        'That produces a distinction which is usually where confusion starts. Naming the project in order to credit it is not merely allowed but required — the attribution condition asks for exactly that: “based on material from Vozzrenye”, “adapted from Технология Просветления”, with a link to the original. That is nominative use and nothing here restricts it.',
+        'What you may not do is take the name. You may not present your own project, course, community, site or product as Vozzrenye or Технология Просветления, use those names as your own name, in a domain name or as a trademark, or present your account of the material as though it came from us, or were endorsed or checked by us. Put simply: cite the source, yes; pose as the source, no.',
+        'Your own material. Rights in what you write or upload — assignment answers, discussion posts, files — remain yours. You grant us a limited right to store, reproduce and display it to the extent needed to operate the platform: so an instructor can see your work and the system can record your progress. If you publish material under the open licence, you confirm you are entitled to do so.',
         'You are responsible for having the right to post whatever you post.',
       ],
     },
@@ -219,7 +270,8 @@ export const termsEn: LegalContent = {
       body: [
         'This platform is built on LearnHouse, free software licensed under the GNU Affero General Public License version 3 (AGPL-3.0), together with our modifications.',
         `In line with section 13 of the AGPL-3.0, users interacting with the software over a network are entitled to receive the corresponding source of the modified version. To obtain it, write to ${CONTACT_EMAIL}.`,
-        'The licence covers the platform software. It does not cover the learning material hosted on it, nor user data.',
+        'The licence covers the platform software. It does not cover the learning material hosted on it, nor user data, nor the name of the project: section 7(e) of the AGPL-3.0 expressly permits declining to grant rights in names, and we rely on that.',
+        'So you are free to stand up your own fork — that is what the AGPL is for — but it must run under its own name, not ours.',
       ],
     },
     {
