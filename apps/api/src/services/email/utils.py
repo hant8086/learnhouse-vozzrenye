@@ -4,6 +4,7 @@ import smtplib
 import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -273,6 +274,10 @@ def send_email(to: EmailStr, subject: str, body: str):
     mailing = lh_config.mailing_config
     # The display name used to be hardcoded to the upstream project, so every
     # message a fork sent went out branded LearnHouse. It is configuration now.
+    #
+    # Resend takes the pair as a plain JSON string and encodes it itself. SMTP
+    # needs a real RFC 2047 header and builds its own — see _send_email_smtp,
+    # which must not simply be handed this string.
     sender_name = (mailing.system_email_name or "").strip() or "Vozzrenye"
     sender = f"{sender_name} <{mailing.system_email_address}>"
 
@@ -287,7 +292,7 @@ def send_email(to: EmailStr, subject: str, body: str):
         raise HTTPException(status_code=400, detail="Invalid recipient email address")
 
     if mailing.email_provider == "smtp":
-        return _send_email_smtp(sender, to_addr, subject, body, mailing)
+        return _send_email_smtp(sender_name, to_addr, subject, body, mailing)
     else:
         return _send_email_resend(sender, to_addr, subject, body, mailing)
 
@@ -333,10 +338,15 @@ def _send_email_resend(sender: str, to: str, subject: str, body: str, mailing):
 _SMTP_TIMEOUT = 15
 
 
-def _send_email_smtp(sender: str, to: str, subject: str, body: str, mailing):
+def _send_email_smtp(sender_name: str, to: str, subject: str, body: str, mailing):
     from fastapi import HTTPException
     msg = MIMEMultipart("alternative")
-    msg["From"] = sender
+    # formataddr, not an f-string. Assigning "Имя <a@b>" wholesale makes the
+    # email package encode the entire value as one RFC 2047 word — address and
+    # all — leaving no readable addr-spec for a strict parser or relay. This
+    # encodes only the display name and leaves the address in the clear.
+    # Subject and body need no such care: the stdlib encodes both correctly.
+    msg["From"] = formataddr((sender_name, mailing.system_email_address), charset="utf-8")
     msg["To"] = to
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "html"))

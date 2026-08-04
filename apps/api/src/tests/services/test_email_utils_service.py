@@ -1,6 +1,8 @@
 """Tests for src/services/email/utils.py."""
 
 import smtplib
+from email import message_from_string
+from email.header import decode_header, make_header
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -32,6 +34,7 @@ def _config(**overrides):
     mailing = SimpleNamespace(
         email_provider=overrides.pop("email_provider", "resend"),
         system_email_address=overrides.pop("system_email_address", "system@test.com"),
+        system_email_name=overrides.pop("system_email_name", None),
         resend_api_key=overrides.pop("resend_api_key", "resend-test-key"),
         smtp_host=overrides.pop("smtp_host", "smtp.test"),
         smtp_port=overrides.pop("smtp_port", 587),
@@ -295,7 +298,7 @@ class TestEmailUtilsService:
         assert result == {"id": "msg-1"}
         assert send_email.__module__ == "src.services.email.utils"
         assert mock_resend_send.call_args.args[0] == {
-            "from": "LearnHouse <system@test.com>",
+            "from": "Vozzrenye <system@test.com>",
             "to": ["to@test.com"],
             "subject": "Hello",
             "html": "<p>Body</p>",
@@ -325,6 +328,41 @@ class TestEmailUtilsService:
         smtp_client.login.assert_called_once_with("smtp-user", "smtp-pass")
         smtp_client.sendmail.assert_called_once()
         smtp_client.quit.assert_called_once()
+
+    def test_send_email_smtp_encodes_non_ascii_sender_name(self):
+        """A non-ASCII display name must not swallow the address.
+
+        Assigning "Имя <a@b>" to the From header makes the email package
+        encode the whole value as one RFC 2047 word, address included, leaving
+        no addr-spec a strict parser or relay can read. Only the display name
+        may be encoded.
+        """
+        smtp_client = Mock()
+        with patch(
+            "src.services.email.utils.get_learnhouse_config",
+            return_value=_config(
+                email_provider="smtp",
+                system_email_address="hello@vozzrenye.pro",
+                system_email_name="Платформа Воззрения",
+            ),
+        ), patch("src.services.email.utils.smtplib.SMTP", return_value=smtp_client):
+            send_email("to@test.com", "Сброс пароля", "<p>Здравствуйте</p>")
+
+        raw = smtp_client.sendmail.call_args.args[2]
+        from_header = next(
+            line for line in raw.splitlines() if line.startswith("From:")
+        )
+
+        # The address survives in the clear, outside the encoded word.
+        assert "<hello@vozzrenye.pro>" in from_header
+        assert "=?utf-8?" in from_header
+
+        # And a receiving client reads back exactly what was configured.
+        parsed = message_from_string(raw)
+        assert str(make_header(decode_header(parsed["From"]))) == (
+            "Платформа Воззрения <hello@vozzrenye.pro>"
+        )
+        assert str(make_header(decode_header(parsed["Subject"]))) == "Сброс пароля"
 
     def test_send_email_smtp_without_tls_or_login(self):
         smtp_client = Mock()
