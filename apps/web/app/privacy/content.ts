@@ -64,7 +64,7 @@ export const privacyRu: LegalContent = {
         'Пароль сохраняется только в виде хеша Argon2. Мы не храним его в открытом виде, не можем его прочитать и не сможем сообщить вам, если вы его забудете, — только помочь задать новый.',
         'Адрес электронной почты служит вашим логином, опознаёт учётную запись и используется для служебных сообщений о ней: подтверждения адреса и восстановления пароля. Рекламных и маркетинговых рассылок мы не ведём.',
         'Учётная запись действует сразу после регистрации: подтверждение адреса в текущей конфигурации не является обязательным условием входа.',
-        'Внешний почтовый сервис к платформе сейчас не подключён, поэтому письма фактически не отправляются и ваш адрес не передаётся почтовому провайдеру. Когда отправка писем будет включена, провайдер станет обработчиком персональных данных и будет назван на этой странице.',
+        'Письма доставляет Brevo (Sendinblue, Франция) — наш почтовый обработчик. Чтобы доставить сообщение, ему передаётся ваш адрес электронной почты и содержимое самого письма; ничего сверх этого он не получает. Серверы Brevo находятся в Европейском союзе. Для собственных целей эти данные Brevo не использует.',
       ],
     },
     {
@@ -105,8 +105,14 @@ export const privacyRu: LegalContent = {
       id: 'third-parties',
       heading: 'Кому мы передаём данные',
       body: [
-        'В текущей конфигурации платформа не передаёт персональные данные сторонним обработчикам. Функции искусственного интеллекта, внешняя телеметрия и системы веб-аналитики отключены, платёжный провайдер не подключён, файлы хранятся на диске нашего сервера, а не во внешнем облаке.',
-        'Единственный внешний участник — Google, и только если вы сами выбрали вход через Google.',
+        'Круг внешних участников намеренно узок. Их всего два:',
+        {
+          list: [
+            'Brevo (Sendinblue, Франция) — доставка служебных писем. Получает адрес получателя и текст письма, серверы в ЕС;',
+            'Google — только если вы сами выбрали вход через Google.',
+          ],
+        },
+        'Всё остальное остаётся у нас. Функции искусственного интеллекта, внешняя телеметрия и системы веб-аналитики отключены, платёжный провайдер не подключён, файлы хранятся на диске нашего сервера, а не во внешнем облаке.',
         'Мы раскроем данные, если этого потребует закон или это будет необходимо для защиты прав, безопасности и целостности сервиса.',
         'Если в будущем мы подключим внешнего обработчика, эта страница будет обновлена до того, как обработка начнётся.',
       ],
@@ -214,7 +220,7 @@ export const privacyEn: LegalContent = {
         'The password is stored only as an Argon2 hash. We do not keep it in readable form, we cannot read it, and if you forget it we cannot tell you what it was — only help you set a new one.',
         'Your email address is your login, identifies your account, and is used for messages about that account: verifying the address and resetting the password. We do not send marketing email.',
         'Your account works immediately after registration: as currently configured, verifying your address is not a condition of signing in.',
-        'No external email service is connected to the platform at present, so no messages are actually dispatched and your address is not passed to an email provider. If email delivery is switched on, that provider becomes a data processor and will be named on this page.',
+        'Messages are delivered by Brevo (Sendinblue, France), our email processor. To deliver a message it receives your email address and the contents of that message, and nothing beyond it. Brevo’s servers are in the European Union. It does not use this data for its own purposes.',
       ],
     },
     {
@@ -255,8 +261,14 @@ export const privacyEn: LegalContent = {
       id: 'third-parties',
       heading: 'Who we share data with',
       body: [
-        'As currently configured, the platform shares no personal data with third-party processors. AI features, external telemetry and web analytics are switched off, no payment provider is connected, and uploaded files are stored on our own server disk rather than in external cloud storage.',
-        'The only external party involved is Google, and only if you choose to sign in with Google.',
+        'The set of outside parties is deliberately small. There are two:',
+        {
+          list: [
+            'Brevo (Sendinblue, France) — delivery of service email. It receives the recipient address and the message text; its servers are in the EU;',
+            'Google — only if you choose to sign in with Google.',
+          ],
+        },
+        'Everything else stays with us. AI features, external telemetry and web analytics are switched off, no payment provider is connected, and uploaded files are stored on our own server disk rather than in external cloud storage.',
         'We will disclose data where the law requires it, or where it is necessary to protect the rights, safety and integrity of the service.',
         'If we ever add an external processor, this page will be updated before that processing begins.',
       ],

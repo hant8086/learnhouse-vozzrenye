@@ -37,6 +37,7 @@ hosting_config:
 mailing_config:
   email_provider: "resend" # "resend" or "smtp"
   system_email_address: ""
+  system_email_name: "" # From-header display name; falls back to Vozzrenye
   resend_api_key: ""
   smtp_host: ""
   smtp_port: 587

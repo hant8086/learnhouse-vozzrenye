@@ -271,7 +271,10 @@ def send_email(to: EmailStr, subject: str, body: str):
 
     lh_config = get_learnhouse_config()
     mailing = lh_config.mailing_config
-    sender = f"LearnHouse <{mailing.system_email_address}>"
+    # The display name used to be hardcoded to the upstream project, so every
+    # message a fork sent went out branded LearnHouse. It is configuration now.
+    sender_name = (mailing.system_email_name or "").strip() or "Vozzrenye"
+    sender = f"{sender_name} <{mailing.system_email_address}>"
 
     # Resend (and most providers) require a plain `email@example.com` string.
     # Pydantic's EmailStr is a str subclass, but third-party JSON serializers
