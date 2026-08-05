@@ -31,6 +31,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.organizations import Organization
 from src.db.users import UserRead
 from src.security.auth import create_access_token, decode_jwt
+from src.services.email.translations import t
 from src.services.email.utils import send_email
 
 logger = logging.getLogger(__name__)
@@ -110,25 +111,28 @@ def send_magic_login_email(
     login_url = f"{base_url.rstrip('/')}/auth/magic?token={safe_token}"
     safe_name = html.escape(user.username or user.email)
 
+    heading = t(lang, "magic_login.heading")
+    body_text = t(lang, "magic_login.body", username=safe_name)
+    cta = t(lang, "magic_login.cta")
+    paste = t(lang, "magic_login.paste")
+
     body_content = f"""
-        <h1 style="{STYLES['h1']}">Sign in to LearnHouse</h1>
+        <h1 style="{STYLES['h1']}">{heading}</h1>
         <p style="{STYLES['p']}">
-            Hi {safe_name}, click the button below to sign in. This link works
-            once and expires in 15 minutes. If you didn't request it, you can
-            safely ignore this email.
+            {body_text}
         </p>
-        <a href="{login_url}" style="{STYLES['button']}">Sign in</a>
+        <a href="{login_url}" style="{STYLES['button']}">{cta}</a>
         <p style="{STYLES['link_text']}">
-            Or paste this link into your browser:<br />{login_url}
+            {paste}<br />{login_url}
         </p>
     """
     return send_email(
         to=email,
-        subject="Your LearnHouse login link",
+        subject=t(lang, "magic_login.subject"),
         body=_email_layout(
-            title="Sign in to LearnHouse",
+            title=heading,
             body_content=body_content,
-            footer_note="This link signs you in to your LearnHouse account.",
+            footer_note=t(lang, "magic_login.footer"),
         ),
     )
 

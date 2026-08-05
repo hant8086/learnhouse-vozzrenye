@@ -914,6 +914,8 @@ async def magic_link_request(
         resolve_org,
         send_magic_login_email,
     )
+    from src.db.organization_config import OrganizationConfig
+    from src.services.orgs.orgs import get_org_default_language
     from src.services.orgs.auth_policy import is_login_method_allowed
     from src.security.session_context import AUTH_METHOD_MAGIC_LOGIN
     from src.services.email.utils import get_base_url_from_request
@@ -928,6 +930,14 @@ async def magic_link_request(
     generic = {"detail": "If an account exists for that email, a login link has been sent."}
 
     org = await resolve_org(body.org_slug, db_session)
+
+    # Email language follows the org's default UI locale (same as password
+    # reset / invitations); org-less requests fall back to English.
+    email_lang = "en"
+    if org is not None:
+        org_config_stmt = select(OrganizationConfig).where(OrganizationConfig.org_id == org.id)
+        org_config = (await db_session.execute(org_config_stmt)).scalars().first()
+        email_lang = get_org_default_language(org_config)
     # If the request is scoped to an org that does not offer magic-link login,
     # do not send one — the link would only be refused at the org gate anyway.
     if org is not None and not await is_login_method_allowed(
@@ -952,6 +962,7 @@ async def magic_link_request(
             user.email,
             get_base_url_from_request(request),
             token,
+            lang=email_lang,
         )
     except Exception:
         import logging

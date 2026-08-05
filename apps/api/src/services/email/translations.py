@@ -86,6 +86,13 @@ EMAIL_TRANSLATIONS: dict[str, dict[str, str]] = {
         "email_verification.cta": "Verify Email Address",
         "email_verification.copy_paste": "Or copy and paste this link:",
         "email_verification.footer": "This link expires in 1 hour. If you didn't create a LearnHouse account, you can safely ignore this email.",
+
+        "magic_login.subject": "Your LearnHouse login link",
+        "magic_login.heading": "Sign in to LearnHouse",
+        "magic_login.body": "Hi {username}, click the button below to sign in. This link works once and expires in 15 minutes. If you didn't request it, you can safely ignore this email.",
+        "magic_login.cta": "Sign in",
+        "magic_login.paste": "Or paste this link into your browser:",
+        "magic_login.footer": "This link signs you in to your LearnHouse account.",
     },
     "fr": {
         "account_creation.subject": "Bienvenue sur LearnHouse, {username} !",
@@ -408,6 +415,13 @@ EMAIL_TRANSLATIONS: dict[str, dict[str, str]] = {
         "email_verification.cta": "Подтвердить адрес почты",
         "email_verification.copy_paste": "Либо скопируйте эту ссылку:",
         "email_verification.footer": "Срок действия ссылки — 1 час. Если вы не создавали аккаунт LearnHouse, проигнорируйте это письмо.",
+
+        "magic_login.subject": "Ссылка для входа в LearnHouse",
+        "magic_login.heading": "Вход в LearnHouse",
+        "magic_login.body": "Здравствуйте, {username}! Нажмите на кнопку ниже, чтобы войти. Ссылка действует один раз и истекает через 15 минут. Если вы её не запрашивали, проигнорируйте это письмо.",
+        "magic_login.cta": "Войти",
+        "magic_login.paste": "Либо вставьте эту ссылку в адресную строку браузера:",
+        "magic_login.footer": "Эта ссылка выполнит вход в ваш аккаунт LearnHouse.",
     },
     "zh": {
         "account_creation.subject": "欢迎加入 LearnHouse，{username}！",
