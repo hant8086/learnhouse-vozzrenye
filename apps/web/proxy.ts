@@ -312,6 +312,15 @@ export default async function proxy(req: NextRequest) {
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   )
   if (pathname === '/home' || (instance.tenancy === 'multi' && isHubRoot)) {
+    // Single tenancy has exactly one org, so the org picker has nothing to
+    // pick. Redirect /home straight onto the org home: the tenant catch-all
+    // below serves `/` as `/orgs/{slug}/`, and getUriWithOrg() already
+    // resolves every org link to a relative path in single tenancy. Doing the
+    // hop server-side avoids flashing the "Choose an organization" screen.
+    // Best-effort session check only; the target page re-verifies auth.
+    if (instance.tenancy === 'single' && pathname === '/home' && req.cookies.get('LH_session')?.value) {
+      return NextResponse.redirect(new URL(`/${search}`, req.url))
+    }
     // `/account/*` ALSO exists as an org-scoped dashboard route
     // (/orgs/{slug}/account/[subpage] — general/security/purchases). On an org
     // subdomain or custom domain it must resolve there, NOT the apex hub (which
