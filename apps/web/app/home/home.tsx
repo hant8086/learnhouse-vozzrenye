@@ -4,7 +4,7 @@ import { canManageOrgFromSession } from '@components/Hooks/useAdminStatus'
 import { useLHAnalytics } from '@services/analytics/useLHAnalytics'
 import { AnalyticsEvent } from '@services/analytics/events'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { getAPIUrl, getUriWithOrg, getLEARNHOUSE_PLATFORM_URL_VAL } from '@services/config/config'
+import { getAPIUrl, getUriWithOrg, getLEARNHOUSE_PLATFORM_URL_VAL, getTenancy } from '@services/config/config'
 import { apiFetch } from '@services/utils/ts/requests'
 import { signOut } from '@components/Contexts/AuthContext'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
@@ -48,6 +48,12 @@ function HomeClient() {
   const isLoading = session?.status === 'loading'
   const platformUrl = getLEARNHOUSE_PLATFORM_URL_VAL()
 
+  // Single tenancy has no org hub: proxy.ts only routes /new, /billing and the
+  // rest of HUB_ROOT_PATHS when tenancy === 'multi', so on a single-org
+  // deployment every one of those links 404s. Hide the affordances rather than
+  // offer a user a button that cannot work.
+  const singleOrg = getTenancy() === 'single'
+
   const { data: orgs, isLoading: orgsLoading } = useQuery({
     queryKey: ['orgs', 'user'],
     queryFn: () => apiFetch(`${getAPIUrl()}orgs/user/page/1/limit/50`, access_token),
@@ -64,11 +70,15 @@ function HomeClient() {
   // A brand-new (org-less) user has no orgs yet — send them straight to create
   // their first org rather than a confusing empty hub. Mirrors the platform's
   // post-signup onboarding hop.
+  //
+  // Multi tenancy only. In single tenancy /new does not exist, so this would
+  // bounce an org-less user to a 404 with no way out; the empty state below
+  // tells them to ask for an invite instead.
   useEffect(() => {
-    if (isAuthenticated && Array.isArray(orgs) && orgs.length === 0) {
+    if (!singleOrg && isAuthenticated && Array.isArray(orgs) && orgs.length === 0) {
       router.replace('/new')
     }
-  }, [isAuthenticated, orgs, router])
+  }, [singleOrg, isAuthenticated, orgs, router])
 
   return (
     <div className="fixed inset-0 z-[100] bg-white overflow-y-auto">
@@ -218,7 +228,7 @@ function HomeClient() {
                 ))}
 
               {/* Create organization — prominent entry into the hub */}
-              {isAuthenticated && orgs && (
+              {!singleOrg && isAuthenticated && orgs && (
                 <Link
                   href="/new"
                   className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gray-900 text-white rounded-2xl font-semibold text-sm nice-shadow hover:bg-gray-800 transition-colors"
@@ -261,6 +271,7 @@ function OrgRow({ org, access_token }: { org: any; access_token: string }) {
   const { track } = useLHAnalytics('hub')
   // Only org managers (admins/superadmins) see the billing / Manage-Upgrade entry.
   const canManageOrg = canManageOrgFromSession(orgSession, org?.id)
+  const singleOrg = getTenancy() === 'single'
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -349,7 +360,10 @@ function OrgRow({ org, access_token }: { org: any; access_token: string }) {
         />
       </Link>
 
-      {/* Admin actions */}
+      {/* Admin actions. In single tenancy a plain member has no item left in
+          here — no billing, and leaving is a self-lockout — so the trigger
+          would open an empty menu. Drop it entirely for them. */}
+      {(canManageOrg || !singleOrg) && (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -360,7 +374,7 @@ function OrgRow({ org, access_token }: { org: any; access_token: string }) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-52" align="end">
-          {canManageOrg && (
+          {canManageOrg && !singleOrg && (
             <DropdownMenuItem asChild>
               <Link href={`/billing?org=${org.slug}`} className="flex items-center space-x-2">
                 <CreditCard size={14} />
@@ -368,16 +382,18 @@ function OrgRow({ org, access_token }: { org: any; access_token: string }) {
               </Link>
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem asChild>
-            <Link
-              href={getUriWithOrg(org.slug, '/dash/org/settings/general')}
-              className="flex items-center space-x-2"
-            >
-              <Settings size={14} />
-              <span>{t('common.settings', { defaultValue: 'Settings' })}</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {canManageOrg && (
+            <DropdownMenuItem asChild>
+              <Link
+                href={getUriWithOrg(org.slug, '/dash/org/settings/general')}
+                className="flex items-center space-x-2"
+              >
+                <Settings size={14} />
+                <span>{t('common.settings', { defaultValue: 'Settings' })}</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
+          {canManageOrg && <DropdownMenuSeparator />}
           {canManageOrg ? (
             // Admins can delete the whole organization.
             <DropdownMenuItem
@@ -392,7 +408,7 @@ function OrgRow({ org, access_token }: { org: any; access_token: string }) {
               <Trash2 size={14} />
               <span>{t('common.delete', { defaultValue: 'Delete' })}</span>
             </DropdownMenuItem>
-          ) : (
+          ) : singleOrg ? null : (
             // Non-admin members can only leave the org (quit their membership).
             <DropdownMenuItem
               onSelect={(e) => {
@@ -408,6 +424,7 @@ function OrgRow({ org, access_token }: { org: any; access_token: string }) {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      )}
 
       {/* Typed-confirmation delete dialog */}
       <Dialog
