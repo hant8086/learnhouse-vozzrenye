@@ -17,7 +17,10 @@ export function useCourses(orgSlug: string) {
   })
 }
 
-export function useCourseMeta(courseUuid: string) {
+// FORK CHANGE (SEO): `initialData` lets a server component hand its already
+// fetched course down, so the activity body is present in the delivered HTML
+// instead of being replaced by a skeleton until a client fetch resolves.
+export function useCourseMeta(courseUuid: string, initialData?: any) {
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token as string | undefined
 
@@ -26,5 +29,6 @@ export function useCourseMeta(courseUuid: string) {
     queryFn: () => getCourseMetadata(courseUuid, {}, accessToken, { slim: true }),
     enabled: !!courseUuid,
     staleTime: 60_000,
+    initialData: initialData ?? undefined,
   })
 }

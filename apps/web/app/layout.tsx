@@ -1,7 +1,24 @@
 import '../styles/globals.css'
 import React from 'react'
+import type { Metadata } from 'next'
 import Providers from '@components/Providers'
 import { Wix_Madefor_Text } from 'next/font/google'
+import {
+  getLEARNHOUSE_HTTP_PROTOCOL_VAL,
+  getLEARNHOUSE_DOMAIN_VAL,
+} from '@services/config/config'
+
+// FORK CHANGE (SEO): upstream's root layout exports no metadata, so Next resolves
+// relative OG/Twitter image paths against its localhost fallback origin — production
+// was advertising og:image = http://localhost:8000/empty_thumbnail.png. These are
+// RUNTIME getters (runtime-config.js / injected NEXT_PUBLIC_*), so metadataBase
+// resolves per deployment with no rebuild. NEXT_PUBLIC_LEARNHOUSE_HTTPS drives the
+// scheme; without it an https-only box still advertises http://.
+export const metadata: Metadata = {
+  metadataBase: new URL(
+    `${getLEARNHOUSE_HTTP_PROTOCOL_VAL()}${getLEARNHOUSE_DOMAIN_VAL()}`
+  ),
+}
 
 const wixMadeforText = Wix_Madefor_Text({
   subsets: ['latin'],

@@ -152,13 +152,13 @@ export default function RootLayout(
         </PodcastPlayerProvider>
       </OrgJoinBannerProvider>
       </SessionGate>
-      {/* Deliberately OUTSIDE SessionGate.
-          The gate renders <PageLoading /> instead of its children whenever the
-          session status is 'loading', which is exactly the state during server
-          rendering — so everything inside it is absent from the delivered HTML.
-          Google's OAuth review requires the homepage to link to the privacy
-          policy, and it fetches that page without running our JavaScript, so
-          the link has to survive outside the gate. */}
+      {/* Kept OUTSIDE SessionGate. Historically the gate swapped its children
+          for <PageLoading /> whenever the session status was 'loading' — always
+          the case during server rendering — so everything inside it was absent
+          from the delivered HTML, and Google's OAuth review (which fetches the
+          page without running our JavaScript) could not see the privacy link.
+          The gate is now transparent by default, but this footer stays outside
+          it so the legal link survives regardless of future gate changes. */}
       <StaticLegalFooter />
     </>
   )

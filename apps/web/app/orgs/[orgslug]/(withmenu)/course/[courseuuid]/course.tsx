@@ -44,15 +44,23 @@ const CourseClient = (props: any) => {
   const access_token = session?.data?.tokens?.access_token;
   const queryClient = useQueryClient()
 
-  const { data: clientCourseData, error: courseError, isLoading: courseLoading } = useQuery({
+  // FORK CHANGE (SEO): `page.tsx` now server-fetches the course and passes it in,
+  // so the body exists in the delivered HTML. Seeding it as `initialData` (rather
+  // than short-circuiting the query) keeps a single source of truth in the query
+  // cache — the activity page reads the same key — and still lets the client
+  // revalidate once the data goes stale.
+  const { data: course, error: courseError, isLoading: courseLoading } = useQuery({
     queryKey: queryKeys.courses.meta(courseuuid),
     queryFn: () => getCourseMetadata(courseuuid, {}, access_token, { slim: true }),
-    enabled: !!courseuuid && !serverError,
+    // Deliberately NOT gated on `serverError`: a signed-in visitor whose access
+    // token cookie has expired renders server-side as anonymous, so a private
+    // course 403s during SSR. The client must still be allowed to retry with the
+    // refreshed token, otherwise they are stuck on the access-denied screen.
+    enabled: !!courseuuid,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
+    initialData: initialCourse ?? undefined,
   });
-
-  const course = initialCourse || clientCourseData;
 
   const { track } = useLHAnalytics('learner')
 
@@ -86,8 +94,11 @@ const CourseClient = (props: any) => {
     }
   }, [course])
 
-  // Show loading state if fetching course data client-side
-  if (!initialCourse && !serverError && courseLoading) {
+  // Show loading state if fetching course data client-side. A server-side error
+  // no longer short-circuits to the error screen: the client retry above may
+  // still succeed (expired access-token cookie, refreshed on hydration), so keep
+  // showing the skeleton until that retry settles.
+  if (!course && courseLoading) {
     return (
       <GeneralWrapperStyled>
         <div className="animate-pulse">
@@ -299,49 +310,13 @@ const CourseClient = (props: any) => {
     })
   }
 
-  // Generate JSON-LD structured data for SEO
-  const generateJsonLd = () => {
-    if (!course || !org) return null
-    const seo = course.seo || {}
-
-    // Check if JSON-LD is enabled (defaults to true if not set)
-    if (seo.enable_jsonld === false) return null
-
-    const jsonLd = {
-      '@context': 'https://schema.org',
-      '@type': 'Course',
-      name: seo.title || course.name,
-      description: seo.description || course.description || '',
-      provider: {
-        '@type': 'Organization',
-        name: org.name,
-        ...(org.description && { description: org.description }),
-      },
-      ...(course.thumbnail_image && {
-        image: getCourseThumbnailMediaDirectory(
-          org?.org_uuid,
-          course?.course_uuid,
-          course?.thumbnail_image
-        ),
-      }),
-      ...(course.creation_date && { dateCreated: course.creation_date }),
-      ...(course.update_date && { dateModified: course.update_date }),
-    }
-
-    return jsonLd
-  }
-
-  const jsonLd = generateJsonLd()
+  // FORK CHANGE (SEO): the schema.org/Course block used to be built here, inside
+  // the client subtree, so it never reached the delivered HTML. It now lives in
+  // `page.tsx` (server) via `buildCourseJsonLd`.
 
   return (
     <>
-      {jsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      )}
-      {!course || !org ? null : (
+      {!course ? null : (
         <>
           <GeneralWrapperStyled>
             <div className="pb-4">

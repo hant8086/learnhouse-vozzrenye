@@ -20,8 +20,10 @@ function ClientAdminLayout({
 }) {
     const isMobile = useMediaQuery('(max-width: 1024px)')
 
+    // Private surface, never crawled — AdminAuthorization assumes a settled
+    // session, so keep the blocking gate here.
     return (
-        <SessionGate>
+        <SessionGate waitForSession>
             <AdminAuthorization authorizationMode="page">
                 <CommandPaletteProvider>
                     <UpgradeModalProvider>

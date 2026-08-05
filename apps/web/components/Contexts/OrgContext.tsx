@@ -17,12 +17,18 @@ export const OrgContext = createContext<OrgContextValue | null>(null)
 export function OrgProvider({
   children,
   orgslug,
+  initialOrg,
   errorMessage,
   errorSubmessage,
   inactiveMessage = 'This organization is no longer active',
 }: {
   children: React.ReactNode
   orgslug: string
+  // FORK CHANGE (SEO): org fetched by the server layout. Without it `org` is
+  // undefined during SSR, and every page that renders `if (!org) return null`
+  // ships an empty body to crawlers that do not execute JS. Public org info
+  // only — the server fetch is anonymous, exactly like the client's first one.
+  initialOrg?: any
   // When omitted, the fetch error is classified into a meaningful message
   // (offline / server / not-found …). Pass a value to force a specific one.
   errorMessage?: string
@@ -37,6 +43,11 @@ export function OrgProvider({
     queryFn: () => getOrganizationContextInfo(orgslug, {}, accessToken),
     staleTime: 5 * 60_000,
     enabled: !!orgslug,
+    initialData: initialOrg ?? undefined,
+    // Treat the server payload as already stale: it was fetched anonymously, so
+    // an authenticated visitor still refetches with their token on mount. The
+    // SSR pass gets content; the client gets the authed view a moment later.
+    initialDataUpdatedAt: initialOrg ? 0 : undefined,
   })
 
   const isOrgActive = useMemo(() => (org?.config?.config?.active ?? org?.config?.config?.general?.enabled) !== false, [org])

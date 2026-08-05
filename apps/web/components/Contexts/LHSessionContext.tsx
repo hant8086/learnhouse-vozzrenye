@@ -21,14 +21,28 @@ function LHSessionProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Blocks rendering with a loading spinner until the session is ready.
- * Wrap page layouts that need guaranteed session data before rendering.
- * Pages with custom skeletons (like the editor) should NOT use this.
+ * Session-aware wrapper.
+ *
+ * FORK CHANGE (SEO): `status` is ALWAYS 'loading' during server rendering, so a
+ * gate that swaps children for a spinner in that state removes its whole
+ * subtree — server components included — from the delivered HTML. That is why
+ * production served ~100 visible characters per course/activity page: crawlers
+ * that do not execute JS (GPTBot, ClaudeBot, PerplexityBot, CCBot, Amazonbot)
+ * saw only the footer. Upstream's blocking behaviour is therefore now opt-in.
+ *
+ * Default (`waitForSession` unset): renders `children` immediately, including
+ * during SSR and the first client render. Consumers that genuinely need a
+ * resolved session must guard on `status` themselves — every one of them in
+ * this tree already fails closed on a non-'authenticated' status.
+ *
+ * `waitForSession`: the old behaviour — spinner until the session resolves.
+ * Kept for private surfaces (/admin, /dash) that are never crawled and whose
+ * authorization components assume a settled session.
  */
-export function SessionGate({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
+export function SessionGate({ children, fallback, waitForSession = false }: { children: React.ReactNode; fallback?: React.ReactNode; waitForSession?: boolean }) {
     const session = useContext(SessionContext)
 
-    if (session && session.status === 'loading') {
+    if (waitForSession && session && session.status === 'loading') {
         return fallback ? <>{fallback}</> : <PageLoading />
     }
 

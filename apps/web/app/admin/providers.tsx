@@ -11,7 +11,8 @@ export default function AdminProviders({
   return (
     <SessionProvider>
       <LHSessionProvider>
-        <SessionGate>
+        {/* Private surface, never crawled — keep the blocking gate. */}
+        <SessionGate waitForSession>
           {children}
         </SessionGate>
       </LHSessionProvider>

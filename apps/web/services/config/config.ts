@@ -80,8 +80,18 @@ const getCookieValue = (name: string): string | null => {
 }
 
 // Dynamic config getters - these are functions to ensure runtime values are used
+// FORK CHANGE (SEO): parse the flag case-insensitively.
+// Upstream compared strictly against the lowercase string 'true', while
+// upstream's OWN env generator (apps/cli/src/templates/env.ts) writes `True`.
+// Every deployment produced from that template therefore silently resolved to
+// http://, which is how production ended up advertising `canonical: http://…`
+// and `og:image: http://localhost:8000/…` on an https-only box (measured
+// 2026-08-05). Accept true/True/TRUE/1/yes so the documented value works.
+const TRUTHY = new Set(['true', '1', 'yes', 'on'])
 const getLEARNHOUSE_HTTP_PROTOCOL = () =>
-  (getConfig('NEXT_PUBLIC_LEARNHOUSE_HTTPS') === 'true') ? 'https://' : 'http://'
+  TRUTHY.has(String(getConfig('NEXT_PUBLIC_LEARNHOUSE_HTTPS')).trim().toLowerCase())
+    ? 'https://'
+    : 'http://'
 const getLEARNHOUSE_BACKEND_URL = () => getConfig('NEXT_PUBLIC_LEARNHOUSE_BACKEND_URL', 'http://localhost/')
 const getLEARNHOUSE_DOMAIN = () => {
   // 1. Env var (backward compat for existing deploys)

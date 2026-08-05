@@ -1,5 +1,6 @@
 import { headers } from 'next/headers'
 import { getCanonicalUrl } from './utils'
+import { getLEARNHOUSE_HTTP_PROTOCOL_VAL } from '@services/config/config'
 
 /**
  * Async canonical URL for Server Components / `generateMetadata`.
@@ -20,7 +21,13 @@ export async function getServerCanonicalUrl(orgslug: string, path: string): Prom
     const tenancy = h.get('x-lh-tenancy')
     const customDomain = h.get('x-lh-custom-domain')
     const topDomain = h.get('x-lh-top-domain')
-    const proto = h.get('x-forwarded-proto') ?? 'https'
+    // FORK CHANGE (SEO): production emitted `<link rel="canonical" href="http://…">`
+    // on an https-only deployment because the reverse proxy does not set
+    // x-forwarded-proto. The deployment's own NEXT_PUBLIC_LEARNHOUSE_HTTPS is the
+    // authority on the scheme it is reachable over, so when it says https we never
+    // downgrade to whatever a proxy hop happened to report.
+    const configuredHttps = getLEARNHOUSE_HTTP_PROTOCOL_VAL() === 'https://'
+    const proto = configuredHttps ? 'https' : (h.get('x-forwarded-proto') ?? 'https')
 
     if (customDomain) {
       return `${proto}://${customDomain}${path}`.replace(/\/+$/, '')

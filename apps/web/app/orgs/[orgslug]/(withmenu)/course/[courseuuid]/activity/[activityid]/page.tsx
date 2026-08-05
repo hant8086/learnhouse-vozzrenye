@@ -1,12 +1,12 @@
-import { getActivityWithAuthHeader } from '@services/courses/activities'
-import { getCourseMetadata } from '@services/courses/courses'
 import ActivityClient from './activity'
-import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { getCourseThumbnailMediaDirectory, getOrgOgImageMediaDirectory } from '@services/media/media'
 import { Metadata } from 'next'
-import { getServerSession } from '@/lib/auth/server'
-import { getOrgSeoConfig } from '@/lib/seo/utils'
+import { getOrgSeoConfig, buildActivityJsonLd } from '@/lib/seo/utils'
 import { getServerCanonicalUrl } from '@/lib/seo/utils.server'
+import { JsonLd } from '@components/SEO/JsonLd'
+// FORK CHANGE (SEO): memoised per-request loaders, shared with generateMetadata
+// so server-rendering the body does not double-fetch course/activity.
+import { loadOrg, loadCourseMeta, loadActivity, loadServerAccessToken } from '@/lib/data/pageData.server'
 
 type MetadataProps = {
   params: Promise<{ orgslug: string; courseuuid: string; activityid: string }>
@@ -15,20 +15,13 @@ type MetadataProps = {
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params;
-  const session = await getServerSession()
-  const access_token = session?.tokens?.access_token || null
+  const access_token = await loadServerAccessToken()
 
+  // React-cached loaders — the page component below reuses these responses.
   const [org, course_meta, activity] = await Promise.all([
-    getOrganizationContextInfo(params.orgslug, {
-      revalidate: 120,
-      tags: ['organizations'],
-    }),
-    getCourseMetadata(params.courseuuid, { revalidate: 120, tags: ['courses'] }, access_token || null, { slim: true }),
-    getActivityWithAuthHeader(
-      params.activityid,
-      { revalidate: 120, tags: ['activities'] },
-      access_token || null
-    ),
+    loadOrg(params.orgslug),
+    loadCourseMeta(params.courseuuid, access_token),
+    loadActivity(params.activityid, access_token),
   ])
 
   // Check if this is the course end page
@@ -91,19 +84,53 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
+// FORK CHANGE (SEO): upstream passed `activity={null} course={null}` and let the
+// browser fetch both, so the delivered HTML contained no lesson text at all.
+// We now fetch server-side (the same React-cached calls generateMetadata made)
+// and pass the payloads down as initial data, plus emit JSON-LD here.
+//
+// This does NOT change what a locked resource delivers. The fetch carries this
+// visitor's own access token — none at all for a crawler — and the API scrubs
+// what they may not read, so a locked activity still arrives with `content = {}`
+// and `is_locked = true` and `activity.tsx` renders the locked screen. Serving a
+// crawler content a human does not get would be cloaking; we only make PUBLIC
+// content server-rendered.
 const ActivityPage = async (params: any) => {
-  const activityid = (await params.params).activityid
-  const courseuuid = (await params.params).courseuuid
-  const orgslug = (await params.params).orgslug
+  const { activityid, courseuuid, orgslug } = await params.params
+  const access_token = await loadServerAccessToken()
+
+  const [org, course, activity] = await Promise.all([
+    loadOrg(orgslug).catch(() => null),
+    loadCourseMeta(courseuuid, access_token).catch(() => null),
+    // `activityid` is the literal 'end' on the course-completion screen, which
+    // has no activity record — a failure here is expected, not exceptional.
+    loadActivity(activityid, access_token).catch(() => null),
+  ])
+
+  const jsonLdImage = course?.thumbnail_image
+    ? getCourseThumbnailMediaDirectory(org?.org_uuid, course?.course_uuid, course?.thumbnail_image)
+    : null
+  const canonical = await getServerCanonicalUrl(
+    orgslug,
+    `/course/${courseuuid}/activity/${activityid}`
+  )
+  // Describe only what the visitor was actually served: no JSON-LD for a locked
+  // activity, so structured data can never advertise gated material.
+  const jsonLd = activity?.is_locked
+    ? null
+    : buildActivityJsonLd(activity, course, org, { url: canonical, image: jsonLdImage })
 
   return (
-    <ActivityClient
-      activityid={activityid}
-      courseuuid={courseuuid}
-      orgslug={orgslug}
-      activity={null}
-      course={null}
-    />
+    <>
+      <JsonLd data={jsonLd} />
+      <ActivityClient
+        activityid={activityid}
+        courseuuid={courseuuid}
+        orgslug={orgslug}
+        activity={activity}
+        course={course}
+      />
+    </>
   )
 }
 

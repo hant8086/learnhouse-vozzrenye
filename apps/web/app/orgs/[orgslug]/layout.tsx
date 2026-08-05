@@ -7,8 +7,8 @@ import Toast from '@components/Objects/StyledElements/Toast/Toast'
 import '@styles/globals.css'
 import Footer from '@components/Footer/Footer'
 import CompleteSignupFields from '@components/Auth/CompleteSignupFields'
-import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { getOrgFaviconMediaDirectory } from '@services/media/media'
+import { loadOrg } from '@/lib/data/pageData.server'
 
 export async function generateMetadata({
   params,
@@ -17,10 +17,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { orgslug } = await params
   try {
-    const org = await getOrganizationContextInfo(orgslug, {
-      revalidate: 86400,
-      tags: ['organizations'],
-    })
+    // Shares the request-memoised loader with the layout body below.
+    const org = await loadOrg(orgslug)
     const faviconImage = org?.config?.config?.customization?.general?.favicon_image || org?.config?.config?.general?.favicon_image
     if (faviconImage) {
       return {
@@ -38,10 +36,13 @@ export default async function RootLayout(props: {
   params: Promise<{ orgslug: string }>
 }) {
   const params = await props.params
+  // FORK CHANGE (SEO): seed the org into OrgProvider so `useOrg()` is populated
+  // during SSR. Same React-cached call generateMetadata makes above — one fetch.
+  const initialOrg = await loadOrg(params.orgslug).catch(() => null)
 
   return (
     <div>
-      <OrgProvider orgslug={params.orgslug}>
+      <OrgProvider orgslug={params.orgslug} initialOrg={initialOrg}>
         <OrgLanguageSync />
         <NextTopLoader color="#2e2e2e" initialPosition={0.3} height={4} easing={'ease'} speed={500} showSpinner={false} />
         <Toast />

@@ -240,8 +240,12 @@ function ActivityClient(props: ActivityClientProps) {
   const orgslug = props.orgslug
   const org = useOrg() as any
 
-  const { data: course, isLoading: courseLoading } = useCourseMeta(courseuuid)
-  const { data: activity, isLoading: activityLoading } = useActivity(activityid)
+  // FORK CHANGE (SEO): seeded from the server fetch in `page.tsx` so the course
+  // header and the activity body exist in the delivered HTML. A locked activity
+  // arrives already scrubbed by the API and still hits the locked screen below —
+  // its content is never in the HTML, for any user agent.
+  const { data: course, isLoading: courseLoading } = useCourseMeta(courseuuid, props.course)
+  const { data: activity, isLoading: activityLoading } = useActivity(activityid, props.activity)
   const session = useLHSession() as any;
   const pathname = usePathname()
   const access_token = session?.data?.tokens?.access_token;
