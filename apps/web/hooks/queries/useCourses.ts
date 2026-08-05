@@ -30,5 +30,10 @@ export function useCourseMeta(courseUuid: string, initialData?: any) {
     enabled: !!courseUuid,
     staleTime: 60_000,
     initialData: initialData ?? undefined,
+    // Mark the server payload as already stale so the mount refetch still runs.
+    // Without this the seed counts as fresh for the whole staleTime, and a member
+    // whose access-token cookie expired (getServerSession reports `unresolved`,
+    // so SSR fetched anonymously) would keep the anonymous view for a full minute.
+    initialDataUpdatedAt: initialData ? 0 : undefined,
   })
 }

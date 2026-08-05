@@ -45,7 +45,9 @@ import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 const ReactConfetti = dynamic(() => import('react-confetti'), { ssr: false })
 
 // Lazy load heavy components
-const Canva = lazy(() => import('@components/Objects/Activities/DynamicCanva/DynamicCanva'))
+// FORK CHANGE (SEO): eager (not lazy) — this renders the lesson body server-side.
+// It lazy-loads the interactive editor itself once mounted.
+import CanvaWithStaticFallback from '@components/Objects/Activities/DynamicCanva/CanvaWithStaticFallback'
 const VideoActivity = lazy(() => import('@components/Objects/Activities/Video/Video'))
 const DocumentPdfActivity = lazy(() => import('@components/Objects/Activities/DocumentPdf/DocumentPdf'))
 const AssignmentStudentActivity = lazy(() => import('@components/Objects/Activities/Assignment/AssignmentStudentActivity'))
@@ -328,10 +330,20 @@ function ActivityClient(props: ActivityClientProps) {
             </Suspense>
           );
         }
+        // FORK CHANGE (SEO): `Canva` renders through useEditor({ immediatelyRender:
+        // false }), which is null during SSR — the lesson prose reached the browser
+        // only after hydration, so non-JS crawlers got no body text at all. This
+        // wrapper server-renders the same document via @tiptap/html and swaps in the
+        // interactive editor on mount. Reached only after the locked/published/paid
+        // checks above, so gated content is still never generated.
         return (
-          <Suspense fallback={<LoadingFallback />}>
-            <Canva content={activity.content} activity={activity} courseUuid={course?.course_uuid} orgUuid={org?.org_uuid} />
-          </Suspense>
+          <CanvaWithStaticFallback
+            content={activity.content}
+            activity={activity}
+            courseUuid={course?.course_uuid}
+            orgUuid={org?.org_uuid}
+            fallback={<LoadingFallback />}
+          />
         );
       case 'TYPE_VIDEO':
         return (
@@ -926,12 +938,20 @@ function ActivityClient(props: ActivityClientProps) {
                                   </div>
                                 )}
                                 {/* Dates */}
+                                {/* FORK CHANGE (SEO): these two now render on the server as well.
+                                    Both are legitimately environment-dependent — toLocaleDateString
+                                    resolves against the renderer's locale/timezone, and the relative
+                                    time is measured from `new Date()`, so the server and the client
+                                    can straddle a minute boundary. suppressHydrationWarning keeps the
+                                    server text in the delivered HTML (crawlers see the dates) without
+                                    a spurious mismatch warning; the machine-readable dateCreated /
+                                    dateModified are carried precisely by the JSON-LD instead. */}
                                 <div className="flex flex-wrap items-center text-xs text-gray-500 gap-1 sm:gap-2">
-                                  <span>
+                                  <span suppressHydrationWarning>
                                     {t('courses.created_on')} {new Date(course.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                                   </span>
                                   <span className="mx-1">•</span>
-                                  <span>
+                                  <span suppressHydrationWarning>
                                     {t('courses.last_updated')} {getRelativeTime(new Date(course.updated_at || course.last_updated || course.creation_date))}
                                   </span>
                                 </div>
