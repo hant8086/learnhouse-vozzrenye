@@ -36,6 +36,11 @@ type Course = {
   update_date: string
   public?: boolean
   published?: boolean
+  // Gating state computed by the backend for catalog views: a course linked to
+  // usergroup(s) and not public is treated as paid/restricted; `has_access`
+  // tells whether the current user already belongs to one of those groups.
+  is_paid?: boolean
+  has_access?: boolean
   authors?: Array<{
     user: {
       id: string
@@ -152,6 +157,11 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
     : '/empty_thumbnail.png'
 
   const courseLink = customLink ? customLink : getUriWithOrg(orgslug, `/course/${removeCoursePrefix(course.course_uuid)}`)
+
+  // A course that is not public and is linked to one or more usergroups is
+  // gated (paid/membership). When the user is not a member yet, the card
+  // renders a "locked / paid" CTA instead of the usual start-learning action.
+  const isGated = course.is_paid === true && course.has_access !== true
 
   return (
     <div onMouseEnter={handleMouseEnter} className={`group relative flex flex-col bg-white rounded-xl nice-shadow overflow-hidden w-full transition-all duration-300 hover:scale-[1.01] ${isSelected ? 'ring-2 ring-black ring-offset-2' : ''}`}>
@@ -270,14 +280,26 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
             )}
           </div>
           
-          <Link
-            prefetch={false}
-            href={courseLink}
-            onClick={handleCardOpen}
-            className="text-[10px] font-bold text-gray-400 hover:text-gray-900 transition-colors uppercase tracking-wider"
-          >
-            {t('courses.start_learning')}
-          </Link>
+          {isGated ? (
+            <Link
+              prefetch={false}
+              href={courseLink}
+              onClick={handleCardOpen}
+              className="inline-flex items-center gap-1 text-[10px] font-bold bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1.5 rounded-lg transition-colors uppercase tracking-wider"
+            >
+              <Lock className="w-3 h-3" />
+              {t('courses.premium', 'Premium')}
+            </Link>
+          ) : (
+            <Link
+              prefetch={false}
+              href={courseLink}
+              onClick={handleCardOpen}
+              className="text-[10px] font-bold text-gray-400 hover:text-gray-900 transition-colors uppercase tracking-wider"
+            >
+              {t('courses.start_learning')}
+            </Link>
+          )}
         </div>
       </div>
     </div>

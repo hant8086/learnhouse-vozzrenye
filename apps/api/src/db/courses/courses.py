@@ -116,6 +116,12 @@ class CourseRead(CourseBase):
     thumbnail_video: Optional[str] = Field(default="")
     seo: Optional[dict] = None
     extra_metadata: Optional[dict] = None
+    # Computed per-request for catalog views: whether this course is linked to
+    # one or more usergroups (i.e. is gated — paid or restricted membership).
+    is_paid: bool = False
+    # Computed per-request: whether the current user already has access via
+    # membership in any of the course's linked usergroups.
+    has_access: bool = False
 
 
 class FullCourseRead(CourseBase):
