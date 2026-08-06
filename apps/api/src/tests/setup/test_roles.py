@@ -55,6 +55,7 @@ class TestRightsModel:
             "podcasts": self.get_valid_permission_with_own(),
             "boards": self.get_valid_permission_with_own(),
             "playgrounds": self.get_valid_permission_with_own(),
+            "articles": self.get_valid_permission(),
         }
 
     def test_rights_model_with_all_fields(self):
@@ -193,7 +194,7 @@ class TestRightsModel:
         assert "discussions" in dumped
         assert "podcasts" in dumped
         assert "assignments" in dumped
-        assert len(dumped) == 16  # All 16 fields
+        assert len(dumped) == 17  # All 17 fields
 
 
 class TestPermissionModels:
@@ -261,6 +262,7 @@ class TestDefaultRolesValidation:
         "podcasts",
         "boards",
         "playgrounds",
+        "articles",
     ]
 
     def test_rights_model_has_expected_fields(self):
@@ -589,6 +591,7 @@ class TestRightsFieldConsistency:
             "podcasts",
             "boards",
             "playgrounds",
+            "articles",
         }
 
         actual_fields = set(fields.keys())

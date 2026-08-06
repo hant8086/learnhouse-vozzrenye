@@ -140,6 +140,12 @@ async def install_default_elements(db_session: AsyncSession):
                 action_delete=True,
                 action_delete_own=True,
             ),
+            articles=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=True,
+            ),
         ),
         creation_date=str(datetime.now()),
         update_date=str(datetime.now()),
@@ -259,6 +265,12 @@ async def install_default_elements(db_session: AsyncSession):
                 action_update_own=True,
                 action_delete=True,
                 action_delete_own=True,
+            ),
+            articles=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=True,
             ),
         ),
         creation_date=str(datetime.now()),
@@ -380,6 +392,12 @@ async def install_default_elements(db_session: AsyncSession):
                 action_delete=False,
                 action_delete_own=True,
             ),
+            articles=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
         ),
         creation_date=str(datetime.now()),
         update_date=str(datetime.now()),
@@ -499,6 +517,16 @@ async def install_default_elements(db_session: AsyncSession):
                 action_update_own=False,
                 action_delete=False,
                 action_delete_own=False,
+            ),
+            # Deliberately not mirroring `activities` here, which grants a plain
+            # member `action_read`. An article is reached through its `published`
+            # flag and `lock_type`; a role-based read outranks both and would
+            # hand every member the unpublished drafts.
+            articles=Permission(
+                action_create=False,
+                action_read=False,
+                action_update=False,
+                action_delete=False,
             ),
         ),
         creation_date=str(datetime.now()),

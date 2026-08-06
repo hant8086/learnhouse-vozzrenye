@@ -19,6 +19,7 @@ interface AuthenticatedClientElementProps {
   | 'podcasts'
   | 'boards'
   | 'playgrounds'
+  | 'articles'
   action?: 'create' | 'update' | 'delete' | 'read'
 }
 

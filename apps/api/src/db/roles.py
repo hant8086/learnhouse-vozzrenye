@@ -86,6 +86,21 @@ class Rights(BaseModel):
         action_delete=False,
         action_delete_own=False,
     )  # Default: read-only for backward compat with existing roles
+    articles: Permission = Permission(
+        action_create=False,
+        action_read=False,
+        action_update=False,
+        action_delete=False,
+    )  # Default: no access, deliberately unlike the read-only defaults above.
+    # An article carries its own publication flag and lock_type, and anonymous
+    # reachability is granted separately (Article.public), so a blanket
+    # `action_read=True` here does not restore parity — it hands every role a
+    # role-based read that outranks those gates and exposes unpublished drafts.
+    #
+    # A role already stored in the database keeps the JSON it was written with,
+    # so this default only reaches roles created or rewritten after this change.
+    # Until an org grants article rights explicitly, the authoring UI shows for
+    # superadmins only, who bypass the rights check entirely.
 
     def __getitem__(self, item):
         return getattr(self, item)

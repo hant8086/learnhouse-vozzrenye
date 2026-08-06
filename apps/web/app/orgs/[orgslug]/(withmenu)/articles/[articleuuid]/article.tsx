@@ -84,11 +84,14 @@ export default function ArticleClient(props: ArticleClientProps) {
           )}
         </header>
 
+        {/* `orgUuid` is nullable in our props (the server fetch can fail to
+            resolve the org) but the Canva prop is `string | undefined`, so the
+            absence has to be passed through as undefined, not null. */}
         <div className="article-gated-body">
           <CanvaWithStaticFallback
             content={article.content}
             activity={article}
-            orgUuid={props.orgUuid}
+            orgUuid={props.orgUuid ?? undefined}
             fallback={
               <div className="flex items-center justify-center py-16">
                 <div className="text-sm text-gray-400">…</div>
