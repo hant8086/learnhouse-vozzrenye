@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from src.routers import admin as admin_router_module
+from src.routers import articles as articles_router_module
 from src.routers import analytics as analytics_router_module
 from src.routers import audit as audit_router_module
 from src.routers import code_execution
@@ -203,6 +204,9 @@ v1_router.include_router(
 )
 v1_router.include_router(chapters.router, prefix="/chapters", tags=["chapters"])
 v1_router.include_router(activities.router, prefix="/activities", tags=["activities"])
+v1_router.include_router(
+    articles_router_module.router, prefix="/articles", tags=["articles"]
+)
 v1_router.include_router(
     folders_router_module.router, prefix="/folders", tags=["folders"]
 )

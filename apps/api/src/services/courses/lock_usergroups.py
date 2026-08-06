@@ -12,6 +12,7 @@ from fastapi import HTTPException, Request, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.db.articles import Article
 from src.db.courses.activities import Activity
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
@@ -94,6 +95,15 @@ async def _detach_usergroup(resource_uuid, usergroup_id, db_session):
     await db_session.delete(ugr)
     await db_session.commit()
     return {"detail": "User group removed"}
+
+
+async def _load_article(article_uuid, db_session):
+    article = (await db_session.execute(
+        select(Article).where(Article.article_uuid == article_uuid)
+    )).scalars().first()
+    if not article:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
+    return article
 
 
 async def _list_usergroups_for_resource(resource_uuid, db_session):
@@ -211,3 +221,51 @@ async def get_activity_usergroups(
         request, db_session, current_user, course.course_uuid, AccessAction.READ
     )
     return await _list_usergroups_for_resource(activity_uuid, db_session)
+
+
+# ---------------------------------------------------------------------------
+# Article
+# ---------------------------------------------------------------------------
+
+
+async def add_usergroup_to_article(
+    request: Request,
+    article_uuid: str,
+    usergroup_uuid: str,
+    current_user: PublicUser,
+    db_session: AsyncSession,
+) -> dict:
+    article = await _load_article(article_uuid, db_session)
+    await check_resource_access(
+        request, db_session, current_user, article.article_uuid, AccessAction.UPDATE
+    )
+    ug = await _load_usergroup(usergroup_uuid, db_session)
+    return await _attach_usergroup(article_uuid, article.org_id, ug.id, db_session)
+
+
+async def remove_usergroup_from_article(
+    request: Request,
+    article_uuid: str,
+    usergroup_uuid: str,
+    current_user: PublicUser,
+    db_session: AsyncSession,
+) -> dict:
+    article = await _load_article(article_uuid, db_session)
+    await check_resource_access(
+        request, db_session, current_user, article.article_uuid, AccessAction.UPDATE
+    )
+    ug = await _load_usergroup(usergroup_uuid, db_session)
+    return await _detach_usergroup(article_uuid, ug.id, db_session)
+
+
+async def get_article_usergroups(
+    request: Request,
+    article_uuid: str,
+    current_user: PublicUser,
+    db_session: AsyncSession,
+) -> List[dict]:
+    article = await _load_article(article_uuid, db_session)
+    await check_resource_access(
+        request, db_session, current_user, article.article_uuid, AccessAction.READ
+    )
+    return await _list_usergroups_for_resource(article_uuid, db_session)
