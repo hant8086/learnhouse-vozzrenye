@@ -24,6 +24,11 @@ export const queryKeys = {
     versions: (uuid: string) => ['activity', uuid, 'versions'] as const,
     state: (uuid: string) => ['activity', uuid, 'state'] as const,
   },
+  article: {
+    detail: (uuid: string) => ['article', uuid] as const,
+    list: (orgId: number) => ['articles', orgId] as const,
+    editorBootstrap: (uuid: string) => ['article', uuid, 'editor-bootstrap'] as const,
+  },
   trail: {
     org: (orgId: number) => ['trail', 'org', orgId] as const,
   },
