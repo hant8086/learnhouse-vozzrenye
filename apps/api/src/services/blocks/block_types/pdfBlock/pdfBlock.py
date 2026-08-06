@@ -10,6 +10,7 @@ from src.security.org_auth import is_org_member, enforce_org_mfa
 from src.security.rbac import check_resource_access, AccessAction
 from src.services.blocks.utils.upload_files import upload_file_and_return_file_object
 from src.services.blocks.utils.parents import (
+    enforce_article_block_access,
     resolve_block_parent,
     resolve_block_parent_for_block,
 )
@@ -94,6 +95,10 @@ async def get_pdf_block(
     await check_resource_access(
         request, db_session, current_user, parent.access_uuid, AccessAction.READ
     )
+
+    # Articles have no course guard below; gate their media on the same
+    # lock decision that gates the article body.
+    await enforce_article_block_access(parent, current_user, db_session)
 
     # Belt-and-braces cross-tenant check: the RBAC "no usergroup linked" rule
     # grants access to any authenticated user, which is too permissive for
