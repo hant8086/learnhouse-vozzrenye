@@ -14,7 +14,7 @@ interface NewArticleModalProps {
 
 /**
  * Create-article modal: name (required) and an optional excerpt. On success it
- * routes to `/editor/article/<uuid>/edit` — the block editor route from Task 7 — so
+ * routes to `/article/<uuid>/edit` — the block editor route from Task 7 — so
  * the creator lands directly in the body editor.
  */
 export default function NewArticleModal(props: NewArticleModalProps) {
@@ -59,7 +59,7 @@ export default function NewArticleModal(props: NewArticleModalProps) {
       }
       toast.success(t('articles.create_success', 'Article created'))
       props.closeModal()
-      router.push(`/editor/article/${articleUuid}/edit`)
+      router.push(`/article/${articleUuid}/edit`)
     } catch (error: any) {
       toast.error(error?.message || t('articles.create_error', 'Failed to create article'))
       setSubmitting(false)

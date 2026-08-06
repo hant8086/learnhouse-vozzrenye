@@ -232,8 +232,12 @@
     box-sizing: border-box;
   }
 
+  /* Keep the upstream readability fallback for the light theme only. An
+     explicit `html.dark` choice must be able to reach the tokenized body
+     surface below, while OS-dark visitors who remain on light keep the
+     existing black-on-#fbfbfb rendering. */
   @media (prefers-color-scheme: dark) {
-    body {
+    html:not(.dark) body {
       color: black;
       background: #fbfbfb;
     }

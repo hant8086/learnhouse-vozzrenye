@@ -445,7 +445,15 @@ export default async function proxy(req: NextRequest) {
     setInstanceCookies(response, instance)
     return response
   }
-  if (pathname.startsWith('/editor/playground/')) {
+  // Keep the long-form editor routes working for existing bookmarks and
+  // shared links. New article/activity links use the short standalone forms
+  // above, but these are real app-router paths and must bypass the tenant
+  // catch-all just like the already-supported playground route.
+  if (
+    pathname.startsWith('/editor/playground/')
+    || pathname.match(/^\/editor\/article\/[^/]+\/edit$/)
+    || pathname.match(/^\/editor\/course\/[^/]+\/activity\/[^/]+\/edit$/)
+  ) {
     const response = NextResponse.rewrite(new URL(pathname + search, req.url))
     setInstanceCookies(response, instance)
     return response
