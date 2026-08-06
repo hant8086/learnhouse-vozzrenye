@@ -3,12 +3,20 @@ import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { getOrgFolders } from '@services/folders/folders'
 import { getOrgPodcasts } from '@services/podcasts/podcasts'
 import { getCommunities } from '@services/communities/communities'
+import { getArticlesWithAuthHeader } from '@services/articles/articles'
+import { getLEARNHOUSE_HTTP_PROTOCOL_VAL } from '@services/config/config'
 import { NextRequest, NextResponse } from 'next/server'
 
+// FORK CHANGE (SEO): the sitemap previously emitted every <loc> as `http://`
+// even on https deployments, because the protocol was reconstructed from the
+// proxy's `x-forwarded-proto` (which the reverse proxy does not set) with an
+// http fallback. The deployment's own NEXT_PUBLIC_LEARNHOUSE_HTTPS is the
+// authority on the scheme it is reachable over, so the origin is built from
+// that getter — the same one Task 0 uses for canonical URLs and og:image.
 function getBaseUrlFromRequest(request: NextRequest): string {
   const host = request.headers.get('host') || 'localhost'
-  const proto = request.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https')
-  return `${proto}://${host}/`
+  const protocol = getLEARNHOUSE_HTTP_PROTOCOL_VAL().replace(/\/+$/, '')
+  return `${protocol}://${host}/`
 }
 
 export async function GET(request: NextRequest) {
@@ -128,6 +136,23 @@ export async function GET(request: NextRequest) {
       }
       break
     }
+    case 'articles': {
+      const articles = await getArticlesWithAuthHeader(orgInfo.id, null, null).catch(() => [])
+      for (const article of articles) {
+        // Only PUBLIC + published articles belong in the sitemap. A locked or
+        // unpublished article renders an identical gate page to every visitor,
+        // and a sitemap full of gates reads to search engines as soft-404s.
+        if (article?.published !== true || article?.lock_type !== 'public') continue
+        if (!article?.slug) continue
+        sitemapUrls.push({
+          loc: `${baseUrl}articles/${article.slug}`,
+          priority: 0.7,
+          changefreq: 'weekly',
+          lastmod: article.update_date,
+        })
+      }
+      break
+    }
     default: {
       return NextResponse.json({ error: 'Invalid sitemap type' }, { status: 400 })
     }
@@ -146,7 +171,7 @@ interface SitemapUrl {
   lastmod?: string
 }
 
-const SITEMAP_TYPES = ['pages', 'courses', 'activities', 'folders', 'podcasts', 'communities']
+const SITEMAP_TYPES = ['pages', 'courses', 'activities', 'folders', 'podcasts', 'communities', 'articles']
 
 function generateSitemapIndex(baseUrl: string): string {
   const sitemaps = SITEMAP_TYPES.map(type => `
