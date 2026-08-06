@@ -143,7 +143,13 @@ async def _apply_article_lock(
     )
 
     if locked:
+        # Deliberately public teaser surface — left untouched: name,
+        # thumbnail_image, excerpt (this IS the preview), seo. `content` is
+        # the gated body. `extra_metadata` is arbitrary author-set payload
+        # with no defined public shape, so it's scrubbed alongside content
+        # rather than assumed safe to leak to a stranger.
         article_read.content = {}
+        article_read.extra_metadata = None
         article_read.is_locked = True
 
 

@@ -52,13 +52,17 @@ class Article(ArticleBase, table=True):
 
     @property
     def public(self) -> bool:
-        """RBAC reads `getattr(resource, 'public', False)` (resource_access.py:732)
-        to decide whether an anonymous/ordinary reader may see a published
-        resource. Articles express that through lock_type rather than a stored
-        column, so derive it — a separate boolean would drift.
-        `authenticated` and `restricted` are both non-public here: the reader
-        must clear the lock check, which _apply_article_lock then applies."""
-        return self.lock_type == ArticleLockType.PUBLIC
+        """RBAC's anonymous-read gate (resource_access.py:732) runs BEFORE any
+        lock check. For an article the page itself is always reachable once
+        published: an anonymous reader must be able to land on a gated article
+        and see its excerpt teaser — that is the whole preview design, and a
+        403 here would replace the teaser with an error page.
+
+        lock_type does NOT gate reachability; it gates the BODY, and
+        _apply_article_lock enforces that immediately after this gate by
+        scrubbing content to {} and setting is_locked. Unpublished articles are
+        still denied here, via has_published_field=True on the RBAC config."""
+        return True
 
 
 class ArticleCreate(ArticleBase):
