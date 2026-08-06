@@ -15,6 +15,7 @@ import { BookCopy, LogIn } from 'lucide-react'
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 import { asArray } from '@services/utils/ts/requests'
+import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
 
 interface ArticlesProps {
   orgslug: string
@@ -80,7 +81,11 @@ function Articles(props: ArticlesProps) {
       <GeneralWrapperStyled>
         <div className="flex flex-col space-y-2 mb-2">
           <div className="flex items-center justify-between">
-            <TypeOfContentTitle title={t('articles.articles', 'Articles')} type="cou" />
+            <div>
+              <span className="mono-label">PUBLIC / ARTICLE INDEX</span>
+              <TypeOfContentTitle title={t('articles.articles', 'Articles')} type="cou" />
+              <div className="vz-hairline" />
+            </div>
             <AuthenticatedClientElement
               checkMethod="roles"
               action="create"
@@ -110,13 +115,15 @@ function Articles(props: ArticlesProps) {
             </AuthenticatedClientElement>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <RevealGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {allArticles.map((article) => (
-              <ArticleCard key={article.article_uuid} article={article} orgslug={orgslug} />
+              <RevealItem key={article.article_uuid} className="flex h-full">
+                <ArticleCard article={article} orgslug={orgslug} />
+              </RevealItem>
             ))}
 
             {allArticles.length === 0 && (
-              <div className="col-span-full flex flex-col justify-center items-center py-12 px-4 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+              <RevealItem className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-100 bg-gray-50/30 px-4 py-12">
                 <div className="p-4 bg-white rounded-full nice-shadow mb-4">
                   <BookCopy className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
                 </div>
@@ -148,9 +155,9 @@ function Articles(props: ArticlesProps) {
                     {t('articles.create_article', 'New article')}
                   </button>
                 )}
-              </div>
+              </RevealItem>
             )}
-          </div>
+          </RevealGroup>
         </div>
       </GeneralWrapperStyled>
     </div>

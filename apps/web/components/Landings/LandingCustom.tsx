@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { type ReactNode } from 'react'
 import { LandingSection } from '@components/Dashboard/Pages/Org/OrgEditLanding/landing_types'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
@@ -9,6 +9,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import CourseThumbnailLanding from '@components/Objects/Thumbnails/CourseThumbnailLanding'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useTranslation } from 'react-i18next'
+import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
 
 interface LandingCustomProps {
   landing: {
@@ -16,6 +17,16 @@ interface LandingCustomProps {
     enabled: boolean
   }
   orgslug: string
+}
+
+function LandingSectionHeading({ eyebrow, title }: { eyebrow: string; title: ReactNode }) {
+  return (
+    <header className="mb-6">
+      <span className="mono-label">{eyebrow}</span>
+      <h2 className="mt-3 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">{title}</h2>
+      <div className="vz-hairline mt-4" />
+    </header>
+  )
 }
 
 function LandingCustom({ landing, orgslug }: LandingCustomProps) {
@@ -37,7 +48,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
         return (
           <div 
             key={`hero-${section.title}`}
-            className="min-h-[400px] sm:min-h-[500px] mt-[20px] sm:mt-[40px] mx-2 sm:mx-4 lg:mx-16 w-full flex items-center justify-center rounded-xl border border-gray-100"
+            className="vz-frame mx-2 mt-[20px] flex min-h-[400px] w-full items-center justify-center overflow-hidden border-gray-100 sm:mx-4 sm:mt-[40px] sm:min-h-[500px] lg:mx-16"
             style={{
               background: section.background.type === 'solid' 
                 ? section.background.color 
@@ -69,14 +80,16 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
                 section.contentAlign === 'left' ? 'justify-start text-left' :
                 section.contentAlign === 'right' ? 'justify-end text-right' :
                 'justify-center text-center'
-              } p-6`}>
+                } p-6`}>
                 <div className="max-w-2xl">
+                  <span className="mono-label">ORG / HERO</span>
                   <h1 
                     className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-4"
                     style={{ color: section.heading.color }}
                   >
                     {section.heading.text}
                   </h1>
+                  <div className="vz-hairline mb-4 sm:mb-6" />
                   <h2
                     className="text-sm sm:text-base md:text-lg mb-4 sm:mb-6 md:mb-8 font-medium"
                     style={{ color: section.subheading.color }}
@@ -113,11 +126,11 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             key={`text-image-${section.title}`}
             className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
           >
-            <div className={`flex flex-col md:flex-row items-center gap-8 md:gap-12 bg-white rounded-xl p-6 md:p-8 lg:p-12 nice-shadow ${
+            <div className={`vz-frame vz-frame-interactive flex flex-col items-center gap-8 bg-white p-6 md:flex-row md:gap-12 md:p-8 lg:p-12 ${
               section.flow === 'right' ? 'md:flex-row-reverse' : ''
             }`}>
               <div className="flex-1 w-full max-w-2xl">
-                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-gray-900 tracking-tight">{section.title}</h2>
+                <LandingSectionHeading eyebrow="ORG / ABOUT" title={section.title} />
                 <div className="prose prose-lg prose-gray max-w-none">
                   <p className="text-base md:text-lg leading-relaxed text-gray-600 whitespace-pre-line">
                     {section.text}
@@ -160,7 +173,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
           >
             {section.title && (
-              <h2 className="text-2xl md:text-3xl font-bold text-left mb-16 text-gray-900">{section.title}</h2>
+              <LandingSectionHeading eyebrow="ORG / NETWORK" title={section.title} />
             )}
             <div className="flex justify-center w-full">
               <div className="flex flex-wrap justify-center gap-16 max-w-7xl">
@@ -183,7 +196,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             key={`people-${section.title}`}
             className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
           >
-            <h2 className="text-2xl md:text-3xl font-bold text-left mb-10 text-gray-900">{section.title}</h2>
+            <LandingSectionHeading eyebrow="ORG / PEOPLE" title={section.title} />
             <div className="flex flex-wrap justify-center gap-x-20 gap-y-8">
               {section.people.map((person, index) => (
                 <div key={index} className="w-[140px] flex flex-col items-center">
@@ -218,7 +231,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
               key={`featured-courses-${section.title}`}
               className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
             >
-              <h2 className="text-2xl md:text-3xl font-bold text-left mb-6 text-gray-900">{section.title}</h2>
+              <LandingSectionHeading eyebrow="ORG / FEATURED COURSES" title={section.title} />
               <div className="text-center py-6 text-gray-500">{t('courses.loading_courses')}</div>
             </div>
           )
@@ -233,22 +246,19 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             key={`featured-courses-${section.title}`}
             className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
           >
-            <h2 className="text-2xl md:text-3xl font-bold text-left mb-6 text-gray-900">{section.title}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+            <LandingSectionHeading eyebrow="ORG / FEATURED COURSES" title={section.title} />
+            <RevealGroup className="grid grid-cols-1 gap-6 w-full sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {featuredCourses.map((course: any) => (
-                <div key={course.course_uuid} className="w-full flex justify-center">
-                  <CourseThumbnailLanding
-                    course={course}
-                    orgslug={orgslug}
-                  />
-                </div>
+                <RevealItem key={course.course_uuid} className="flex w-full justify-center">
+                  <CourseThumbnailLanding course={course} orgslug={orgslug} />
+                </RevealItem>
               ))}
               {featuredCourses.length === 0 && (
-                <div className="col-span-full text-center py-6 text-gray-500">
+                <RevealItem className="col-span-full py-6 text-center text-gray-500">
                   {t('courses.no_featured_courses')}
-                </div>
+                </RevealItem>
               )}
-            </div>
+            </RevealGroup>
           </div>
         )
       default:

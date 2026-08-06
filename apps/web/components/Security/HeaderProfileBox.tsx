@@ -29,6 +29,7 @@ import { AVAILABLE_LANGUAGES } from '@/lib/languages'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 import { getMenuColorClasses } from '@services/utils/ts/colorUtils'
+import ThemeToggle from '@components/Objects/Theme/ThemeToggle'
 
 interface RoleInfo {
   name: string;
@@ -164,6 +165,9 @@ export const HeaderProfileBox = ({ primaryColor = '' }: { primaryColor?: string 
 
   return (
     <div className="flex items-stretch items-center">
+      <div className="hidden shrink-0 items-center md:flex">
+        <ThemeToggle />
+      </div>
       {session.status == 'unauthenticated' && (
         <div className="flex items-stretch grow items-center">
           <ul className="flex space-x-0.5 sm:space-x-1 items-center">

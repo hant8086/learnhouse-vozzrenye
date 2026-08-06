@@ -27,6 +27,8 @@ import { useTranslation } from 'react-i18next'
 import CourseCommunitySection from '@components/Objects/Communities/CourseCommunitySection'
 import CourseShare from '@components/Objects/Courses/CourseShare/CourseShare'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
+import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
+import { ScrollPath } from '@components/Objects/Motion/ScrollPath'
 
 const CourseClient = (props: any) => {
   const { t } = useTranslation()
@@ -316,6 +318,7 @@ const CourseClient = (props: any) => {
 
   return (
     <>
+      <ScrollPath />
       {!course ? null : (
         <>
           <GeneralWrapperStyled>
@@ -325,8 +328,12 @@ const CourseClient = (props: any) => {
                 { label: course.name }
               ]} />
             </div>
-            <div className="pb-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-              <h1 className="text-3xl md:text-3xl font-bold">{course.name}</h1>
+            <div className="flex flex-col items-start justify-between gap-3 pb-4 md:flex-row md:items-center">
+              <div>
+                <span className="mono-label">COURSE / OVERVIEW</span>
+                <h1 className="mt-3 text-3xl font-bold text-gray-900 md:text-3xl">{course.name}</h1>
+                <div className="vz-hairline mt-4" />
+              </div>
               <CourseShare
                 courseName={course.name}
                 courseUrl={getUriWithOrg(orgslug, `/course/${courseuuid}`)}
@@ -341,7 +348,7 @@ const CourseClient = (props: any) => {
 
                   if (showVideo && course.thumbnail_video) {
                     return (
-                      <div className="relative inset-0 ring-1 ring-inset ring-black/10 rounded-lg shadow-xl w-full h-[200px] md:h-[400px]">
+                      <div className="vz-frame vz-frame-interactive relative inset-0 h-[200px] w-full overflow-hidden md:h-[400px]">
                         {course.thumbnail_type === 'both' && (
                           <div className="absolute top-3 right-3 z-10">
                             <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1 flex space-x-1">
@@ -389,7 +396,7 @@ const CourseClient = (props: any) => {
                     );
                   } else if (showImage && course.thumbnail_image) {
                     return (
-                      <div className="relative inset-0 ring-1 ring-inset ring-black/10 rounded-lg shadow-xl w-full h-[200px] md:h-[400px] bg-cover bg-center"
+                      <div className="vz-frame vz-frame-interactive relative inset-0 h-[200px] w-full overflow-hidden bg-cover bg-center md:h-[400px]"
                         style={{
                           backgroundImage: `url(${getCourseThumbnailMediaDirectory(
                             org?.org_uuid,
@@ -440,7 +447,7 @@ const CourseClient = (props: any) => {
                   } else {
                     return (
                       <div
-                        className="inset-0 ring-1 ring-inset ring-black/10 rounded-lg shadow-xl relative w-full h-[400px] bg-cover bg-center"
+                        className="vz-frame relative h-[400px] w-full bg-cover bg-center"
                         style={{
                           backgroundImage: `url('/empty_thumbnail.png')`,
                           backgroundSize: 'auto',
@@ -475,16 +482,21 @@ const CourseClient = (props: any) => {
                 </div>
               </div>
 
-              <div className='course_metadata_right w-full md:w-1/4 space-y-4'>
-                {/* Actions Box */}
-                <CoursesActions courseuuid={courseuuid} orgslug={orgslug} course={course} trailData={trailData} />
-                
-                {/* Authors & Updates Box */}
-                <div className="bg-white shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4">
-                  <CourseProvider courseuuid={course.course_uuid}>
-                    <CourseAuthors authors={course.authors} />
-                  </CourseProvider>
-                </div>
+              <div className="course_metadata_right w-full md:w-1/4">
+                <RevealGroup className="space-y-4">
+                  <RevealItem>
+                    <CoursesActions courseuuid={courseuuid} orgslug={orgslug} course={course} trailData={trailData} />
+                  </RevealItem>
+
+                  <RevealItem>
+                    {/* Authors & Updates Box */}
+                    <div className="vz-frame vz-frame-interactive overflow-hidden bg-white p-4">
+                      <CourseProvider courseuuid={course.course_uuid}>
+                        <CourseAuthors authors={course.authors} />
+                      </CourseProvider>
+                    </div>
+                  </RevealItem>
+                </RevealGroup>
               </div>
             </div>
 
@@ -496,8 +508,12 @@ const CourseClient = (props: any) => {
               if (displayLearnings.length === 0) return null
               return (
                 <div className="w-full">
-                  <h2 className="py-5 text-xl md:text-2xl font-bold">{t('courses.what_you_will_learn')}</h2>
-                  <div className="bg-white shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden px-5 py-5 space-y-2">
+                  <div className="mb-2 pt-5">
+                    <span className="mono-label">COURSE / OUTCOMES</span>
+                    <h2 className="mt-3 text-xl font-bold text-gray-900 md:text-2xl">{t('courses.what_you_will_learn')}</h2>
+                    <div className="vz-hairline mt-4" />
+                  </div>
+                  <div className="vz-frame vz-frame-interactive overflow-hidden bg-white px-5 py-5 space-y-2">
                     {displayLearnings.map((learning: any) => {
                       const learningText = typeof learning === 'string' ? learning : learning.text
                       const learningEmoji = typeof learning === 'string' ? null : learning.emoji
@@ -535,8 +551,12 @@ const CourseClient = (props: any) => {
             })()}
 
             <div className="w-full my-5 mb-10">
-              <h2 className="py-5 text-xl md:text-2xl font-bold">{t('courses.course_lessons')}</h2>
-              <div className="bg-white shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden">
+              <div className="mb-3 pt-5">
+                <span className="mono-label">COURSE / CURRICULUM</span>
+                <h2 className="mt-3 text-xl font-bold text-gray-900 md:text-2xl">{t('courses.course_lessons')}</h2>
+                <div className="vz-hairline mt-4" />
+              </div>
+              <div className="vz-frame vz-frame-interactive overflow-hidden bg-white">
                 {(course.chapters ?? []).map((chapter: any, idx: number) => {
                   const isExpanded = expandedChapters[chapter.chapter_uuid] ?? (idx === 0); // Default to expanded for first chapter
                   return (

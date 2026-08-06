@@ -17,6 +17,7 @@ import FormLayout, {
   FormField,
 } from '@components/Objects/StyledElements/Form/Form'
 import * as Form from '@radix-ui/react-form'
+import AuthSurfaceHeading from '@components/Auth/AuthSurfaceHeading'
 
 interface SignUpClientProps {
   org: any
@@ -184,10 +185,13 @@ const LoggedInJoinScreen = ({ inviteCode, org }: JoinScreenProps) => {
       )}
 
       <div className="flex-1 flex items-center justify-center px-6 md:px-12 lg:px-20">
-        <div className="w-full max-w-[420px] py-10">
+        <div className="vz-frame w-full max-w-[420px] px-6 py-10 sm:px-8">
           {/* Header */}
-          <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">{t('auth.join_organization')}</h1>
-          <p className="mt-2 text-black/45 text-[15px] font-medium">{t('auth.join_organization_desc')}</p>
+          <AuthSurfaceHeading
+            eyebrow="AUTH / JOIN"
+            title={t('auth.join_organization')}
+            description={t('auth.join_organization_desc')}
+          />
 
           {/* Join Card */}
           <div className="mt-8 flex flex-col items-center gap-6">
@@ -317,10 +321,13 @@ const NoTokenScreen = ({ org }: NoTokenScreenProps) => {
       )}
 
       <div className="flex-1 flex items-center justify-center px-6 md:px-12 lg:px-20">
-        <div className="w-full max-w-[420px] py-10">
+        <div className="vz-frame w-full max-w-[420px] px-6 py-10 sm:px-8">
           {/* Header */}
-          <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">{t('auth.invite_required')}</h1>
-          <p className="mt-2 text-black/45 text-[15px] font-medium">{t('auth.invite_required_desc', { org: activeOrg?.name })}</p>
+          <AuthSurfaceHeading
+            eyebrow="AUTH / INVITE"
+            title={t('auth.invite_required')}
+            description={t('auth.invite_required_desc', { org: activeOrg?.name })}
+          />
 
           {/* Invite Code Form */}
           <div className="mt-8">

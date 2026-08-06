@@ -2519,7 +2519,8 @@
     background: var(--color-paper-bright);
     transition:
       border-color 220ms var(--ease-interface),
-      box-shadow 220ms var(--ease-interface);
+      box-shadow 220ms var(--ease-interface),
+      transform 220ms var(--ease-interface);
   }
 
   .vz-frame::before,
@@ -2557,6 +2558,7 @@
   .vz-frame-interactive:hover,
   .vz-frame-interactive:focus-visible {
     border-color: var(--color-line-strong);
+    transform: translateY(-4px);
     box-shadow:
       0 0 0 1px rgb(238 162 47 / 0.18),
       0 0 28px -6px rgb(238 162 47 / 0.35);
@@ -2578,13 +2580,14 @@
     border-radius: var(--radius-card);
   }
 
-  .vz-night .vz-mono,
+  .vz-night :where(.vz-mono, .mono-label),
   .vz-night :where(.text-gray-400, .text-gray-500) {
     color: var(--color-on-night-soft);
   }
 
   /* ORG §3: mono carries status, type, duration and metrics — never prose. */
-  .vz-mono {
+  .vz-mono,
+  .mono-label {
     font-family: var(--font-mono);
     font-size: 0.75rem;
     letter-spacing: 0.08em;
@@ -2595,6 +2598,83 @@
   .vz-signal-text {
     color: var(--color-signal-dark);
   }
+
+  /* `.pro` surfaces are intentionally inert in the light theme. T4 can add
+     these classes to shared markup without importing glassmorphism or neon
+     treatment into the ORG paper system. Dark-only rules below opt them in. */
+  .vz-glass-card,
+  .vz-cyber-panel {
+    position: relative;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .vz-cyber-panel::before,
+  .vz-cyber-panel::after {
+    display: none;
+  }
+
+  /* A viewport progress indicator for long reading surfaces. The light
+     treatment remains ink→signal; dark retunes it to the `.pro` peaks. */
+  .vz-scroll-progress {
+    position: fixed;
+    top: 0;
+    right: 0.75rem;
+    bottom: 0;
+    z-index: 40;
+    width: 2px;
+    pointer-events: none;
+  }
+
+  .vz-scroll-progress__vertical,
+  .vz-scroll-progress__horizontal {
+    display: block;
+    background: linear-gradient(
+      180deg,
+      var(--color-ink),
+      var(--color-signal)
+    );
+  }
+
+  .vz-scroll-progress__vertical {
+    width: 2px;
+    height: 100%;
+    transform-origin: top center;
+  }
+
+  .vz-scroll-progress__horizontal {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .vz-scroll-progress {
+      top: 0;
+      right: 0;
+      bottom: auto;
+      left: 0;
+      width: 100%;
+      height: 2px;
+    }
+
+    .vz-scroll-progress__vertical {
+      display: none;
+    }
+
+    .vz-scroll-progress__horizontal {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(
+        90deg,
+        var(--color-ink),
+        var(--color-signal)
+      );
+      transform-origin: left center;
+    }
+  }
 }
 
 /* ORG §6: everything above a plain hover respects reduced motion. */
@@ -2603,6 +2683,11 @@
   .vz-frame::before,
   .vz-frame::after {
     transition: none;
+  }
+
+  .vz-frame-interactive:hover,
+  .vz-frame-interactive:focus-visible {
+    transform: none;
   }
 }
 
@@ -2756,5 +2841,513 @@
     background-image:
       radial-gradient(rgb(104 113 108 / 0.35) 1px, transparent 1px),
       radial-gradient(rgb(104 113 108 / 0.35) 1px, transparent 1px);
+  }
+}
+
+/* ==========================================================================
+   Vozzrenye — dark token substrate (T1)
+   The public `.pro` language is a second token surface, not a second component
+   tree. This must remain the final block: Tailwind v4 emits `:root` and the
+   shadcn `.dark` channels with equal or lower specificity, while `html.dark`
+   wins here without changing the light theme at all.
+
+   Neutral utilities are inverted as a family so existing `bg-gray-50` /
+   `text-gray-900` pairs trade paper for night and ink for readable text. The
+   lower ramp is deliberately cool and close together: `#050505` is the page,
+   `#0A0B10` is the raised surface, and the first text shade that appears in
+   the app (`gray-400`) still clears 4.5:1 on the base.
+   ========================================================================== */
+
+html.dark {
+  /* --- `.pro` surfaces and semantic ORG aliases -------------------------
+     Keep these aliases in the same roles as the light ORG substrate, so the
+     already-shipped `bg-paper`, `bg-paper-bright`, `vz-night`, and body rules
+     repaint by token instead of by component. */
+  --color-paper: #050505;
+  --color-paper-bright: #0A0B10;
+  --color-paper-raised: #11151E;
+  --color-paper-deep: #1B2330;
+  --color-ink: #F4F7F8;
+  --color-ink-soft: #D4DCE3;
+  --color-ink-faint: #A0AEC0;
+  --color-line: #202A39;
+  --color-line-strong: #394759;
+  --color-signal: #00F0FF;
+  --color-signal-dark: #00B8C4;
+  --color-signal-soft: #07343A;
+  --color-night: #0A0B10;
+  --color-night-raised: #11151E;
+  --color-night-line: #394759;
+  --color-on-night: #F4F7F8;
+  --color-on-night-soft: #A0AEC0;
+
+  /* Explicit role names make the four `.pro` peaks available to later dark
+     utilities without making cyan, purple, or gold interchangeable accents. */
+  --vz-cyan: #00F0FF;
+  --vz-purple: #9D4EDD;
+  --vz-violet: #7B2CBF;
+  --vz-gold: #F5D061;
+
+  /* --- Neutral ramp -----------------------------------------------------
+     The light ORG ramp ran bright→dark from 50→950. Reversing that direction
+     keeps the utility meanings stable in dark: low numbers are surfaces,
+     high numbers are text. All five neutral families stay collapsed because
+     the codebase uses them interchangeably and the light substrate already
+     made that hue decision. */
+  --color-gray-50: #050505;
+  --color-gray-100: #0A0B10;
+  --color-gray-200: #11151E;
+  --color-gray-300: #202A39;
+  --color-gray-400: #738394;
+  --color-gray-500: #A0AEC0;
+  --color-gray-600: #B9C4CE;
+  --color-gray-700: #D4DCE3;
+  --color-gray-800: #E5EBEF;
+  --color-gray-900: #F4F7F8;
+  --color-gray-950: #FFFFFF;
+
+  --color-neutral-50: #050505;
+  --color-neutral-100: #0A0B10;
+  --color-neutral-200: #11151E;
+  --color-neutral-300: #202A39;
+  --color-neutral-400: #738394;
+  --color-neutral-500: #A0AEC0;
+  --color-neutral-600: #B9C4CE;
+  --color-neutral-700: #D4DCE3;
+  --color-neutral-800: #E5EBEF;
+  --color-neutral-900: #F4F7F8;
+  --color-neutral-950: #FFFFFF;
+
+  --color-zinc-50: #050505;
+  --color-zinc-100: #0A0B10;
+  --color-zinc-200: #11151E;
+  --color-zinc-300: #202A39;
+  --color-zinc-400: #738394;
+  --color-zinc-500: #A0AEC0;
+  --color-zinc-600: #B9C4CE;
+  --color-zinc-700: #D4DCE3;
+  --color-zinc-800: #E5EBEF;
+  --color-zinc-900: #F4F7F8;
+  --color-zinc-950: #FFFFFF;
+
+  --color-slate-50: #050505;
+  --color-slate-100: #0A0B10;
+  --color-slate-200: #11151E;
+  --color-slate-300: #202A39;
+  --color-slate-400: #738394;
+  --color-slate-500: #A0AEC0;
+  --color-slate-600: #B9C4CE;
+  --color-slate-700: #D4DCE3;
+  --color-slate-800: #E5EBEF;
+  --color-slate-900: #F4F7F8;
+  --color-slate-950: #FFFFFF;
+
+  --color-stone-50: #050505;
+  --color-stone-100: #0A0B10;
+  --color-stone-200: #11151E;
+  --color-stone-300: #202A39;
+  --color-stone-400: #738394;
+  --color-stone-500: #A0AEC0;
+  --color-stone-600: #B9C4CE;
+  --color-stone-700: #D4DCE3;
+  --color-stone-800: #E5EBEF;
+  --color-stone-900: #F4F7F8;
+  --color-stone-950: #FFFFFF;
+
+  /* White/black are dual-purpose in this codebase. They must become dark
+     surfaces, but their text utilities must not become dark ink. The local
+     text rebinds below preserve every opacity variant (`text-white/40`,
+     `text-black/60`) without changing component markup. */
+  --color-white: #0A0B10;
+  --color-black: #050505;
+  --vz-text-on-dark: #FFFFFF;
+  --vz-text-on-fill: #000000;
+
+  /* --- Cyan interactive family -----------------------------------------
+     Blue/indigo were collapsed into the ORG signal in L2, so they follow
+     sky/cyan here as one interactive family. The exact cyan peak stays
+     available at 500; darker steps keep existing filled controls usable. */
+  --color-blue-50: #001518;
+  --color-blue-100: #00252B;
+  --color-blue-200: #003E46;
+  --color-blue-300: #005B66;
+  --color-blue-400: #007F8C;
+  --color-blue-500: #00F0FF;
+  --color-blue-600: #00C4CF;
+  --color-blue-700: #008F9A;
+  --color-blue-800: #006773;
+  --color-blue-900: #004651;
+  --color-blue-950: #002D34;
+
+  --color-indigo-50: #001518;
+  --color-indigo-100: #00252B;
+  --color-indigo-200: #003E46;
+  --color-indigo-300: #005B66;
+  --color-indigo-400: #007F8C;
+  --color-indigo-500: #00F0FF;
+  --color-indigo-600: #00C4CF;
+  --color-indigo-700: #008F9A;
+  --color-indigo-800: #006773;
+  --color-indigo-900: #004651;
+  --color-indigo-950: #002D34;
+
+  --color-sky-50: #001518;
+  --color-sky-100: #00252B;
+  --color-sky-200: #003E46;
+  --color-sky-300: #005B66;
+  --color-sky-400: #007F8C;
+  --color-sky-500: #00F0FF;
+  --color-sky-600: #00C4CF;
+  --color-sky-700: #008F9A;
+  --color-sky-800: #006773;
+  --color-sky-900: #004651;
+  --color-sky-950: #002D34;
+
+  --color-cyan-50: #001518;
+  --color-cyan-100: #00252B;
+  --color-cyan-200: #003E46;
+  --color-cyan-300: #005B66;
+  --color-cyan-400: #007F8C;
+  --color-cyan-500: #00F0FF;
+  --color-cyan-600: #00C4CF;
+  --color-cyan-700: #008F9A;
+  --color-cyan-800: #006773;
+  --color-cyan-900: #004651;
+  --color-cyan-950: #002D34;
+
+  /* --- Purple method / frames ------------------------------------------
+     Purple is intentionally not merged with cyan. The two bright peaks are
+     retained for doctrinal panels, method markers, and structural frames;
+     only the 500 peak is treated as a light-fill foreground case below. */
+  --color-violet-50: #10071A;
+  --color-violet-100: #1D0C2E;
+  --color-violet-200: #2B1242;
+  --color-violet-300: #3D1B5D;
+  --color-violet-400: #5A2A82;
+  --color-violet-500: #9D4EDD;
+  --color-violet-600: #8B3CC6;
+  --color-violet-700: #7B2CBF;
+  --color-violet-800: #5C208E;
+  --color-violet-900: #411763;
+  --color-violet-950: #2B0F43;
+
+  --color-purple-50: #10071A;
+  --color-purple-100: #1D0C2E;
+  --color-purple-200: #2B1242;
+  --color-purple-300: #3D1B5D;
+  --color-purple-400: #5A2A82;
+  --color-purple-500: #9D4EDD;
+  --color-purple-600: #8B3CC6;
+  --color-purple-700: #7B2CBF;
+  --color-purple-800: #5C208E;
+  --color-purple-900: #411763;
+  --color-purple-950: #2B0F43;
+
+  --color-fuchsia-50: #10071A;
+  --color-fuchsia-100: #1D0C2E;
+  --color-fuchsia-200: #2B1242;
+  --color-fuchsia-300: #3D1B5D;
+  --color-fuchsia-400: #5A2A82;
+  --color-fuchsia-500: #9D4EDD;
+  --color-fuchsia-600: #8B3CC6;
+  --color-fuchsia-700: #7B2CBF;
+  --color-fuchsia-800: #5C208E;
+  --color-fuchsia-900: #411763;
+  --color-fuchsia-950: #2B0F43;
+
+  /* --- Gold peak --------------------------------------------------------
+     Amber/yellow are the existing warning and emphasis families. Their
+     bright middle steps carry the `.pro` gold peak; the foreground rule
+     below gives those light fills dark ink instead of violating the role
+     discipline with white-on-gold controls. */
+  --color-amber-50: #1A1204;
+  --color-amber-100: #291C07;
+  --color-amber-200: #453008;
+  --color-amber-300: #6D490C;
+  --color-amber-400: #A06C12;
+  --color-amber-500: #F5D061;
+  --color-amber-600: #D1A43A;
+  --color-amber-700: #B27C1F;
+  --color-amber-800: #815612;
+  --color-amber-900: #583A0C;
+  --color-amber-950: #362206;
+
+  --color-yellow-50: #1A1204;
+  --color-yellow-100: #291C07;
+  --color-yellow-200: #453008;
+  --color-yellow-300: #6D490C;
+  --color-yellow-400: #A06C12;
+  --color-yellow-500: #F5D061;
+  --color-yellow-600: #D1A43A;
+  --color-yellow-700: #B27C1F;
+  --color-yellow-800: #815612;
+  --color-yellow-900: #583A0C;
+  --color-yellow-950: #362206;
+
+  /* --- shadcn channels --------------------------------------------------
+     The earlier `.dark` block is a stock grayscale theme. Restating every
+     channel here makes `bg-background`, cards, popovers, buttons, charts,
+     and focus rings consume the same dark substrate instead of leaving a
+     second HSL palette fighting the `.pro` ramps by inheritance. */
+  --background: 0 0% 2%;
+  --foreground: 195 20% 97%;
+  --card: 228 23% 5%;
+  --card-foreground: 195 20% 97%;
+  --popover: 228 23% 5%;
+  --popover-foreground: 195 20% 97%;
+  --primary: 184 100% 50%;
+  --primary-foreground: 0 0% 2%;
+  --secondary: 220 22% 10%;
+  --secondary-foreground: 195 20% 97%;
+  --muted: 220 22% 9%;
+  --muted-foreground: 216 20% 69%;
+  --accent: 184 100% 50%;
+  --accent-foreground: 0 0% 2%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 195 20% 97%;
+  --border: 220 22% 14%;
+  --input: 220 22% 16%;
+  --ring: 184 100% 50%;
+  --chart-1: 184 100% 50%;
+  --chart-2: 275 66% 58%;
+  --chart-3: 46 87% 67%;
+  --chart-4: 216 20% 69%;
+  --chart-5: 0 72% 60%;
+}
+
+/* The same `--color-white` / `--color-black` variables power backgrounds and
+   foregrounds in Tailwind v4. Rebinding only text-bearing elements keeps the
+   surface inversion while retaining readable ink and all text opacity steps.
+   This is the mitigation for the sampled `bg-black text-white`, saturated
+   status-button, and dark panel call sites; it also leaves light-theme output
+   byte-for-byte outside the `html.dark` scope. */
+html.dark :where([class*="text-white"]) {
+  --color-white: var(--vz-text-on-dark);
+}
+
+html.dark :where([class*="text-black"]) {
+  --color-black: var(--vz-text-on-dark);
+}
+
+/* Inverted high neutral ramps and known mid-tone fills become light surfaces
+   in dark. Their actual call sites pair them with `text-white`; use a black
+   foreground there. The explicit list is intentional: saturated purple
+   steps and dark semantic reds/greens retain white ink where black would
+   lose contrast, while the common `bg-red-500 text-white` case is repaired. */
+html.dark :is(
+  [class*="bg-gray-7"], [class*="bg-gray-8"], [class*="bg-gray-9"],
+  [class*="bg-neutral-7"], [class*="bg-neutral-8"], [class*="bg-neutral-9"],
+  [class*="bg-zinc-7"], [class*="bg-zinc-8"], [class*="bg-zinc-9"],
+  [class*="bg-slate-7"], [class*="bg-slate-8"], [class*="bg-slate-9"],
+  [class*="bg-stone-7"], [class*="bg-stone-8"], [class*="bg-stone-9"],
+  [class*="bg-red-4"], [class*="bg-red-5"],
+  [class*="bg-rose-4"], [class*="bg-rose-5"],
+  [class*="bg-orange-4"], [class*="bg-orange-5"], [class*="bg-orange-6"],
+  [class*="bg-green-4"], [class*="bg-green-5"], [class*="bg-green-6"],
+  [class*="bg-emerald-4"], [class*="bg-emerald-5"], [class*="bg-emerald-6"],
+  [class*="bg-teal-4"], [class*="bg-teal-5"], [class*="bg-teal-6"],
+  [class*="bg-blue-3"], [class*="bg-blue-4"], [class*="bg-blue-5"], [class*="bg-blue-6"], [class*="bg-blue-7"],
+  [class*="bg-indigo-3"], [class*="bg-indigo-4"], [class*="bg-indigo-5"], [class*="bg-indigo-6"], [class*="bg-indigo-7"],
+  [class*="bg-sky-3"], [class*="bg-sky-4"], [class*="bg-sky-5"], [class*="bg-sky-6"], [class*="bg-sky-7"],
+  [class*="bg-cyan-3"], [class*="bg-cyan-4"], [class*="bg-cyan-5"], [class*="bg-cyan-6"], [class*="bg-cyan-7"],
+  [class*="bg-violet-5"], [class*="bg-purple-5"], [class*="bg-fuchsia-5"],
+  [class*="bg-amber-3"], [class*="bg-amber-4"], [class*="bg-amber-5"], [class*="bg-amber-6"], [class*="bg-amber-7"],
+  [class*="bg-yellow-3"], [class*="bg-yellow-4"], [class*="bg-yellow-5"], [class*="bg-yellow-6"], [class*="bg-yellow-7"]
+) :is([class*="text-white"], [class*="text-black"]),
+html.dark :is(
+  [class*="bg-gray-7"], [class*="bg-gray-8"], [class*="bg-gray-9"],
+  [class*="bg-neutral-7"], [class*="bg-neutral-8"], [class*="bg-neutral-9"],
+  [class*="bg-zinc-7"], [class*="bg-zinc-8"], [class*="bg-zinc-9"],
+  [class*="bg-slate-7"], [class*="bg-slate-8"], [class*="bg-slate-9"],
+  [class*="bg-stone-7"], [class*="bg-stone-8"], [class*="bg-stone-9"],
+  [class*="bg-red-4"], [class*="bg-red-5"],
+  [class*="bg-rose-4"], [class*="bg-rose-5"],
+  [class*="bg-orange-4"], [class*="bg-orange-5"], [class*="bg-orange-6"],
+  [class*="bg-green-4"], [class*="bg-green-5"], [class*="bg-green-6"],
+  [class*="bg-emerald-4"], [class*="bg-emerald-5"], [class*="bg-emerald-6"],
+  [class*="bg-teal-4"], [class*="bg-teal-5"], [class*="bg-teal-6"],
+  [class*="bg-blue-3"], [class*="bg-blue-4"], [class*="bg-blue-5"], [class*="bg-blue-6"], [class*="bg-blue-7"],
+  [class*="bg-indigo-3"], [class*="bg-indigo-4"], [class*="bg-indigo-5"], [class*="bg-indigo-6"], [class*="bg-indigo-7"],
+  [class*="bg-sky-3"], [class*="bg-sky-4"], [class*="bg-sky-5"], [class*="bg-sky-6"], [class*="bg-sky-7"],
+  [class*="bg-cyan-3"], [class*="bg-cyan-4"], [class*="bg-cyan-5"], [class*="bg-cyan-6"], [class*="bg-cyan-7"],
+  [class*="bg-violet-5"], [class*="bg-purple-5"], [class*="bg-fuchsia-5"],
+  [class*="bg-amber-3"], [class*="bg-amber-4"], [class*="bg-amber-5"], [class*="bg-amber-6"], [class*="bg-amber-7"],
+  [class*="bg-yellow-3"], [class*="bg-yellow-4"], [class*="bg-yellow-5"], [class*="bg-yellow-6"], [class*="bg-yellow-7"]
+):is([class*="text-white"], [class*="text-black"]) {
+  --color-white: var(--vz-text-on-fill);
+  --color-black: var(--vz-text-on-fill);
+}
+
+/* Opacity-bearing red/rose/green and purple chat fills blend into the dark
+   substrate, so their effective surface is not the opaque mid-tone sampled
+   above. Keep the existing light foreground on those real status/chat cases;
+   cyan and gold alpha fills stay in the black-ink group because their dark
+   palette values remain bright after compositing. */
+html.dark :is(
+  [class*="bg-red-4/"], [class*="bg-red-5/"], [class*="bg-red-6/"],
+  [class*="bg-rose-4/"], [class*="bg-rose-5/"], [class*="bg-rose-6/"],
+  [class*="bg-orange-4/"], [class*="bg-orange-5/"], [class*="bg-orange-6/"],
+  [class*="bg-green-4/"], [class*="bg-green-5/"], [class*="bg-green-6/"],
+  [class*="bg-emerald-4/"], [class*="bg-emerald-5/"], [class*="bg-emerald-6/"],
+  [class*="bg-teal-4/"], [class*="bg-teal-5/"], [class*="bg-teal-6/"],
+  [class*="bg-violet-5/"], [class*="bg-purple-5/"], [class*="bg-fuchsia-5/"]
+) :is([class*="text-white"], [class*="text-black"]),
+html.dark :is(
+  [class*="bg-red-4/"], [class*="bg-red-5/"], [class*="bg-red-6/"],
+  [class*="bg-rose-4/"], [class*="bg-rose-5/"], [class*="bg-rose-6/"],
+  [class*="bg-orange-4/"], [class*="bg-orange-5/"], [class*="bg-orange-6/"],
+  [class*="bg-green-4/"], [class*="bg-green-5/"], [class*="bg-green-6/"],
+  [class*="bg-emerald-4/"], [class*="bg-emerald-5/"], [class*="bg-emerald-6/"],
+  [class*="bg-teal-4/"], [class*="bg-teal-5/"], [class*="bg-teal-6/"],
+  [class*="bg-violet-5/"], [class*="bg-purple-5/"], [class*="bg-fuchsia-5/"]
+):is([class*="text-white"], [class*="text-black"]) {
+  --color-white: var(--vz-text-on-dark);
+  --color-black: var(--vz-text-on-dark);
+}
+
+/* Dark elevation is a hairline plus an inner signal haze. The old ORG shadow
+   declarations used black drop shadows that disappear against #050505, so
+   these four high-use utilities get a dark-only treatment at the token edge. */
+html.dark .nice-shadow,
+html.dark .light-shadow,
+html.dark .vz-elevated {
+  outline-color: var(--color-line);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 240 255 / 0.06),
+    inset 0 0 24px rgb(0 240 255 / 0.025);
+}
+
+html.dark .custom-dots-bg {
+  background-image:
+    radial-gradient(rgb(160 174 192 / 0.16) 1px, transparent 1px),
+    radial-gradient(rgb(160 174 192 / 0.16) 1px, transparent 1px);
+}
+
+/* Frames stay structural in dark: cyan confirms interaction, purple remains
+   available to callers for method framing, and no amber glow leaks back into
+   the `.pro` interactive role. */
+html.dark .vz-frame-interactive:hover,
+html.dark .vz-frame-interactive:focus-visible {
+  border-color: var(--color-line-strong);
+  box-shadow:
+    0 0 0 1px rgb(0 240 255 / 0.22),
+    inset 0 0 24px rgb(0 240 255 / 0.035);
+}
+
+/* ==========================================================================
+   Vozzrenye — T3 cyber vocabulary and reading motion
+   Light keeps the ORG amber/ink treatment from the utility definitions above;
+   only the dark scope introduces `.pro` cyan, purple, gold, glass, and glow.
+   ========================================================================== */
+
+html.dark .vz-hairline {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--vz-purple) 28%,
+    var(--vz-cyan) 72%,
+    transparent 100%
+  );
+}
+
+html.dark .vz-hairline-signal {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--vz-cyan) 50%,
+    transparent 100%
+  );
+}
+
+html.dark .vz-frame::before {
+  border-color: var(--vz-cyan);
+}
+
+html.dark .vz-frame::after {
+  border-color: var(--vz-purple);
+}
+
+html.dark .vz-night {
+  border-color: rgb(123 44 191 / 0.42);
+  box-shadow: inset 0 0 18px rgb(0 240 255 / 0.03);
+}
+
+html.dark .vz-glass-card {
+  background: rgb(10 11 16 / 0.6);
+  border: 1px solid rgb(0 240 255 / 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 0 20px rgb(0 240 255 / 0.02);
+  transition:
+    border-color 220ms var(--ease-interface),
+    box-shadow 220ms var(--ease-interface);
+}
+
+html.dark .vz-glass-card:hover,
+html.dark .vz-glass-card:focus-within {
+  border-color: rgb(0 240 255 / 0.4);
+  box-shadow:
+    inset 0 0 20px rgb(0 240 255 / 0.05),
+    0 0 20px rgb(0 240 255 / 0.1);
+}
+
+html.dark .vz-cyber-panel {
+  background: linear-gradient(
+    135deg,
+    rgb(10 11 16 / 0.9) 0%,
+    rgb(5 5 5 / 0.95) 100%
+  );
+  border: 1px solid rgb(157 78 221 / 0.3);
+  box-shadow:
+    inset 0 0 30px rgb(123 44 191 / 0.1),
+    0 0 20px rgb(0 0 0 / 0.8);
+}
+
+html.dark .vz-cyber-panel::before,
+html.dark .vz-cyber-panel::after {
+  position: absolute;
+  display: block;
+  height: 1px;
+  pointer-events: none;
+  content: '';
+}
+
+html.dark .vz-cyber-panel::before {
+  top: 0;
+  right: 10%;
+  left: 10%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--vz-cyan),
+    transparent
+  );
+  opacity: 0.7;
+}
+
+html.dark .vz-cyber-panel::after {
+  right: 20%;
+  bottom: 0;
+  left: 20%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--vz-gold),
+    transparent
+  );
+  opacity: 0.5;
+}
+
+html.dark .vz-scroll-progress__vertical {
+  background: linear-gradient(180deg, var(--vz-purple), var(--vz-cyan));
+}
+
+html.dark .vz-scroll-progress__horizontal {
+  background: linear-gradient(90deg, var(--vz-purple), var(--vz-cyan));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.dark .vz-glass-card {
+    transition: none;
   }
 }

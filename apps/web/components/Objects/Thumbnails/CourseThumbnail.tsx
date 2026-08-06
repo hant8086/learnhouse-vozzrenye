@@ -164,7 +164,14 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
   const isGated = course.is_paid === true && course.has_access !== true
 
   return (
-    <div onMouseEnter={handleMouseEnter} className={`group relative flex flex-col bg-white rounded-xl nice-shadow overflow-hidden w-full transition-all duration-300 hover:scale-[1.01] ${isSelected ? 'ring-2 ring-black ring-offset-2' : ''}`}>
+    <div
+      onMouseEnter={handleMouseEnter}
+      className={`group relative flex w-full flex-col overflow-hidden ${
+        isDashboard
+          ? 'bg-white rounded-xl nice-shadow transition-all duration-300 hover:scale-[1.01]'
+          : 'bg-white vz-frame vz-frame-interactive'
+      } ${isSelected ? 'ring-2 ring-black ring-offset-2' : ''}`}
+    >
       {/* Selection checkbox - visible on hover or when selected (dashboard only) */}
       {isDashboard && onToggleSelect && (
         <button

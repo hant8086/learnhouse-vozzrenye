@@ -22,6 +22,7 @@ import { useCourses } from '@/hooks/queries/useCourses'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 import CatalogPagination, { useCatalogPagination } from '@components/Objects/Catalog/CatalogPagination'
 import { asArray } from '@services/utils/ts/requests'
+import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
 
 interface CourseProps {
   orgslug: string
@@ -185,7 +186,11 @@ function Courses(props: CourseProps) {
       <GeneralWrapperStyled>
         <div className="flex flex-col space-y-2 mb-2">
           <div className="flex items-center justify-between">
-            <TypeOfContentTitle title={t('courses.courses')} type="cou" />
+            <div>
+              <span className="mono-label">PUBLIC / COURSE CATALOG</span>
+              <TypeOfContentTitle title={t('courses.courses')} type="cou" />
+              <div className="vz-hairline" />
+            </div>
             <AuthenticatedClientElement
               checkMethod="roles"
               action="create"
@@ -279,14 +284,14 @@ function Courses(props: CourseProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <RevealGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {paginatedCourses.map((course: any, index: number) => (
-              <div key={course.course_uuid} className="">
+              <RevealItem key={course.course_uuid} className="flex h-full">
                 <CourseThumbnail course={course} orgslug={orgslug} isPriority={currentPage === 1 && index < 3} />
-              </div>
+              </RevealItem>
             ))}
             {filteredCourses.length === 0 && searchQuery && (
-              <div className="col-span-full flex flex-col justify-center items-center py-12 px-4">
+              <RevealItem className="col-span-full flex flex-col items-center justify-center px-4 py-12">
                 <Search className="w-12 h-12 text-gray-300 mb-4" />
                 <h2 className="text-xl font-semibold text-gray-600 mb-2">
                   {t('courses.no_search_results')}
@@ -294,10 +299,10 @@ function Courses(props: CourseProps) {
                 <p className="text-gray-400">
                   {t('courses.try_different_search')}
                 </p>
-              </div>
+              </RevealItem>
             )}
             {allCourses.length === 0 && !searchQuery && (
-              <div className="col-span-full flex flex-col justify-center items-center py-12 px-4 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+              <RevealItem className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-100 bg-gray-50/30 px-4 py-12">
                 <div className="p-4 bg-white rounded-full nice-shadow mb-4">
                   {isAuthenticated ? (
                     <BookCopy className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
@@ -350,9 +355,9 @@ function Courses(props: CourseProps) {
                     </AuthenticatedClientElement>
                   </div>
                 )}
-              </div>
+              </RevealItem>
             )}
-          </div>
+          </RevealGroup>
 
           <CatalogPagination
             currentPage={currentPage}

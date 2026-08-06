@@ -29,7 +29,7 @@ export default function ArticleCard(props: ArticleCardProps) {
     <Link
       prefetch={false}
       href={getUriWithOrg(orgslug, target)}
-      className="group block bg-white nice-shadow rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
+      className="group block h-full overflow-hidden bg-white nice-shadow vz-frame vz-frame-interactive"
     >
       <div className="relative">
         {article.thumbnail_image ? (

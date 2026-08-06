@@ -35,7 +35,11 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
         {/* Courses */}
         <div className="flex flex-col space-y-2">
           <Reveal className="flex items-center justify-between" direction="none">
-            <TypeOfContentTitle title={t('courses.courses')} type="cou" />
+            <div>
+              <span className="mono-label">ORG / COURSE CATALOG</span>
+              <TypeOfContentTitle title={t('courses.courses')} type="cou" />
+              <div className="vz-hairline" />
+            </div>
             <AuthenticatedClientElement
               ressourceType="courses"
               action="create"

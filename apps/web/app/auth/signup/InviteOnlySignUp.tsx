@@ -22,6 +22,7 @@ import CustomSignupFields, {
   validateCustomFields,
 } from '@components/Auth/CustomSignupFields'
 import { readSignupFields, type SignupFieldItem } from '@services/settings/org'
+import AuthSurfaceHeading from '@components/Auth/AuthSurfaceHeading'
 
 const validate = (values: any, t: any, customFields: SignupFieldItem[]) => {
   const errors: any = {}
@@ -164,10 +165,13 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
   };
 
   return (
-    <div className="w-full max-w-[420px] py-10">
+    <div className="vz-frame w-full max-w-[420px] px-6 py-10 sm:px-8">
       {/* Header */}
-      <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">{t('auth.create_account')}</h1>
-      <p className="mt-2 text-black/45 text-[15px] font-medium">{t('auth.fill_in_details')}</p>
+      <AuthSurfaceHeading
+        eyebrow="AUTH / INVITE SIGN UP"
+        title={t('auth.create_account')}
+        description={t('auth.fill_in_details')}
+      />
 
       <div className="mt-8">
         {/* Error/Success Messages */}

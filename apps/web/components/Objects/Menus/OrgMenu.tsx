@@ -48,6 +48,7 @@ import {
   TooltipTrigger,
 } from '@components/ui/tooltip'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
+import ThemeToggle from '@components/Objects/Theme/ThemeToggle'
 
 export const OrgMenu = (props: any) => {
   const orgslug = props.orgslug
@@ -380,6 +381,9 @@ export const OrgMenu = (props: any) => {
 
             <div className="hidden md:flex">
               <HeaderProfileBox primaryColor={primaryColor} />
+            </div>
+            <div className="md:hidden">
+              <ThemeToggle />
             </div>
             <button
               className={`md:hidden focus:outline-hidden ${colors.text}`}

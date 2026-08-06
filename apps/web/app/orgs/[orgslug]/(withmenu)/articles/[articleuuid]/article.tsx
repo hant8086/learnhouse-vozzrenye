@@ -4,6 +4,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useArticle } from '@/hooks/queries/useArticle'
 import CanvaWithStaticFallback from '@components/Objects/Activities/DynamicCanva/CanvaWithStaticFallback'
 import ArticleGate from '@components/Objects/Articles/ArticleGate'
+import { ScrollPath } from '@components/Objects/Motion/ScrollPath'
 
 interface ArticleClientProps {
   articleuuid: string
@@ -65,42 +66,49 @@ export default function ArticleClient(props: ArticleClientProps) {
   // interactive view on the client. `courseUuid` is deliberately absent:
   // article blocks are parented to the article itself (`parent_uuid`).
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <article className="space-y-6">
-        {article.thumbnail_image && (
-          <img
-            src={resolveThumbnail(article.thumbnail_image)}
-            alt=""
-            className="w-full rounded-xl object-cover"
-          />
-        )}
-
-        <header>
-          <h1 className="text-3xl font-bold text-gray-900 first-letter:uppercase">
-            {article.name}
-          </h1>
-          {article.excerpt && (
-            <p className="mt-3 text-lg text-gray-600 leading-relaxed">{article.excerpt}</p>
+    <>
+      <ScrollPath />
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <article className="space-y-6">
+          {article.thumbnail_image && (
+            <div className="vz-frame overflow-hidden">
+              <img
+                src={resolveThumbnail(article.thumbnail_image)}
+                alt=""
+                className="w-full object-cover"
+              />
+            </div>
           )}
-        </header>
 
-        {/* `orgUuid` is nullable in our props (the server fetch can fail to
-            resolve the org) but the Canva prop is `string | undefined`, so the
-            absence has to be passed through as undefined, not null. */}
-        <div className="article-gated-body">
-          <CanvaWithStaticFallback
-            content={article.content}
-            activity={article}
-            orgUuid={props.orgUuid ?? undefined}
-            fallback={
-              <div className="flex items-center justify-center py-16">
-                <div className="text-sm text-gray-400">…</div>
-              </div>
-            }
-          />
-        </div>
-      </article>
-    </div>
+          <header>
+            <span className="mono-label">PUBLIC / ARTICLE READING</span>
+            <h1 className="mt-3 text-3xl font-bold text-gray-900 first-letter:uppercase">
+              {article.name}
+            </h1>
+            <div className="vz-hairline mt-4" />
+            {article.excerpt && (
+              <p className="mt-3 text-lg text-gray-600 leading-relaxed">{article.excerpt}</p>
+            )}
+          </header>
+
+          {/* `orgUuid` is nullable in our props (the server fetch can fail to
+              resolve the org) but the Canva prop is `string | undefined`, so the
+              absence has to be passed through as undefined, not null. */}
+          <div className="article-gated-body">
+            <CanvaWithStaticFallback
+              content={article.content}
+              activity={article}
+              orgUuid={props.orgUuid ?? undefined}
+              fallback={
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-sm text-gray-400">…</div>
+                </div>
+              }
+            />
+          </div>
+        </article>
+      </div>
+    </>
   )
 }
 

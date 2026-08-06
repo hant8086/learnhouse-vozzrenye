@@ -18,6 +18,7 @@ import AuthLayout from '@components/Auth/AuthLayout'
 import TurnstileWidget, { useTurnstileRequired, verifyTurnstileToken, type TurnstileWidgetHandle } from '@components/Auth/TurnstileWidget'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 import { getAllowedAuthMethods } from '@services/auth/authMethods'
+import AuthSurfaceHeading from '@components/Auth/AuthSurfaceHeading'
 
 interface LoginClientProps {
   org: any
@@ -509,18 +510,17 @@ const LoginClient = (props: LoginClientProps) => {
         )}
 
         <div className="flex-1 flex items-center justify-center px-6 md:px-12 lg:px-20">
-          <div className="w-full max-w-[420px] py-10">
+          <div className="vz-frame w-full max-w-[420px] px-6 py-10 sm:px-8">
             {mfaToken ? (
               <>
                 {/* Second-factor challenge */}
-                <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">
-                  {t('auth.mfa_title', { defaultValue: 'Two-step verification' })}
-                </h1>
-                <p className="mt-2 text-black/45 text-[15px] font-medium">
-                  {useBackupCode
+                <AuthSurfaceHeading
+                  eyebrow="AUTH / MFA"
+                  title={t('auth.mfa_title', { defaultValue: 'Two-step verification' })}
+                  description={useBackupCode
                     ? t('auth.mfa_subtitle_backup', { defaultValue: 'Enter one of the backup codes you saved.' })
                     : t('auth.mfa_subtitle', { defaultValue: 'Enter the 6-digit code from your authenticator app.' })}
-                </p>
+                />
 
                 <form onSubmit={handleMfaSubmit} className="mt-8">
                   <label className="block text-[13px] font-semibold text-black/70 mb-1.5">
@@ -610,9 +610,10 @@ const LoginClient = (props: LoginClientProps) => {
             ) : magicMode ? (
               <>
                 {/* Passwordless "email me a link" step */}
-                <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">
-                  {t('auth.magic_title', { defaultValue: 'Sign in with a link' })}
-                </h1>
+                <AuthSurfaceHeading
+                  eyebrow="AUTH / MAGIC LINK"
+                  title={t('auth.magic_title', { defaultValue: 'Sign in with a link' })}
+                />
                 {magicSent ? (
                   <>
                     <div className="mt-8 flex flex-col items-center text-center">
@@ -721,14 +722,15 @@ const LoginClient = (props: LoginClientProps) => {
             ) : (
               <>
             {/* Header */}
-            <h1 className="text-[28px] md:text-[32px] font-black text-black tracking-tight leading-tight">{t('auth.welcome_back')}</h1>
-            <p className="mt-2 text-black/45 text-[15px] font-medium">
-              {passwordAllowed
+            <AuthSurfaceHeading
+              eyebrow="AUTH / SIGN IN"
+              title={t('auth.welcome_back')}
+              description={passwordAllowed
                 ? t('auth.enter_credentials')
                 : t('auth.choose_sign_in_method', {
                     defaultValue: 'Choose how you’d like to sign in.',
                   })}
-            </p>
+            />
 
             <div className="mt-8">
               {passwordAllowed && (
