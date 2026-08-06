@@ -50,6 +50,16 @@ class Article(ArticleBase, table=True):
         sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
     )
 
+    @property
+    def public(self) -> bool:
+        """RBAC reads `getattr(resource, 'public', False)` (resource_access.py:732)
+        to decide whether an anonymous/ordinary reader may see a published
+        resource. Articles express that through lock_type rather than a stored
+        column, so derive it — a separate boolean would drift.
+        `authenticated` and `restricted` are both non-public here: the reader
+        must clear the lock check, which _apply_article_lock then applies."""
+        return self.lock_type == ArticleLockType.PUBLIC
+
 
 class ArticleCreate(ArticleBase):
     org_id: int = Field(default=None, foreign_key="organization.id")
