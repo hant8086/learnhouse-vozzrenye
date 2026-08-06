@@ -33,7 +33,7 @@ router = APIRouter()
     "/image",
     response_model=BlockRead,
     summary="Create image block",
-    description="Upload an image file and create a new image block attached to the given activity.",
+    description="Upload an image file and create a new image block attached to the given activity or article.",
     responses={
         200: {"description": "Image block created and returned.", "model": BlockRead},
         401: {"description": "Authentication required"},
@@ -42,14 +42,14 @@ router = APIRouter()
 async def api_create_image_file_block(
     request: Request,
     file_object: UploadFile,
-    activity_uuid: str = Form(),
+    parent_uuid: str = Form(),
     db_session=Depends(get_db_session),
     current_user: Union[PublicUser, AnonymousUser] = Depends(get_current_user),
 ) -> BlockRead:
     """
     Create new image file
     """
-    return await create_image_block(request, file_object, activity_uuid, db_session, current_user)
+    return await create_image_block(request, file_object, parent_uuid, db_session, current_user)
 
 
 @router.get(
@@ -84,7 +84,7 @@ async def api_get_image_file_block(
     "/video",
     response_model=BlockRead,
     summary="Create video block",
-    description="Upload a video file and create a new video block attached to the given activity.",
+    description="Upload a video file and create a new video block attached to the given activity or article.",
     responses={
         200: {"description": "Video block created and returned.", "model": BlockRead},
         401: {"description": "Authentication required"},
@@ -93,14 +93,14 @@ async def api_get_image_file_block(
 async def api_create_video_file_block(
     request: Request,
     file_object: UploadFile,
-    activity_uuid: str = Form(),
+    parent_uuid: str = Form(),
     db_session=Depends(get_db_session),
     current_user: Union[PublicUser, AnonymousUser] = Depends(get_current_user),
 ) -> BlockRead:
     """
     Create new video file
     """
-    return await create_video_block(request, file_object, activity_uuid, db_session, current_user)
+    return await create_video_block(request, file_object, parent_uuid, db_session, current_user)
 
 
 @router.get(
@@ -135,7 +135,7 @@ async def api_get_video_file_block(
     "/pdf",
     response_model=BlockRead,
     summary="Create PDF block",
-    description="Upload a PDF file and create a new PDF block attached to the given activity.",
+    description="Upload a PDF file and create a new PDF block attached to the given activity or article.",
     responses={
         200: {"description": "PDF block created and returned.", "model": BlockRead},
         401: {"description": "Authentication required"},
@@ -144,14 +144,14 @@ async def api_get_video_file_block(
 async def api_create_pdf_file_block(
     request: Request,
     file_object: UploadFile,
-    activity_uuid: str = Form(),
+    parent_uuid: str = Form(),
     db_session=Depends(get_db_session),
     current_user: Union[PublicUser, AnonymousUser] = Depends(get_current_user),
 ) -> BlockRead:
     """
     Create new pdf file
     """
-    return await create_pdf_block(request, file_object, activity_uuid, db_session, current_user)
+    return await create_pdf_block(request, file_object, parent_uuid, db_session, current_user)
 
 
 @router.get(
@@ -186,7 +186,7 @@ async def api_get_pdf_file_block(
     "/audio",
     response_model=BlockRead,
     summary="Create audio block",
-    description="Upload an audio file and create a new audio block attached to the given activity.",
+    description="Upload an audio file and create a new audio block attached to the given activity or article.",
     responses={
         200: {"description": "Audio block created and returned.", "model": BlockRead},
         401: {"description": "Authentication required"},
@@ -195,14 +195,14 @@ async def api_get_pdf_file_block(
 async def api_create_audio_file_block(
     request: Request,
     file_object: UploadFile,
-    activity_uuid: str = Form(),
+    parent_uuid: str = Form(),
     db_session=Depends(get_db_session),
     current_user: Union[PublicUser, AnonymousUser] = Depends(get_current_user),
 ) -> BlockRead:
     """
     Create new audio file
     """
-    return await create_audio_block(request, file_object, activity_uuid, db_session, current_user)
+    return await create_audio_block(request, file_object, parent_uuid, db_session, current_user)
 
 
 @router.get(

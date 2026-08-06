@@ -7,12 +7,12 @@ from src.services.utils.upload_content import upload_file
 async def upload_file_and_return_file_object(
     request: Request,
     file: UploadFile,
-    activity_uuid: str,
+    parent_uuid: str,
     block_id: str,
     list_of_allowed_file_formats: list,
     type_of_block: str,
     org_uuid: str,
-    course_uuid: str,
+    storage_prefix: str,
 ):
     """Upload file for blocks."""
     file_id = str(uuid.uuid4())
@@ -34,7 +34,7 @@ async def upload_file_and_return_file_object(
     # Upload file
     filename = await upload_file(
         file=file,
-        directory=f"courses/{course_uuid}/activities/{activity_uuid}/dynamic/blocks/{type_of_block}/{block_id}",
+        directory=f"{storage_prefix}/dynamic/blocks/{type_of_block}/{block_id}",
         type_of_dir='orgs',
         uuid=org_uuid,
         allowed_types=allowed_types,
@@ -61,5 +61,5 @@ async def upload_file_and_return_file_object(
         file_name=file.filename or name_on_disk,
         file_size=file_size,
         file_type=file.content_type or "application/octet-stream",
-        activity_uuid=activity_uuid,
+        activity_uuid=parent_uuid,
     )

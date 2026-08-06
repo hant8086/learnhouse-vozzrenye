@@ -276,7 +276,7 @@ class TestUploadFileAndReturnFileObject:
             result = await _import_and_call_upload(
                 mock_request, uf, "activity_test", "block_x",
                 ["mp3", "wav", "ogg", "m4a"], "audioBlock",
-                "org_test", "course_test",
+                "org_test", "courses/course_test/activities/activity_test",
             )
 
         assert isinstance(result, BlockFile)
@@ -302,7 +302,7 @@ class TestUploadFileAndReturnFileObject:
             result = await _import_and_call_upload(
                 mock_request, uf, "activity_test", "block_y",
                 ["mp4", "webm"], "videoBlock",
-                "org_test", "course_test",
+                "org_test", "courses/course_test/activities/activity_test",
             )
 
         assert isinstance(result, BlockFile)
@@ -336,13 +336,13 @@ async def _import_and_call_create_video(request, file, activity_uuid, db, curren
 
 
 async def _import_and_call_upload(
-    request, file, activity_uuid, block_id, allowed_formats, type_of_block,
-    org_uuid, course_uuid,
+    request, file, parent_uuid, block_id, allowed_formats, type_of_block,
+    org_uuid, storage_prefix,
 ):
     from src.services.blocks.utils.upload_files import (
         upload_file_and_return_file_object,
     )
     return await upload_file_and_return_file_object(
-        request, file, activity_uuid, block_id, allowed_formats, type_of_block,
-        org_uuid, course_uuid,
+        request, file, parent_uuid, block_id, allowed_formats, type_of_block,
+        org_uuid, storage_prefix,
     )

@@ -1,49 +1,27 @@
 from datetime import datetime
 from uuid import uuid4
-from src.db.organizations import Organization
 from fastapi import HTTPException, status, UploadFile, Request
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.db.courses.activities import Activity
 from src.db.courses.blocks import Block, BlockRead, BlockTypeEnum
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
 from src.security.org_auth import is_org_member, enforce_org_mfa
 from src.security.rbac import check_resource_access, AccessAction
 from src.services.blocks.utils.upload_files import upload_file_and_return_file_object
+from src.services.blocks.utils.parents import (
+    resolve_block_parent,
+    resolve_block_parent_for_block,
+)
 
 
 async def create_video_block(
-    request: Request, video_file: UploadFile, activity_uuid: str, db_session: AsyncSession,
+    request: Request, video_file: UploadFile, parent_uuid: str, db_session: AsyncSession,
     current_user: PublicUser | AnonymousUser = None,
 ):
-    statement = select(Activity).where(Activity.activity_uuid == activity_uuid)
-    activity = (await db_session.execute(statement)).scalars().first()
-
-    if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
-
     block_type = "videoBlock"
 
-    # get org_uuid
-    statement = select(Organization).where(Organization.id == activity.org_id)
-    org = (await db_session.execute(statement)).scalars().first()
-
-    if not org:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
-        )
-
-    # get course
-    statement = select(Course).where(Course.id == activity.course_id)
-    course = (await db_session.execute(statement)).scalars().first()
-
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+    parent = await resolve_block_parent(parent_uuid, db_session)
 
     # Require authentication and always enforce UPDATE access. current_user
     # defaults to None, so a guarded check would silently fail open for any
@@ -53,7 +31,7 @@ async def create_video_block(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    await check_resource_access(request, db_session, current_user, course.course_uuid, AccessAction.UPDATE)
+    await check_resource_access(request, db_session, current_user, parent.access_uuid, AccessAction.UPDATE)
 
     # get block id
     block_uuid = str(f"block_{uuid4()}")
@@ -61,21 +39,22 @@ async def create_video_block(
     block_data = await upload_file_and_return_file_object(
         request,
         video_file,
-        activity_uuid,
+        parent_uuid,
         block_uuid,
         ["mp4", "webm"],
         block_type,
-        org.org_uuid,
-        str(course.course_uuid),
+        parent.org_uuid,
+        parent.storage_prefix,
     )
 
     # create block
     block = Block(
-        activity_id=activity.id if activity.id else 0,
+        activity_id=parent.activity_id,
         block_type=BlockTypeEnum.BLOCK_VIDEO,
         content=block_data.model_dump(),
-        org_id=org.id if org.id else 0,
-        course_id=course.id if course.id else 0,
+        org_id=parent.org_id,
+        course_id=parent.course_id,
+        article_id=parent.article_id,
         block_uuid=block_uuid,
         creation_date=str(datetime.now()),
         update_date=str(datetime.now()),
@@ -91,7 +70,7 @@ async def create_video_block(
     # player uses the faststart MP4 fallback.
     try:
         from src.services.utils.hls_jobs import enqueue_block
-        enqueue_block(activity_uuid, block_uuid)
+        enqueue_block(parent_uuid, block_uuid)
     except Exception:  # pragma: no cover
         pass
 
@@ -111,33 +90,36 @@ async def get_video_block(
             status_code=status.HTTP_404_NOT_FOUND, detail="Video file does not exist"
         )
 
-    # SECURITY: enforce RBAC on the owning course so the block UUID does not
-    # act as a capability token across organizations.
-    activity = (await db_session.execute(
-        select(Activity).where(Activity.id == block.activity_id)
-    )).scalars().first()
-    if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Video file does not exist"
-        )
-    course = (await db_session.execute(
-        select(Course).where(Course.id == activity.course_id)
-    )).scalars().first()
-    if not course:
+    # SECURITY: resolve the block's owning parent (course for activities,
+    # article for standalone pages) and enforce RBAC so that a user who
+    # obtains a block UUID from one org cannot read blocks from another org.
+    # Public+published content remains readable anonymously via
+    # check_resource_access's PUBLIC_VIEW branch.
+    parent = await resolve_block_parent_for_block(block, db_session)
+    if parent is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Video file does not exist"
         )
     await check_resource_access(
-        request, db_session, current_user, course.course_uuid, AccessAction.READ
+        request, db_session, current_user, parent.access_uuid, AccessAction.READ
     )
 
-    if not course.public and isinstance(current_user, PublicUser):
-        if not await is_org_member(current_user.id, block.org_id, db_session):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to this resource",
-            )
+    # Belt-and-braces cross-tenant check: the RBAC "no usergroup linked" rule
+    # grants access to any authenticated user, which is too permissive for
+    # private course media. For non-public courses, additionally require the
+    # caller to be a member of the owning org. Public+published content stays
+    # anonymously readable through the RBAC branch above.
+    if parent.course_id is not None and isinstance(current_user, PublicUser):
+        course = (await db_session.execute(
+            select(Course).where(Course.id == parent.course_id)
+        )).scalars().first()
+        if not course or not course.public:
+            if not course or not await is_org_member(current_user.id, block.org_id, db_session):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You do not have access to this resource",
+                )
 
-        # Org-wide two-factor policy, applied after the membership gate.
-        await enforce_org_mfa(current_user.id, block.org_id, db_session)  # pragma: no cover - guard mirrors tested call sites; enforce_org_mfa covered centrally
+            # Org-wide two-factor policy, applied after the membership gate.
+            await enforce_org_mfa(current_user.id, block.org_id, db_session)  # pragma: no cover - guard mirrors tested call sites; enforce_org_mfa covered centrally
     return BlockRead.model_validate(block)
