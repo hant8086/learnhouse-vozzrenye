@@ -38,12 +38,11 @@ function ArticlesHome(params: ArticleProps) {
   const [newArticleModal, setNewArticleModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { data: articlesData, isLoading } = useArticles(org?.id)
+  // Drafts included: creation defaults to unpublished, so without this the
+  // article an author just made would be missing from the only screen that can
+  // publish it. The API honours the flag for org admins only.
+  const { data: articlesData, isLoading } = useArticles(org?.id, undefined, true)
 
-  // BACKEND LIMITATION (flagged in the task report): the articles router only
-  // exposes `published_only=True` (GET /articles/?org_id=… has no
-  // include_unpublished flag), so this table cannot show unpublished articles.
-  // The per-row publish toggle below can still flip a row's published state.
   const allArticles = asArray<any>(articlesData)
 
   const filteredArticles = useMemo(() => {
@@ -56,7 +55,10 @@ function ArticlesHome(params: ArticleProps) {
   }, [allArticles, searchQuery])
 
   const mutateArticles = () => {
-    if (org?.id) queryClient.invalidateQueries({ queryKey: queryKeys.article.list(org.id) })
+    if (org?.id) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.article.list(org.id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.article.listAll(org.id) })
+    }
     revalidateTags(['articles'], orgslug)
   }
 
@@ -244,7 +246,7 @@ function ArticlesHome(params: ArticleProps) {
                     </Link>
                     <Link
                       prefetch={false}
-                      href={`/article/${article.article_uuid}/edit`}
+                      href={`/editor/article/${article.article_uuid}/edit`}
                       className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                       aria-label={t('articles.edit', 'Edit')}
                     >

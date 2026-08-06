@@ -28,13 +28,23 @@ export function useArticle(articleUuid: string, initialData?: any) {
   })
 }
 
-export function useArticles(orgId: number, initialData?: any) {
+export function useArticles(
+  orgId: number,
+  initialData?: any,
+  /** Dashboard reads ask for drafts; the public catalog must not, or an admin's
+   *  draft rows would land in the cache entry the catalog reads. Hence the
+   *  separate query key. */
+  includeUnpublished = false
+) {
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token as string | undefined
 
   return useQuery({
-    queryKey: queryKeys.article.list(orgId),
-    queryFn: () => getArticlesWithAuthHeader(orgId, {}, accessToken),
+    queryKey: includeUnpublished
+      ? queryKeys.article.listAll(orgId)
+      : queryKeys.article.list(orgId),
+    queryFn: () =>
+      getArticlesWithAuthHeader(orgId, {}, accessToken, includeUnpublished),
     enabled: !!orgId,
     staleTime: 60_000,
     initialData: initialData ?? undefined,

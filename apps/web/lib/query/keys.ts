@@ -27,6 +27,7 @@ export const queryKeys = {
   article: {
     detail: (uuid: string) => ['article', uuid] as const,
     list: (orgId: number) => ['articles', orgId] as const,
+    listAll: (orgId: number) => ['articles', orgId, 'with-drafts'] as const,
     editorBootstrap: (uuid: string) => ['article', uuid, 'editor-bootstrap'] as const,
   },
   trail: {

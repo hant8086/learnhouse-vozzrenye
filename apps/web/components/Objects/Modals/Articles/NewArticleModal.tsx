@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
@@ -14,7 +14,7 @@ interface NewArticleModalProps {
 
 /**
  * Create-article modal: name (required) and an optional excerpt. On success it
- * routes to `/article/<uuid>/edit` — the block editor route from Task 7 — so
+ * routes to `/editor/article/<uuid>/edit` — the block editor route from Task 7 — so
  * the creator lands directly in the body editor.
  */
 export default function NewArticleModal(props: NewArticleModalProps) {
@@ -28,7 +28,7 @@ export default function NewArticleModal(props: NewArticleModalProps) {
   const [excerpt, setExcerpt] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     const trimmedName = name.trim()
     if (!trimmedName) {
@@ -59,7 +59,7 @@ export default function NewArticleModal(props: NewArticleModalProps) {
       }
       toast.success(t('articles.create_success', 'Article created'))
       props.closeModal()
-      router.push(`/article/${articleUuid}/edit`)
+      router.push(`/editor/article/${articleUuid}/edit`)
     } catch (error: any) {
       toast.error(error?.message || t('articles.create_error', 'Failed to create article'))
       setSubmitting(false)

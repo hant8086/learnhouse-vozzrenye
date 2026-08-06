@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -35,7 +36,7 @@ function Articles(props: ArticlesProps) {
   const session = useLHSession() as any
   const { isAdmin: isUserAdmin } = useAdminStatus()
   const isAuthenticated = session?.status === 'authenticated'
-  const [newArticleModal, setNewArticleModal] = React.useState(false)
+  const [newArticleModal, setNewArticleModal] = useState(false)
 
   // FORK CHANGE (SEO): the catalog is a server-rendered list of teasers — the
   // API delivers locked articles with `is_locked=true` and empty content, so

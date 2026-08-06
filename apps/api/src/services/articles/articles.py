@@ -359,6 +359,17 @@ async def list_articles(
     limit = min(limit, 100)
     offset = (page - 1) * limit
 
+    is_anon = isinstance(current_user, AnonymousUser)
+    acting_user_id = resolve_acting_user_id(current_user)
+    admin = False if is_anon else await is_org_admin(acting_user_id, org_id, db_session)
+
+    # Drafts are admin-only. `published_only=False` is what the dashboard asks
+    # for, so an author can find the article they just created — creation
+    # defaults to unpublished. For anyone else the flag is ignored rather than
+    # refused, so a hand-crafted query cannot widen the catalog.
+    if not admin:
+        published_only = True
+
     statement = (
         select(Article, User)
         .outerjoin(User, Article.last_modified_by_id == User.id)  # type: ignore
@@ -376,11 +387,6 @@ async def list_articles(
     results = (await db_session.execute(statement)).all()
     if not results:
         return []
-
-    is_anon = isinstance(current_user, AnonymousUser)
-    acting_user_id = resolve_acting_user_id(current_user)
-
-    admin = False if is_anon else await is_org_admin(acting_user_id, org_id, db_session)
 
     accessible: set = set()
     if not admin and not is_anon:

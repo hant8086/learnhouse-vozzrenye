@@ -85,10 +85,16 @@ export async function getArticleWithAuthHeader(
 export async function getArticlesWithAuthHeader(
   org_id: number,
   next: any,
-  access_token: string | null | undefined
+  access_token: string | null | undefined,
+  /** Ask for drafts too. The API honours this for org admins only, so a
+   *  non-admin caller silently gets the published catalog either way. */
+  include_unpublished = false
 ) {
+  const query = include_unpublished
+    ? `org_id=${org_id}&include_unpublished=true`
+    : `org_id=${org_id}`
   const result = await fetch(
-    `${getAPIUrl()}articles/?org_id=${org_id}`,
+    `${getAPIUrl()}articles/?${query}`,
     RequestBodyWithAuthHeader('GET', null, next, access_token || undefined)
   )
   const res = await result.json()

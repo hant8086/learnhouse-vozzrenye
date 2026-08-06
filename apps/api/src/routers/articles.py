@@ -83,6 +83,10 @@ async def api_list_articles(
     org_id: int = Query(..., description="Organization ID"),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=100),
+    include_unpublished: bool = Query(
+        default=False,
+        description="Include drafts. Honoured for org admins only; ignored otherwise.",
+    ),
     current_user: PublicUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> List[ArticleRead]:
@@ -90,7 +94,13 @@ async def api_list_articles(
     List articles for an organization.
     """
     return await list_articles(
-        request, org_id, current_user, db_session, page=page, limit=limit
+        request,
+        org_id,
+        current_user,
+        db_session,
+        page=page,
+        limit=limit,
+        published_only=not include_unpublished,
     )
 
 
