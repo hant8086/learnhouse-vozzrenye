@@ -67,6 +67,15 @@ RESOURCE_CONFIGS: dict[str, ResourceConfig] = {
         model_name="Board",
         uuid_field="board_uuid",
     ),
+    "articles": ResourceConfig(
+        resource_type="articles",
+        uuid_prefix="article_",
+        has_published_field=True,
+        supports_usergroups=True,   # restricted lock_type binds usergroups
+        supports_authorship=True,   # resourceauthor is resource_uuid-keyed
+        model_name="Article",
+        uuid_field="article_uuid",
+    ),
 
     # ============================================
     # CHILD RESOURCES (inherit access from parent)
