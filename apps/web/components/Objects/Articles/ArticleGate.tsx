@@ -52,7 +52,13 @@ export default function ArticleGate(props: ArticleGateProps) {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-8 text-center">
+      {/* `article-gated-body` marks the region that stands in for the paid body.
+          The JSON-LD in `page.tsx` points `hasPart.cssSelector` at this class to
+          tell Google which part of the page is not free — without it here the
+          selector would resolve to nothing on exactly the pages that carry the
+          paywall markup, and the whole `isAccessibleForFree: false` block would
+          be ignored. */}
+      <div className="article-gated-body bg-white rounded-2xl border border-gray-200/80 shadow-sm p-8 text-center">
         <div className="mx-auto w-14 h-14 rounded-full bg-rose-50 flex items-center justify-center mb-4">
           <Lock className="text-rose-500" size={24} />
         </div>

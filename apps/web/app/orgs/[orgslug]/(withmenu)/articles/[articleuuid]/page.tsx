@@ -118,7 +118,18 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   const title = seo.title || article?.name || 'Article'
   const description = seo.description || article?.excerpt || ''
 
-  const noindex = article?.is_locked || article?.published === false
+  // A gated article is still worth indexing. The delivered HTML carries the
+  // teaser plus the `isAccessibleForFree: false` / `hasPart` markup above,
+  // which is the shape Google documents for paywalled content: the excerpt
+  // ranks, and the reader lands on the login gate. `is_locked` is computed per
+  // requester and a crawler is always anonymous, so gating the index flag on it
+  // would have meant no restricted article was ever indexed — and the paywall
+  // markup would have been dead weight.
+  //
+  // Two cases stay out: an unpublished draft, and a gated article with no
+  // excerpt — a bare lock panel is thin content and reads as a soft 404.
+  const noindex =
+    article?.published === false || (article?.is_locked && !description)
 
   return {
     title,

@@ -18,6 +18,8 @@ import { asArray } from '@services/utils/ts/requests'
 
 interface ArticlesProps {
   orgslug: string
+  /** Server-fetched catalog, so the delivered HTML already carries the cards. */
+  initialArticles?: any
 }
 
 interface ArticleLike {
@@ -38,10 +40,12 @@ function Articles(props: ArticlesProps) {
   const isAuthenticated = session?.status === 'authenticated'
   const [newArticleModal, setNewArticleModal] = useState(false)
 
-  // FORK CHANGE (SEO): the catalog is a server-rendered list of teasers — the
-  // API delivers locked articles with `is_locked=true` and empty content, so
-  // gated articles show up as cards (name/excerpt), never hidden rows.
-  const { data: articlesData, isLoading } = useArticles(org?.id)
+  // FORK CHANGE (SEO): seeded from the server fetch in `page.tsx`, so the first
+  // render — the one that reaches the delivered HTML — already lists every
+  // teaser. The API delivers locked articles with `is_locked=true` and empty
+  // content, so gated articles show up as cards (name/excerpt), never hidden
+  // rows. Drafts are not requested here: this is the public catalog.
+  const { data: articlesData, isLoading } = useArticles(org?.id, props.initialArticles)
 
   const allArticles = asArray<ArticleLike>(articlesData)
 
