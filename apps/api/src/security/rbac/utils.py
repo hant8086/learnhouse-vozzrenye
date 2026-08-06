@@ -26,6 +26,10 @@ async def check_element_type(element_uuid):
         return "media"
     elif element_uuid.startswith("activity_"):
         return "activities"
+    elif element_uuid.startswith("article_"):
+        # Articles are a primary resource: access is decided on the article
+        # itself (no parent course/chapter to inherit from).
+        return "articles"
     elif element_uuid.startswith("role_"):
         return "roles"
     elif element_uuid.startswith("community_"):
@@ -129,6 +133,7 @@ async def get_element_organization_id(
     from src.db.courses.courses import Course
     from src.db.courses.chapters import Chapter
     from src.db.courses.activities import Activity
+    from src.db.articles import Article
     from src.db.organizations import Organization
     from src.db.roles import Role
     from src.db.usergroups import UserGroup
@@ -145,6 +150,11 @@ async def get_element_organization_id(
     elif element_type == "activities":
         # Activity stores org_id directly, no need to join Course
         return (await db_session.execute(select(Activity.org_id).where(Activity.activity_uuid == element_uuid))).scalars().first()
+
+    elif element_type == "articles":
+        # Articles are a primary resource: access is decided on the article
+        # itself, and Article stores org_id directly.
+        return (await db_session.execute(select(Article.org_id).where(Article.article_uuid == element_uuid))).scalars().first()
 
     elif element_type == "folders":
         from src.db.folders.folders import Folder

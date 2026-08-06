@@ -919,6 +919,11 @@ class ResourceAccessChecker:
             statement = select(Course).where(Course.course_uuid == resource_uuid)
             resource = (await self.db_session.execute(statement)).scalars().first()
 
+        elif config.resource_type == "articles":
+            from src.db.articles import Article
+            statement = select(Article).where(Article.article_uuid == resource_uuid)
+            resource = (await self.db_session.execute(statement)).scalars().first()
+
         elif config.resource_type == "podcasts":
             from src.db.podcasts.podcasts import Podcast
             statement = select(Podcast).where(Podcast.podcast_uuid == resource_uuid)
