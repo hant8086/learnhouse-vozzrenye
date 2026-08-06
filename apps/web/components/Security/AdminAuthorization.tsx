@@ -19,6 +19,8 @@ const ADMIN_PATHS = [
   '/dash/users',
   '/dash/courses/*',
   '/dash/courses',
+  '/dash/articles/*',
+  '/dash/articles',
   '/dash/org/settings/general',
 ];
 

@@ -411,6 +411,16 @@ function DashLeftMenu() {
               })()}
             </HoverMenu>
 
+            {/* Articles — standalone pages outside any course */}
+            <MenuLink
+              href="/dash/articles"
+              icon={<Book size={20} weight="fill" />}
+              label={t('articles.articles', 'Articles')}
+              isCollapsed={isCollapsed}
+              active={isActivePath('/dash/articles')}
+              onClick={() => track(AnalyticsEvent.DashboardNavClicked, { section: 'articles' })}
+            />
+
             {/* Assignments with hover menu */}
             <div onMouseEnter={fetchAssignments}>
             <HoverMenu
