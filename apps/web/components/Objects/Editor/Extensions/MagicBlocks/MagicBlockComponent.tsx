@@ -7,7 +7,7 @@ import Image from 'next/image'
 import lrnaiIcon from 'public/lrnai_icon.png'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { useOptionalCourse } from '@components/Contexts/CourseContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { cn } from '@/lib/utils'
 import MagicBlockModal from './MagicBlockModal'
@@ -43,7 +43,7 @@ interface Course {
 interface ExtendedNodeViewProps extends Omit<NodeViewProps, 'extension'> {
   extension: Node & {
     options: {
-      activity: {
+      activity?: {
         activity_uuid: string
         name: string
         content?: any
@@ -57,8 +57,12 @@ function MagicBlockComponent(props: ExtendedNodeViewProps) {
   const { node, extension, updateAttributes } = props
   const editorState = useEditorProvider() as EditorState
   const session = useLHSession() as Session
-  const course = useCourse() as Course | null
+  const course = useOptionalCourse() as Course | null
   const orgContext = useOrg() as any
+
+  // FORK CHANGE (articles): MagicBlock generation is scoped to an activity;
+  // outside a course there is nothing to scope it to, so the modal stays shut.
+  const magicActivityUuid = extension.options.activity?.activity_uuid
 
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [isPreviewModalOpen, setIsPreviewModalOpen] = React.useState(false)
@@ -137,7 +141,7 @@ function MagicBlockComponent(props: ExtendedNodeViewProps) {
 
   // Build context from course and activity
   const buildContext = (): MagicBlockContext => {
-    const activityContent = extension.options.activity.content
+    const activityContent = extension.options.activity?.content
     let contentSummary = ''
 
     if (activityContent?.content) {
@@ -164,7 +168,7 @@ function MagicBlockComponent(props: ExtendedNodeViewProps) {
     return {
       course_title: course?.courseStructure?.name || 'Course',
       course_description: course?.courseStructure?.description || '',
-      activity_name: extension.options.activity.name || 'Activity',
+      activity_name: extension.options.activity?.name || 'Activity',
       activity_content_summary: contentSummary,
     }
   }
@@ -403,13 +407,13 @@ function MagicBlockComponent(props: ExtendedNodeViewProps) {
       </NodeViewWrapper>
 
       {/* Generation Modal */}
-      {accessToken && (
+      {accessToken && magicActivityUuid && (
         <MagicBlockModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSave}
           blockUuid={blockUuid}
-          activityUuid={extension.options.activity.activity_uuid}
+          activityUuid={magicActivityUuid}
           context={buildContext()}
           accessToken={accessToken}
           initialSessionUuid={sessionUuid}

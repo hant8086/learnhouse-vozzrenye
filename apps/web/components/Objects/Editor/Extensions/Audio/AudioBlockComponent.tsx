@@ -11,7 +11,7 @@ import { uploadNewAudioFile, generateAudioBlock, generateScript, type GenerateAu
 import { getAudioBlockStreamUrl, getPodcastAudioStreamUrl } from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useOrgMembership } from '@components/Contexts/OrgContext'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { useOptionalCourse } from '@components/Contexts/CourseContext'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { constructAcceptValue } from '@/lib/constants'
@@ -106,9 +106,11 @@ interface Session {
 interface ExtendedNodeViewProps extends Omit<NodeViewProps, 'extension'> {
   extension: Node & {
     options: {
-      activity: {
+      activity?: {
         activity_uuid: string
       }
+      // FORK CHANGE (articles): opaque block parent — `activity_…`/`article_…`.
+      parentUuid?: string
     }
   }
 }
@@ -314,7 +316,12 @@ function AudioBlockComponent(props: ExtendedNodeViewProps) {
   const { node, extension, updateAttributes } = props
   const org = useOrg() as Organization | null
   const { orgslug } = useOrgMembership()
-  const course = useCourse() as Course | null
+  const course = useOptionalCourse() as Course | null
+  const parentUuid =
+    extension.options.parentUuid || extension.options.activity?.activity_uuid || ''
+  // AI narration resolves its org from an Activity row (routers/ai/audio.py),
+  // so it is available only inside a course.
+  const aiActivityUuid = extension.options.activity?.activity_uuid
   const editorState = useEditorProvider() as EditorState
   const session = useLHSession() as Session
 
@@ -494,7 +501,7 @@ function AudioBlockComponent(props: ExtendedNodeViewProps) {
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => Math.min(prev + 10, 90))
       }, 200)
-      const object = await uploadNewAudioFile(file, extension.options.activity.activity_uuid, access_token)
+      const object = await uploadNewAudioFile(file, parentUuid, access_token)
       clearInterval(progressInterval)
       setUploadProgress(100)
       const newBlockObject: AudioBlockObject = { ...object, source_type: 'upload', size: selectedSize }
@@ -516,13 +523,19 @@ function AudioBlockComponent(props: ExtendedNodeViewProps) {
       setError('Write some text to generate audio from.')
       return
     }
+    if (!aiActivityUuid) {
+      // Standalone article: the generation endpoint resolves its org from an
+      // Activity row, so it has nothing to work with here.
+      setError('AI audio generation is only available inside a course activity.')
+      return
+    }
     try {
       setIsGenerating(true)
       setError(null)
       // 'speak' narrates a single voice, same as plain text-to-speech.
       const object = await generateAudioBlock(
         {
-          activity_uuid: extension.options.activity.activity_uuid,
+          activity_uuid: aiActivityUuid as string,
           mode: genMode === 'podcast' ? 'podcast' : 'tts',
           text: genText,
           voice: genMode !== 'podcast' ? genVoice : undefined,
@@ -552,12 +565,16 @@ function AudioBlockComponent(props: ExtendedNodeViewProps) {
       setError('Add a topic or some text to generate a script from.')
       return
     }
+    if (!aiActivityUuid) {
+      setError('AI script generation is only available inside a course activity.')
+      return
+    }
     try {
       setIsGeneratingScript(true)
       setError(null)
       const res = await generateScript(
         {
-          activity_uuid: extension.options.activity.activity_uuid,
+          activity_uuid: aiActivityUuid as string,
           mode: genMode === 'podcast' ? 'podcast' : 'speak',
           text: genText,
           speakers: genMode === 'podcast' ? genSpeakers : undefined,
@@ -596,7 +613,7 @@ function AudioBlockComponent(props: ExtendedNodeViewProps) {
       ? getAudioBlockStreamUrl(
           org.org_uuid,
           course.courseStructure.course_uuid,
-          blockObject.content.activity_uuid || extension.options.activity.activity_uuid,
+          blockObject.content.activity_uuid || parentUuid,
           blockObject.block_uuid || '',
           `${blockObject.content.file_id}.${blockObject.content.file_format}`
         )

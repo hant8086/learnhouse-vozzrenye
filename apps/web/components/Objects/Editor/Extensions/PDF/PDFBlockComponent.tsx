@@ -3,9 +3,9 @@ import React, { useEffect } from 'react'
 import { FileText, DownloadSimple, ArrowsOut, UploadSimple, CircleNotch, WarningCircle } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import { uploadNewPDFFile } from '../../../../../services/blocks/Pdf/pdf'
-import { getActivityBlockMediaDirectory } from '@services/media/media'
+import { getBlockMediaDirectory } from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { useOptionalCourse } from '@components/Contexts/CourseContext'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { constructAcceptValue } from '@/lib/constants';
@@ -17,7 +17,7 @@ const SUPPORTED_FILES = constructAcceptValue(['pdf'])
 function PDFBlockComponent(props: any) {
   const { t } = useTranslation()
   const org = useOrg() as any
-  const course = useCourse() as any
+  const course = useOptionalCourse() as any
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token;
   const [pdf, setPDF] = React.useState<File | null>(null)
@@ -34,6 +34,12 @@ function PDFBlockComponent(props: any) {
     : null
   const editorState = useEditorProvider() as any
   const isEditable = editorState.isEditable
+
+  // FORK CHANGE (articles): opaque block parent — `activity_…` or `article_…`.
+  const parentUuid =
+    props.extension.options.parentUuid ||
+    props.extension.options.activity?.activity_uuid
+  const blockParentUuid = blockObject?.content?.activity_uuid || parentUuid
 
   const handlePDFChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -52,7 +58,7 @@ function PDFBlockComponent(props: any) {
     try {
       let object = await uploadNewPDFFile(
         pdf,
-        props.extension.options.activity.activity_uuid, access_token,
+        parentUuid, access_token,
         (p) => setProgress(p)
       )
       setProgress(100)
@@ -74,10 +80,10 @@ function PDFBlockComponent(props: any) {
   const handleDownload = () => {
     if (!fileId) return;
 
-    const pdfUrl = getActivityBlockMediaDirectory(
+    const pdfUrl = getBlockMediaDirectory(
       org?.org_uuid,
       course?.courseStructure.course_uuid,
-      blockObject.content.activity_uuid || props.extension.options.activity.activity_uuid,
+      blockParentUuid,
       blockObject.block_uuid,
       fileId,
       'pdfBlock'
@@ -98,10 +104,10 @@ function PDFBlockComponent(props: any) {
     setIsModalOpen(true);
   };
 
-  const pdfUrl = blockObject ? getActivityBlockMediaDirectory(
+  const pdfUrl = blockObject ? getBlockMediaDirectory(
     org?.org_uuid,
     course?.courseStructure.course_uuid,
-    blockObject.content.activity_uuid || props.extension.options.activity.activity_uuid,
+    blockParentUuid,
     blockObject.block_uuid,
     fileId || '',
     'pdfBlock'

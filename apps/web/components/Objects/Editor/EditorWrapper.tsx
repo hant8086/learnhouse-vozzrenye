@@ -2,6 +2,10 @@
 import { default as React, type JSX } from 'react';
 import Editor from './Editor'
 import { updateActivity, getActivityState, getActivity } from '@services/courses/activities'
+import {
+  updateArticleContent,
+  getArticleWithAuthHeader,
+} from '@services/articles/articles'
 import { toast } from 'react-hot-toast'
 import Toast from '@components/Objects/StyledElements/Toast/Toast'
 import { OrgProvider } from '@components/Contexts/OrgContext'
@@ -59,8 +63,13 @@ export interface ConflictInfo {
 
 interface EditorWrapperProps {
   content: string
-  activity: any
-  course: any
+  /** Present when editing a course activity. */
+  activity?: any
+  /** Present when editing a course activity. */
+  course?: any
+  /** FORK CHANGE (articles): present when editing a standalone article.
+   *  Mutually exclusive with `activity`. */
+  article?: any
   org: any
   onEditorReady?: () => void
 }
@@ -71,12 +80,21 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token;
 
+  const isArticle = !!props.article
+  const doc = props.article || props.activity
+  // The uuid blocks are uploaded under, and where "view live" points. Articles
+  // have no course, so both are derived from the document itself.
+  const parentUuid = isArticle ? props.article.article_uuid : props.activity.activity_uuid
+  const liveHref = isArticle
+    ? `/articles/${props.article.slug}`
+    : `/course/${props.course?.course_uuid?.substring(7)}/activity/${props.activity.activity_uuid.substring(9)}`
+
   // Track the current version we loaded with
   const [localVersion, setLocalVersion] = React.useState<number>(
-    props.activity.current_version || 1
+    doc.current_version || 1
   )
   const [_localUpdateDate, setLocalUpdateDate] = React.useState<string>(
-    props.activity.update_date || ''
+    doc.update_date || ''
   )
 
   // Normalize content to fix AI-generated mark types (strong -> bold, em -> italic).
@@ -106,6 +124,9 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
   // Check for remote changes (conflict detection)
   const checkForConflicts = React.useCallback(async (): Promise<ConflictInfo | null> => {
     if (!access_token) return null;
+    // Articles have no version-state endpoint; there is nothing to compare, so
+    // report "no conflict" rather than inventing one.
+    if (isArticle) return null;
 
     try {
       const remoteState = await getActivityState(
@@ -127,13 +148,21 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
       console.error('Error checking for conflicts:', error);
       return null;
     }
-  }, [props.activity.activity_uuid, access_token, localVersion]);
+  }, [props.activity?.activity_uuid, access_token, localVersion, isArticle]);
 
   // Fetch remote content for merging
   const fetchRemoteContent = React.useCallback(async () => {
     if (!access_token) return null;
 
     try {
+      if (isArticle) {
+        const remoteArticle = await getArticleWithAuthHeader(
+          props.article.article_uuid,
+          {},
+          access_token
+        );
+        return remoteArticle?.content;
+      }
       const remoteActivity = await getActivity(
         props.activity.activity_uuid,
         null,
@@ -144,7 +173,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
       console.error('Error fetching remote content:', error);
       return null;
     }
-  }, [props.activity.activity_uuid, access_token]);
+  }, [props.activity?.activity_uuid, props.article?.article_uuid, access_token, isArticle]);
 
   async function setContent(content: any, forceOverwrite: boolean = false) {
     // Check for conflicts before saving (unless force overwrite)
@@ -162,8 +191,11 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
     }
 
     try {
+      const save = isArticle
+        ? updateArticleContent(props.article.article_uuid, content, access_token)
+        : updateActivity({ content }, props.activity.activity_uuid, access_token)
       const result = await toast.promise(
-        updateActivity({ content }, props.activity.activity_uuid, access_token).then(res => {
+        save.then(res => {
           if (!res.success) {
             throw res;
           }
@@ -203,6 +235,9 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
             org={props.org}
             course={props.course}
             activity={props.activity}
+            article={props.article}
+            parentUuid={parentUuid}
+            liveHref={liveHref}
             content={normalizedContent}
             setContent={setContent}
             session={session}

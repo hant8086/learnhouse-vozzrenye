@@ -31,7 +31,7 @@ import {
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { useOptionalCourse } from '@components/Contexts/CourseContext'
 import { uploadSqliteDb } from '@services/blocks/CodePlayground/sqlite'
 import { getAPIUrl } from '@services/config/config'
 import { PLAYGROUND_LANGUAGES, getLanguageById } from './languages'
@@ -428,7 +428,7 @@ const CodePlaygroundComponent: React.FC = (props: any) => {
   const editorState = useEditorProvider() as any
   const session = useLHSession() as any
   const org = useOrg() as any
-  const course = useCourse() as any
+  const course = useOptionalCourse() as any
   const isEditable = editorState?.isEditable ?? true
   const accessToken = session?.data?.tokens?.access_token
 

@@ -226,6 +226,18 @@ export function useCourse() {
   return context
 }
 
+/**
+ * FORK CHANGE (articles): course state when there is one, `null` when there
+ * isn't. Block components are shared between the activity editor (wrapped in
+ * CourseProvider) and the standalone-article editor, which has no course at
+ * all — and `useCourse()` throws outside a provider. Deliberately not a
+ * synthetic course object: a fake uuid would silently build wrong media URLs
+ * and wrong links.
+ */
+export function useOptionalCourse(): CourseState | null {
+  return useContext(CourseContext)
+}
+
 export function useCourseDispatch() {
   const context = useContext(CourseDispatchContext)
   if (!context) {

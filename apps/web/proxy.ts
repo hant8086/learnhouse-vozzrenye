@@ -436,6 +436,10 @@ export default async function proxy(req: NextRequest) {
   if (pathname.match(/^\/course\/[^/]+\/activity\/[^/]+\/edit$/)) {
     return NextResponse.rewrite(new URL(`/editor${pathname}`, req.url))
   }
+  // FORK CHANGE (articles): standalone-article editor, same bypass shape.
+  if (pathname.match(/^\/article\/[^/]+\/edit$/)) {
+    return NextResponse.rewrite(new URL(`/editor${pathname}`, req.url))
+  }
   if (pathname.startsWith('/board/')) {
     const response = NextResponse.rewrite(new URL(pathname + search, req.url))
     setInstanceCookies(response, instance)

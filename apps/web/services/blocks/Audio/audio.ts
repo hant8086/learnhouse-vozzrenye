@@ -78,12 +78,12 @@ export async function generateScript(
 
 export async function uploadNewAudioFile(
   file: any,
-  activity_uuid: string,
+  parent_uuid: string,
   access_token: string
 ) {
   const formData = new FormData()
   formData.append('file_object', file)
-  formData.append('activity_uuid', activity_uuid)
+  formData.append('parent_uuid', parent_uuid)
 
   const result = await fetch(
     `${getAPIUrl()}blocks/audio`,

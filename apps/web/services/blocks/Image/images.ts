@@ -6,14 +6,14 @@ import {
 
 export async function uploadNewImageFile(
   file: any,
-  activity_uuid: string,
+  parent_uuid: string,
   access_token: string,
   onProgress?: (_percent: number) => void
 ) {
   // Send file thumbnail as form data
   const formData = new FormData()
   formData.append('file_object', file)
-  formData.append('activity_uuid', activity_uuid)
+  formData.append('parent_uuid', parent_uuid)
 
   return uploadFormWithProgress(
     `${getAPIUrl()}blocks/image`,

@@ -4,9 +4,9 @@ import { Resizable } from 're-resizable'
 import { Image, DownloadSimple, TextAlignLeft, TextAlignCenter, TextAlignRight, ArrowsOut, UploadSimple, CircleNotch, WarningCircle } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import { uploadNewImageFile } from '../../../../../services/blocks/Image/images'
-import { getActivityBlockMediaDirectory } from '@services/media/media'
+import { getBlockMediaDirectory } from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { useOptionalCourse } from '@components/Contexts/CourseContext'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { constructAcceptValue } from '@/lib/constants';
@@ -22,7 +22,7 @@ const withUtm = (url?: string | null) => (url ? `${url}${UNSPLASH_UTM}` : '')
 function ImageBlockComponent(props: any) {
   const { t } = useTranslation()
   const org = useOrg() as any
-  const course = useCourse() as any
+  const course = useOptionalCourse() as any
   const editorState = useEditorProvider() as any
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token;
@@ -53,6 +53,17 @@ function ImageBlockComponent(props: any) {
     ? `${blockObject.content.file_id}.${blockObject.content.file_format}`
     : null
 
+  // FORK CHANGE (articles): blocks hang off an opaque parent — `activity_<uuid>`
+  // in a course, `article_<uuid>` in a standalone article. The API resolves it
+  // (services/blocks/utils/parents.py); the editor only has to send the right one.
+  const parentUuid =
+    props.extension.options.parentUuid ||
+    props.extension.options.activity?.activity_uuid
+  // A stored block carries its own parent: the field is still named
+  // `activity_uuid` for backward compatibility but holds whichever parent
+  // uploaded it.
+  const blockParentUuid = blockObject?.content?.activity_uuid || parentUuid
+
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -70,7 +81,7 @@ function ImageBlockComponent(props: any) {
     try {
       let object = await uploadNewImageFile(
         file,
-        props.extension.options.activity.activity_uuid,
+        parentUuid,
         access_token,
         (p) => setProgress(p)
       )
@@ -118,10 +129,10 @@ function ImageBlockComponent(props: any) {
   const handleDownload = () => {
     if (!fileId) return;
 
-    const imageUrl = getActivityBlockMediaDirectory(
+    const imageUrl = getBlockMediaDirectory(
       org?.org_uuid,
       course?.courseStructure?.course_uuid,
-      blockObject.content.activity_uuid || props.extension.options.activity.activity_uuid,
+      blockParentUuid,
       blockObject.block_uuid,
       fileId,
       'imageBlock'
@@ -149,10 +160,10 @@ function ImageBlockComponent(props: any) {
     });
   };
 
-  const uploadedImageUrl = blockObject ? getActivityBlockMediaDirectory(
+  const uploadedImageUrl = blockObject ? getBlockMediaDirectory(
     org?.org_uuid,
     course?.courseStructure?.course_uuid,
-    blockObject.content.activity_uuid || props.extension.options.activity.activity_uuid,
+    blockParentUuid,
     blockObject.block_uuid,
     fileId || '',
     'imageBlock'

@@ -7,6 +7,9 @@ import toast from 'react-hot-toast'
 
 interface PasteFileHandlerOptions {
   activity: any
+  /** FORK CHANGE (articles): the opaque parent uploads hang off —
+   *  `activity_<uuid>` in a course, `article_<uuid>` in a standalone article. */
+  parentUuid?: string
   getAccessToken: () => string | undefined
 }
 
@@ -15,7 +18,7 @@ type BlockType = 'blockImage' | 'blockVideo' | 'blockPDF'
 interface FileTypeMapping {
   blockType: BlockType
   label: string
-  upload: (file: File, activityUuid: string, accessToken: string) => Promise<any>
+  upload: (file: File, parentUuid: string, accessToken: string) => Promise<any>
 }
 
 const MIME_TYPE_MAP: Record<string, FileTypeMapping> = {
@@ -34,17 +37,19 @@ const PasteFileHandler = Extension.create<PasteFileHandlerOptions>({
   addOptions() {
     return {
       activity: null,
+      parentUuid: undefined,
       getAccessToken: () => undefined,
     }
   },
 
   addProseMirrorPlugins() {
-    const { activity, getAccessToken } = this.options
+    const { activity, parentUuid: configuredParentUuid, getAccessToken } = this.options
+    const parentUuid = configuredParentUuid || activity?.activity_uuid
     const editor = this.editor
 
     const handleFiles = (files: FileList | File[], pos?: number) => {
       const accessToken = getAccessToken()
-      if (!accessToken || !activity) return false
+      if (!accessToken || !parentUuid) return false
 
       let handled = false
 
@@ -54,7 +59,6 @@ const PasteFileHandler = Extension.create<PasteFileHandlerOptions>({
 
         handled = true
         const { blockType, label, upload } = mapping
-        const activityUuid = activity.activity_uuid
 
         const toastId = toast.loading(`Uploading ${label}...`)
 
@@ -63,7 +67,7 @@ const PasteFileHandler = Extension.create<PasteFileHandlerOptions>({
         // blockObject in React state only once on mount — updating
         // node attrs via ProseMirror transactions doesn't trigger
         // a re-render of the component's internal state.
-        upload(file, activityUuid, accessToken)
+        upload(file, parentUuid, accessToken)
           .then((data) => {
             toast.dismiss(toastId)
             toast.success(`${label.charAt(0).toUpperCase() + label.slice(1)} uploaded`)

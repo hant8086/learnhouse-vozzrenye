@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 import { uploadNewVideoFileWithProgress, getVideoBlock } from '../../../../../services/blocks/Video/video'
 import { getVideoBlockStreamUrl, getVideoBlockHlsMasterUrl, getVideoBlockHlsThumbnailsUrl } from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { useOptionalCourse } from '@components/Contexts/CourseContext'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { constructAcceptValue } from '@/lib/constants'
@@ -88,13 +88,16 @@ interface VideoBlockObject {
 interface ExtendedNodeViewProps extends Omit<NodeViewProps, 'extension'> {
   extension: Node & {
     options: {
-      activity: {
+      activity?: {
         activity_uuid: string
       }
       // Passed at configure() time so playback ids resolve reliably even where
       // the Org/Course React contexts aren't populated (e.g. the student page).
       orgUuid?: string
       courseUuid?: string
+      // FORK CHANGE (articles): the opaque block parent the API resolves —
+      // `activity_<uuid>` in a course, `article_<uuid>` in a standalone article.
+      parentUuid?: string
     }
   }
 }
@@ -103,7 +106,10 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
   const { t } = useTranslation()
   const { node, extension, updateAttributes } = props
   const org = useOrg() as Organization | null
-  const course = useCourse() as Course | null
+  const course = useOptionalCourse() as Course | null
+  // FORK CHANGE (articles): the opaque parent uploads hang off.
+  const parentUuid =
+    extension.options.parentUuid || extension.options.activity?.activity_uuid || ''
   const editorState = useEditorProvider() as EditorState
   const session = useLHSession() as Session
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -212,7 +218,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
       // Real byte-accurate progress (XHR), same as the video-activity upload.
       const object = await uploadNewVideoFileWithProgress(
         file,
-        extension.options.activity.activity_uuid,
+        parentUuid,
         access_token,
         (percent) => setUploadProgress(Math.round(percent))
       )
@@ -256,7 +262,9 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
   // the player actually render there (previously videoUrl went null).
   const orgUuid = extension.options.orgUuid || org?.org_uuid
   const courseUuid = extension.options.courseUuid || course?.courseStructure?.course_uuid
-  const activityUuid = blockObject?.content?.activity_uuid || extension.options.activity?.activity_uuid
+  // Stored blocks carry their own parent in `content.activity_uuid` (legacy
+  // field name, holds `activity_…` or `article_…`).
+  const activityUuid = blockObject?.content?.activity_uuid || parentUuid
 
   const mp4Url = blockObject && orgUuid && courseUuid && activityUuid && fileId
     ? getVideoBlockStreamUrl(orgUuid, courseUuid, activityUuid, blockObject.block_uuid, fileId)

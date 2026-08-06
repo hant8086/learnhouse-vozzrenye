@@ -92,8 +92,18 @@ interface ConflictInfo {
 
 interface EditorProps {
   content: any
-  activity: any
-  course: any
+  /** Present when editing a course activity; absent for standalone articles. */
+  activity?: any
+  /** Present when editing a course activity; absent for standalone articles. */
+  course?: any
+  /** Present when editing a standalone article; absent for activities. */
+  article?: any
+  /** The uuid blocks are created under: the activity uuid for activities, the
+   *  article uuid for articles. Threaded into every block upload as the
+   *  `parent_uuid` the API resolves (services/blocks/utils/parents.py). */
+  parentUuid: string
+  /** Where the "view live" (preview) button points. */
+  liveHref: string
   org: any
   session: any
   setContent: (_content: any, _forceOverwrite?: boolean) => Promise<any>
@@ -130,13 +140,17 @@ function Editor(props: EditorProps) {
   const rf = orgContext?.config?.config?.resolved_features
   const canUseAI = rf?.ai?.enabled === true
   const canUseVersioning = rf?.versioning?.enabled === true
-  const isButtonAvailable = is_ai_feature_enabled
+  // The AI editor is activity-scoped end to end (its endpoints resolve an
+  // Activity row), so it is hidden for standalone articles rather than shown
+  // and then failing on click.
+  const isButtonAvailable = is_ai_feature_enabled && !!props.activity
 
-  // remove course_ from course_uuid
-  const course_uuid = props.course.course_uuid.substring(7)
+  // remove course_ from course_uuid — absent when editing a standalone article
+  const course_uuid = props.course?.course_uuid?.substring(7)
 
-  // remove activity_ from activity_uuid
-  const activity_uuid = props.activity.activity_uuid.substring(9)
+  // The document title shown in the breadcrumb: the activity in a course, the
+  // article itself when standalone.
+  const documentName = props.activity?.name || props.article?.name || ''
 
   // Stable closures for extension config so the extensions array can be
   // memoized even if `props.session` / `props.activity` references change
@@ -155,7 +169,7 @@ function Editor(props: EditorProps) {
   // activity (different uuid) does rebuild correctly.
   const stableActivity = React.useMemo(
     () => activityRef.current,
-    [props.activity.activity_uuid]
+    [props.activity?.activity_uuid]
   )
 
   const extensions = React.useMemo(
@@ -169,46 +183,47 @@ function Editor(props: EditorProps) {
       Callout,
       InfoCallout.configure({ editable: true }),
       WarningCallout.configure({ editable: true }),
-      ImageBlock.configure({ editable: true, activity: stableActivity }),
-      VideoBlock.configure({ editable: true, activity: stableActivity, orgUuid: props.org?.org_uuid, courseUuid: props.course?.course_uuid }),
-      AudioBlock.configure({ editable: true, activity: stableActivity }),
-      MathEquationBlock.configure({ editable: true, activity: stableActivity }),
-      PDFBlock.configure({ editable: true, activity: stableActivity }),
-      LibraryBlock.configure({ editable: true, activity: stableActivity }),
-      QuizBlock.configure({ editable: true, activity: stableActivity }),
+      ImageBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      VideoBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid, orgUuid: props.org?.org_uuid, courseUuid: props.course?.course_uuid }),
+      AudioBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      MathEquationBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      PDFBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      LibraryBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      QuizBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
       Youtube.configure({ controls: true, modestBranding: true }),
       CodeBlockLowlight.configure({ lowlight }),
-      EmbedObjects.configure({ editable: true, activity: stableActivity }),
-      Badges.configure({ editable: true, activity: stableActivity }),
-      Buttons.configure({ editable: true, activity: stableActivity }),
-      UserBlock.configure({ editable: true, activity: stableActivity }),
+      EmbedObjects.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      Badges.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      Buttons.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      UserBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
       TableCell,
       getLinkExtension(),
-      WebPreview.configure({ editable: true, activity: stableActivity }),
-      Flipcard.configure({ editable: true, activity: stableActivity }),
-      FlipcardGrid.configure({ editable: true, activity: stableActivity }),
-      Scenarios.configure({ editable: true, activity: stableActivity }),
-      CodePlayground.configure({ editable: true, activity: stableActivity }),
+      WebPreview.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      Flipcard.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      FlipcardGrid.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      Scenarios.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
+      CodePlayground.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
       DragHandle,
       SlashCommands.configure({ currentPlan }),
       PasteFileHandler.configure({
         activity: stableActivity,
+        parentUuid: props.parentUuid,
         getAccessToken,
       }),
-      MagicBlock.configure({ editable: true, activity: stableActivity }),
+      MagicBlock.configure({ editable: true, activity: stableActivity, parentUuid: props.parentUuid }),
       AIStreamingMark,
       AISelectionHighlight,
     ],
-    [stableActivity, currentPlan, getAccessToken]
+    [stableActivity, currentPlan, getAccessToken, props.parentUuid, props.org?.org_uuid, props.course?.course_uuid]
   )
 
   React.useEffect(() => {
     savedContentSnapshotRef.current = getEditorContentSnapshot(props.content)
     setHasUnsavedChanges(false)
-  }, [props.activity.activity_uuid, props.content])
+  }, [props.activity?.activity_uuid, props.content])
 
   React.useEffect(() => {
     if (!hasUnsavedChanges) {
@@ -426,14 +441,14 @@ function Editor(props: EditorProps) {
     <div className="activity-editor-page">
       {/* Version History Panel — only mount when first opened so the chunk
           + the versions list fetch don't run on every editor load. */}
-      {canUseVersioning && showVersionHistory && (
+      {canUseVersioning && showVersionHistory && props.activity && (
         <VersionHistoryPanel
           isOpen={showVersionHistory}
           onClose={() => setShowVersionHistory(false)}
           activityUuid={props.activity.activity_uuid}
           currentVersion={props.localVersion}
           activity={props.activity}
-          courseUuid={props.course.course_uuid}
+          courseUuid={props.course?.course_uuid}
         />
       )}
 
@@ -449,38 +464,51 @@ function Editor(props: EditorProps) {
           remoteAuthor={conflictInfo?.lastModifiedBy || null}
           onMergeComplete={handleMergeComplete}
           activity={props.activity}
-          courseUuid={props.course.course_uuid}
+          courseUuid={props.course?.course_uuid}
         />
       )}
 
-      <CourseProvider courseuuid={props.course.course_uuid} initialCourseStructure={props.course}>
+      <MaybeCourseProvider course={props.course}>
           <div className="activity-editor-top">
-            <ActivitySwitcher
-              course={props.course}
-              activity={props.activity}
-              isDirty={hasUnsavedChanges}
-              onSave={() => handleSave(false)}
-            />
+            {props.course && props.activity && (
+              <ActivitySwitcher
+                course={props.course}
+                activity={props.activity}
+                isDirty={hasUnsavedChanges}
+                onSave={() => handleSave(false)}
+              />
+            )}
             <div className="activity-editor-doc-section">
               <div className="activity-editor-info-wrapper">
                 <Link href="/">
                   <EditorLearnHouseLogo />
                 </Link>
-                <Link target="_blank" href={`/course/${course_uuid}`}>
-                  <img
-                    className="activity-editor-info-thumbnail"
-                    src={`${props.course.thumbnail_image ? getCourseThumbnailMediaDirectory(
-                      props.org?.org_uuid,
-                      props.course.course_uuid,
-                      props.course.thumbnail_image
-                    ) : getUriWithOrg(props.org?.slug, '/empty_thumbnail.png')}`}
-                    alt={props.course.name}
-                  />
-                </Link>
-                <div className="activity-editor-doc-name">
-                  {' '}
-                  <b>{props.course.name}</b> <SlashIcon /> {props.activity.name}{' '}
-                </div>
+                {props.course ? (
+                  <>
+                    <Link target="_blank" href={`/course/${course_uuid}`}>
+                      <img
+                        className="activity-editor-info-thumbnail"
+                        src={`${props.course.thumbnail_image ? getCourseThumbnailMediaDirectory(
+                          props.org?.org_uuid,
+                          props.course.course_uuid,
+                          props.course.thumbnail_image
+                        ) : getUriWithOrg(props.org?.slug, '/empty_thumbnail.png')}`}
+                        alt={props.course.name}
+                      />
+                    </Link>
+                    <div className="activity-editor-doc-name">
+                      {' '}
+                      <b>{props.course.name}</b> <SlashIcon /> {documentName}{' '}
+                    </div>
+                  </>
+                ) : (
+                  // Standalone article: no course to link back to, and no
+                  // article thumbnail endpoint — the name alone is the crumb.
+                  <div className="activity-editor-doc-name">
+                    {' '}
+                    <b>{documentName}</b>{' '}
+                  </div>
+                )}
               </div>
               <div className="activity-editor-buttons-wrapper">
                 <ToolbarButtons editor={editor} />
@@ -546,8 +574,9 @@ function Editor(props: EditorProps) {
                 }}
               />
               <div className="activity-editor-left-options space-x-2 ">
-                {/* Version History Button */}
-                {canUseVersioning ? (
+                {/* Version History Button — activity-only: article
+                    versioning has no backend counterpart yet. */}
+                {props.activity && canUseVersioning ? (
                   <ToolTip content={t('editor.versioning.version_history')}>
                     <div
                       className="flex bg-neutral-100 hover:bg-neutral-200 transition-all ease-linear h-9 px-3 py-2 font-black justify-center items-center text-sm shadow-sm text-neutral-600 rounded-lg hover:cursor-pointer"
@@ -556,14 +585,14 @@ function Editor(props: EditorProps) {
                       <History size={15} />
                     </div>
                   </ToolTip>
-                ) : (
+                ) : props.activity ? (
                   <ToolTip content={t('editor.versioning.version_history')}>
                     <div className="flex bg-gray-100 h-9 px-3 py-2 font-black justify-center items-center text-sm shadow-sm text-gray-400 rounded-lg cursor-not-allowed opacity-70 gap-1.5">
                       <History size={15} className="opacity-50" />
                       <PlanBadge currentPlan={currentPlan} requiredPlan={(rf?.versioning?.required_plan || 'pro') as PlanLevel} size="sm" />
                     </div>
                   </ToolTip>
-                )}
+                ) : null}
 
                 {/* Save Button with Conflict Detection */}
                 <div className="relative">
@@ -627,10 +656,7 @@ function Editor(props: EditorProps) {
                   )}
                 </div>
                 <ToolTip content={t('editor.preview')}>
-                  <Link
-                    target="_blank"
-                    href={`/course/${course_uuid}/activity/${activity_uuid}`}
-                  >
+                  <Link target="_blank" href={props.liveHref}>
                     <div className="flex bg-neutral-600 hover:bg-neutral-700 transition-all ease-linear h-9 px-3 py-2 font-black justify-center items-center text-sm shadow-sm text-neutral-100 rounded-lg hover:cursor-pointer">
                       <Eye className="mx-auto items-center" size={15} />
                     </div>
@@ -665,12 +691,14 @@ function Editor(props: EditorProps) {
           style={{ position: 'relative', margin: '0 40px' }}
         >
           <div className="activity-editor-content-wrapper" style={{ flex: 1, margin: 0, marginTop: '97px' }}>
-            <AIEditorToolkit activity={props.activity} editor={editor} />
+            {props.activity && (
+              <AIEditorToolkit activity={props.activity} editor={editor} />
+            )}
             <EditorContent editor={editor} />
           </div>
 
           {/* AI Editor Side Panel */}
-          {editorReady && canUseAI && (
+          {editorReady && canUseAI && props.activity && (
             <AIEditorSidePanel
               editor={editor}
               activity={props.activity}
@@ -678,10 +706,24 @@ function Editor(props: EditorProps) {
             />
           )}
         </motion.div>
-      </CourseProvider>
+      </MaybeCourseProvider>
     </div>
   )
 }
+
+/**
+ * FORK CHANGE (articles): the course context wraps the editor only when there
+ * IS a course. A standalone article has none, and CourseProvider would fetch
+ * `course_undefined`. Descendants read it through `useOptionalCourse()`.
+ */
+const MaybeCourseProvider = ({ course, children }: { course?: any; children: React.ReactNode }) =>
+  course ? (
+    <CourseProvider courseuuid={course.course_uuid} initialCourseStructure={course}>
+      {children}
+    </CourseProvider>
+  ) : (
+    <>{children}</>
+  )
 
 const logoAnimations = [
   // Slide up from bottom

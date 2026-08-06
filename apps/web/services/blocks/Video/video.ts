@@ -7,13 +7,13 @@ import {
 
 export async function uploadNewVideoFile(
   file: any,
-  activity_uuid: string,
+  parent_uuid: string,
   access_token: string
 ) {
   // Send file thumbnail as form data
   const formData = new FormData()
   formData.append('file_object', file)
-  formData.append('activity_uuid', activity_uuid)
+  formData.append('parent_uuid', parent_uuid)
 
   const result = await fetch(
     `${getAPIUrl()}blocks/video`,
@@ -42,13 +42,13 @@ export async function uploadNewVideoFile(
  */
 export function uploadNewVideoFileWithProgress(
   file: File,
-  activity_uuid: string,
+  parent_uuid: string,
   access_token: string,
   onProgress: (_percent: number) => void
 ): Promise<any> {
   const formData = new FormData()
   formData.append('file_object', file)
-  formData.append('activity_uuid', activity_uuid)
+  formData.append('parent_uuid', parent_uuid)
   return uploadFormWithProgress(
     `${getAPIUrl()}blocks/video`,
     formData,

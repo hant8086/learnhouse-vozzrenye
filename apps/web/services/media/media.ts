@@ -181,6 +181,30 @@ export function getUserAvatarMediaDirectory(userUUID: string, fileId: string) {
   return uri
 }
 
+/**
+ * Media URL for a block, resolved from its PARENT uuid.
+ *
+ * The API stores block files under a parent-derived prefix
+ * (`services/blocks/utils/parents.py`): `courses/<course>/activities/<activity>`
+ * for activity blocks, `articles/<article>` for standalone-article blocks.
+ * `parentUUID` is the same opaque value the upload sends as `parent_uuid`
+ * (`activity_…` or `article_…`), so the read path can never drift from the
+ * write path.
+ */
+export function getBlockMediaDirectory(
+  orgUUID: string,
+  courseUUID: string | undefined,
+  parentUUID: string,
+  blockId: any,
+  fileId: any,
+  type: string
+) {
+  const prefix = parentUUID?.startsWith('article_')
+    ? `articles/${parentUUID}`
+    : `courses/${courseUUID}/activities/${parentUUID}`
+  return `${getMediaUrl()}content/orgs/${orgUUID}/${prefix}/dynamic/blocks/${type}/${blockId}/${fileId}`
+}
+
 export function getActivityBlockMediaDirectory(
   orgUUID: string,
   courseId: string,
