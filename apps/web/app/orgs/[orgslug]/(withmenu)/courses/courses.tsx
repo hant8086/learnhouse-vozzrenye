@@ -187,7 +187,6 @@ function Courses(props: CourseProps) {
         <div className="flex flex-col space-y-2 mb-2">
           <div className="flex items-center justify-between">
             <div>
-              <span className="mono-label">PUBLIC / COURSE CATALOG</span>
               <TypeOfContentTitle title={t('courses.courses')} type="cou" />
               <div className="vz-hairline" />
             </div>

@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react'
 
 import Link from 'next/link'
-import { Crown, Shield, User, Users, SignOut, CaretDown, Globe, Check, ShoppingBag, House, Buildings, Plus, CreditCard } from '@phosphor-icons/react'
+import { Crown, Shield, User, Users, SignIn, UserPlus, SignOut, CaretDown, Globe, Check, ShoppingBag, House, Buildings, Plus, CreditCard } from '@phosphor-icons/react'
 import UserAvatar from '@components/Objects/UserAvatar'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -176,11 +176,21 @@ export const HeaderProfileBox = ({ primaryColor = '' }: { primaryColor?: string 
             </li>
             <li>
               <Link
-                className={`px-3 py-2 rounded-lg transition-colors text-sm font-bold ${colors.hoverBg} ${colors.text}`}
-                href={getUriWithOrg(org?.slug, '/login')} >{t('auth.login')}</Link>
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors text-sm font-bold ${colors.hoverBg} ${colors.text}`}
+                href={getUriWithOrg(org?.slug, '/login')}
+              >
+                <SignIn size={16} weight="fill" />
+                <span>{t('auth.login')}</span>
+              </Link>
             </li>
             <li className={`rounded-lg shadow-sm transition-colors px-4 py-2 text-xs sm:text-sm font-bold ml-1 sm:ml-2 ${colors.signUpBtn}`}>
-              <Link href={getUriWithOrg(org?.slug, '/signup')}>{t('auth.sign_up')}</Link>
+              <Link
+                className="flex items-center gap-1.5"
+                href={getUriWithOrg(org?.slug, '/signup')}
+              >
+                <UserPlus size={16} weight="fill" />
+                <span>{t('auth.sign_up')}</span>
+              </Link>
             </li>
           </ul>
         </div>

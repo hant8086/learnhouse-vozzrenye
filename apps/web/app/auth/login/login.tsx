@@ -5,7 +5,7 @@ import FormLayout, {
 import * as Form from '@radix-ui/react-form'
 import { useFormik } from 'formik'
 import React, { useState, useEffect } from 'react'
-import { AlertTriangle, Info, Lock, Mail, Shield, X, Clock, Send, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, Info, Lock, Mail, Shield, X, Clock, Send, CheckCircle2, LogIn } from 'lucide-react'
 import { checkSSOEnabled, redirectToSSOLogin } from '@services/auth/sso'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -801,7 +801,10 @@ const LoginClient = (props: LoginClientProps) => {
                         <span>{t('common.loading')}</span>
                       </span>
                     ) : (
-                      t('auth.login')
+                      <span className="flex items-center gap-2">
+                        <LogIn size={15} />
+                        {t('auth.login')}
+                      </span>
                     )}
                   </button>
                 </Form.Submit>

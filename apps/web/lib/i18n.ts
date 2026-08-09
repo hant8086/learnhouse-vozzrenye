@@ -3,9 +3,10 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-import en from '../locales/en.json';
+import ru from '../locales/ru.json';
 
 const LOCALE_LOADERS: Record<string, () => Promise<{ default: any }>> = {
+  en: () => import('../locales/en.json'),
   fr: () => import('../locales/fr.json'),
   de: () => import('../locales/de.json'),
   es: () => import('../locales/es.json'),
@@ -29,14 +30,14 @@ const LOCALE_LOADERS: Record<string, () => Promise<{ default: any }>> = {
   sk: () => import('../locales/sk.json'),
 };
 
-// Only bundle English; lazy-load all other locales on demand
+// Bundle Russian as the product default; lazy-load other locales on demand
 const resources = {
-  en: { common: en },
+  ru: { common: ru },
 };
 
 async function loadLocale(lng: string) {
   const code = lng.split('-')[0]
-  if (code === 'en' || !LOCALE_LOADERS[code]) return;
+  if (code === 'ru' || !LOCALE_LOADERS[code]) return;
   if (i18n.hasResourceBundle(code, 'common')) return;
 
   try {
@@ -52,14 +53,14 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'en',
+    fallbackLng: 'ru',
     ns: ['common'],
     defaultNS: 'common',
     interpolation: {
       escapeValue: false, // react already safes from xss
     },
     detection: {
-      order: ['localStorage', 'cookie', 'querystring', 'navigator', 'path', 'subdomain'],
+      order: ['localStorage', 'cookie', 'querystring', 'path', 'subdomain'],
       caches: ['localStorage', 'cookie'],
       lookupLocalStorage: 'i18nextLng',
       lookupCookie: 'i18next',
@@ -69,7 +70,7 @@ i18n
     }
   });
 
-// Load the detected language if it's not English — export the promise
+// Load the detected language if it's not Russian — export the promise
 // so I18nProvider can wait for resources before rendering
 export const initialLocaleReady = loadLocale(i18n.language.split('-')[0]);
 

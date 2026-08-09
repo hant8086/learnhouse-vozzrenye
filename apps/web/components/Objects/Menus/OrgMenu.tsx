@@ -17,16 +17,11 @@ import { usePathname } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
 import {
-  Question,
-  Book,
-  Globe,
   ChatCircleDots,
   ChatCircle,
   SquaresFour,
-  ChalkboardSimple,
   Signpost,
 } from '@phosphor-icons/react'
-import { DiscordIcon } from '@components/Objects/Icons/DiscordIcon'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +30,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@components/ui/dropdown-menu"
-import { FeedbackModal } from '@components/Objects/Modals/FeedbackModal'
 import { DASHBOARD_MENU_ITEMS, DashboardMenuItem } from '@/lib/dashboard-menu-items'
 import { isFeatureAvailable } from '@services/plans/plans'
 import { getMenuColorClasses } from '@services/utils/ts/colorUtils'
@@ -60,7 +54,6 @@ export const OrgMenu = (props: any) => {
   const pathname = usePathname()
   const { t } = useTranslation()
   const { rights } = useAdminStatus()
-  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
   const { isVisible: isJoinBannerVisible } = useJoinBannerVisible()
   const { track } = useLHAnalytics()
 
@@ -154,7 +147,7 @@ export const OrgMenu = (props: any) => {
       >
         <div className="flex items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center space-x-5 md:w-auto w-full">
-            <div className="logo flex md:w-auto w-full justify-center">
+            <div className="logo flex md:w-auto w-full justify-start">
               <Link href={getUriWithOrg(orgslug, '/')} aria-label={org?.name || 'Vozzrenye'}>
                 <div className="flex w-auto h-9 rounded-md items-center m-auto py-1 justify-center">
                   {org?.logo_image ? (
@@ -171,19 +164,19 @@ export const OrgMenu = (props: any) => {
                       org name sits beside it, separated by a hairline rather
                       than a heavier divider. Taken from org config, never
                       hardcoded, so a differently branded org stays correct.
-                      Hidden below `sm` where the bar has no room for it. */}
+                      Always visible so the brand remains identifiable on narrow screens. */}
                   {org?.name && (
-                    <span className="hidden sm:flex items-center">
+                    <span className="flex items-center">
+                      <span
+                        className={`text-[13px] sm:text-[15px] font-semibold tracking-tight whitespace-nowrap vz-brand-text`}
+                      >
+                        {org.name}
+                      </span>
                       <span
                         className="mx-3 h-5 w-px shrink-0"
                         style={{ backgroundColor: 'var(--color-line-strong)' }}
                         aria-hidden="true"
                       />
-                      <span
-                        className={`text-[15px] font-semibold tracking-tight whitespace-nowrap ${colors.text}`}
-                      >
-                        {org.name}
-                      </span>
                     </span>
                   )}
                 </div>
@@ -195,7 +188,7 @@ export const OrgMenu = (props: any) => {
           </div>
 
           {/* Search Section */}
-          <div className="hidden md:flex flex-1 justify-center max-w-lg px-4">
+          <div className="hidden md:flex flex-1 justify-center max-w-xs px-4">
             <SearchBar orgslug={orgslug} className="w-full" primaryColor={primaryColor} />
           </div>
 
@@ -221,29 +214,6 @@ export const OrgMenu = (props: any) => {
                 </TooltipProvider>
               </div>
             </AuthenticatedClientElement>
-            {/* Boards */}
-            {rf?.boards?.enabled && (
-              <AuthenticatedClientElement checkMethod="authentication">
-                <div className="hidden md:flex">
-                  <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          href={getUriWithOrg(orgslug, '/boards')}
-                          className={`p-2 rounded-lg transition-colors ${colors.iconBtn}`}
-                          aria-label="Boards"
-                        >
-                          <ChalkboardSimple size={20} weight="fill" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs">
-                        Boards
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </AuthenticatedClientElement>
-            )}
             {/* AI Copilot */}
             {rf?.ai?.enabled && config?.admin_toggles?.ai?.copilot_enabled !== false && (
               <AuthenticatedClientElement checkMethod="authentication">
@@ -306,79 +276,6 @@ export const OrgMenu = (props: any) => {
               </div>
             )}
 
-            {/* Help Dropdown - Only visible to admins/maintainers/instructors */}
-            {session?.status === 'authenticated' && rights?.dashboard?.action_access && (
-              <div className="hidden md:flex">
-                <DropdownMenu>
-                  <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            className={`p-2 rounded-lg transition-colors ${colors.iconBtn}`}
-                            aria-label={t('common.help')}
-                          >
-                            <Question size={20} weight="fill" />
-                          </button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs">
-                        {t('common.help')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel className="flex items-center gap-2">
-                      <Question size={16} weight="fill" />
-                      <span>{t('common.help')}</span>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <a
-                        href="https://vozzrenye.pro"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2"
-                      >
-                        <Book size={16} weight="fill" />
-                        <span>{t('common.help_menu.documentation')}</span>
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <a
-                        href="https://vozzrenye.pro"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2"
-                      >
-                        <Globe size={16} weight="fill" />
-                        <span>{t('common.help_menu.website')}</span>
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <a
-                        href="https://discord.gg/learnhouse"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2"
-                      >
-                        <DiscordIcon size={16} />
-                        <span>{t('common.help_menu.discord')}</span>
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setFeedbackModalOpen(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <ChatCircleDots size={16} weight="fill" />
-                      <span>{t('common.help_menu.report_feedback')}</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-
             <div className="hidden md:flex">
               <HeaderProfileBox primaryColor={primaryColor} />
             </div>
@@ -400,6 +297,7 @@ export const OrgMenu = (props: any) => {
               )}
             </button>
           </div>
+          <div className="absolute inset-x-0 bottom-0 vz-hairline vz-hairline-signal" aria-hidden="true" />
         </div>
       </nav>
       <div
@@ -424,15 +322,6 @@ export const OrgMenu = (props: any) => {
           </div>
         </div>
       </div>
-
-      {/* Feedback Modal */}
-      <FeedbackModal
-        open={feedbackModalOpen}
-        onOpenChange={setFeedbackModalOpen}
-        theme="light"
-        userName={session?.data?.user?.username}
-        userEmail={session?.data?.user?.email}
-      />
 
       {/* Copilot floating bubble */}
       {isBubbleMode && (

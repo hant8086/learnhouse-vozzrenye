@@ -6,7 +6,7 @@ import FormLayout, {
   FormField,
 } from '@components/Objects/StyledElements/Form/Form'
 import * as Form from '@radix-ui/react-form'
-import { AlertTriangle, Info, Mail, User } from 'lucide-react'
+import { AlertTriangle, Info, Mail, User, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { signup, resendVerificationEmail } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -175,7 +175,6 @@ function OpenSignUpComponent({ org: propOrg }: OpenSignUpComponentProps = {}) {
     <div className="vz-frame w-full max-w-[420px] px-6 py-10 sm:px-8">
       {/* Header */}
       <AuthSurfaceHeading
-        eyebrow="AUTH / SIGN UP"
         title={t('auth.create_account')}
         description={t('auth.fill_in_details')}
       />
@@ -393,7 +392,10 @@ function OpenSignUpComponent({ org: propOrg }: OpenSignUpComponentProps = {}) {
                   <span>{t('common.loading')}</span>
                 </span>
               ) : (
-                t('auth.create_account')
+                <span className="flex items-center gap-2">
+                  <UserPlus size={15} />
+                  {t('auth.create_account')}
+                </span>
               )}
             </button>
           </Form.Submit>
