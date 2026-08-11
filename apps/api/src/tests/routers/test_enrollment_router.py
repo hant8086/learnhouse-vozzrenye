@@ -104,6 +104,44 @@ async def _fake_create_user(
 
 
 class TestEnrollmentRouter:
+    async def test_finds_existing_user_with_mixed_case_email(
+        self, client, db, org, usergroup
+    ):
+        existing_user = User(
+            username="buyer@example.com",
+            first_name="Existing",
+            last_name="Buyer",
+            email="Buyer@Example.com",
+            password="hashed-test-password",
+            user_uuid="user_existing_enrolled",
+            creation_date=str(datetime.now()),
+            update_date=str(datetime.now()),
+        )
+        db.add(existing_user)
+        await db.commit()
+        await db.refresh(existing_user)
+
+        response = await client.post(
+            "/api/v1/enrollment/provision",
+            json={
+                "email": "buyer@example.com",
+                "org_id": org.id,
+                "usergroup_id": usergroup.id,
+            },
+            headers={"X-Vozzrenye-Enrollment-Secret": "enrollment-test-secret"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "user_id": existing_user.id,
+            "user_created": False,
+            "added_to_group": True,
+            "already_in_group": False,
+        }
+        users = (await db.execute(select(User))).scalars().all()
+        assert len(users) == 1
+        assert users[0].id == existing_user.id
+
     async def test_provisions_once_and_is_idempotent(
         self, client, db, org, usergroup
     ):
