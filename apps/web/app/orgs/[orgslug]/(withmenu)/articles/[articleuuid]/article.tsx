@@ -5,6 +5,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { useArticle } from '@/hooks/queries/useArticle'
 import CanvaWithStaticFallback from '@components/Objects/Activities/DynamicCanva/CanvaWithStaticFallback'
 import ArticleGate from '@components/Objects/Articles/ArticleGate'
+import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import { ScrollPath } from '@components/Objects/Motion/ScrollPath'
 
 interface ArticleClientProps {
@@ -72,13 +73,14 @@ export default function ArticleClient(props: ArticleClientProps) {
   return (
     <>
       <ScrollPath />
-      {/* Top spacing matches `GeneralWrapperStyled`'s `py-5` (20px) on mobile —
-          pages that route through it show a Breadcrumbs strip right under the
-          nav, which visually fills that gap. Articles render no breadcrumb,
-          so the larger `py-8` here (kept at `sm:` and up) read as an empty
-          hole on narrow screens. */}
-      <div className="mx-auto max-w-3xl px-4 pt-5 pb-8 sm:pt-8">
-        <article className="space-y-6">
+      {/* Same reading shell a course activity uses: `GeneralWrapperStyled` for
+          the page gutters (and its `py-5`, which also keeps the top gap in
+          line with breadcrumbed pages) wrapped around one `bg-white
+          nice-shadow` card at `p-3 sm:p-7`. The article body therefore gets
+          the full column width on phone and desktop alike, instead of the
+          narrow `max-w-3xl` measure it used to sit in. */}
+      <GeneralWrapperStyled>
+        <article className="bg-white nice-shadow rounded-lg p-3 sm:p-7 space-y-6">
           {article.thumbnail_image && (
             <div className="vz-frame overflow-hidden">
               <img
@@ -116,7 +118,7 @@ export default function ArticleClient(props: ArticleClientProps) {
             />
           </div>
         </article>
-      </div>
+      </GeneralWrapperStyled>
     </>
   )
 }

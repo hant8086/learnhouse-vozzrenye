@@ -295,7 +295,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
               className="inline-flex items-center gap-1 text-[10px] font-bold bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1.5 rounded-lg transition-colors uppercase tracking-wider"
             >
               <Lock className="w-3 h-3" />
-              {t('courses.premium', 'Premium')}
+              {t('courses.pro', 'Pro')}
             </Link>
           ) : (
             <Link

@@ -47,7 +47,7 @@ export default function ArticleGate(props: ArticleGateProps) {
             />
           )}
           <span className="mono-label">
-            {isAuthenticated ? 'GROUP / PAID ACCESS' : 'MEMBERS / SIGN IN TO READ'}
+            {isAuthenticated ? 'PRO / PAID ACCESS' : 'MEMBERS / SIGN IN TO READ'}
           </span>
           {/* The title and excerpt are the whole enticement: a stranger should
               want to unlock THIS piece, not a generic "continue reading" box. */}

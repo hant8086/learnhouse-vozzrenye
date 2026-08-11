@@ -21,14 +21,17 @@ import Link from 'next/link'
  */
 export default function StaticLegalFooter({ className = '' }: { className?: string }) {
   return (
-    <footer className={`w-full py-6 px-6 ${className}`}>
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-x-5 gap-y-2 text-[13px] font-medium">
+    <footer className={`w-full py-3 px-6 ${className}`}>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-x-4 gap-y-1 text-xs font-medium">
         <p className="text-gray-500">© {new Date().getFullYear()} Vozzrenye</p>
-        <nav className="flex items-center gap-x-5">
-          <Link href="/terms" className="text-gray-600 hover:text-amber-800 transition-colors">
+        <nav className="flex items-center gap-x-4">
+          {/* `signal` rather than a literal amber: it is the accent token, so
+              it stays amber in light and becomes cyan in dark. A hardcoded
+              amber-800 hover was all but invisible on the dark surface. */}
+          <Link href="/terms" className="text-gray-600 hover:text-signal transition-colors">
             Terms of Service
           </Link>
-          <Link href="/privacy" className="text-gray-600 hover:text-amber-800 transition-colors">
+          <Link href="/privacy" className="text-gray-600 hover:text-signal transition-colors">
             Privacy Policy
           </Link>
         </nav>

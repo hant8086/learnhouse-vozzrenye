@@ -451,6 +451,7 @@
     "delete_course": "Удалить курс",
     "failed_load_courses": "Не удалось загрузить курсы",
     "start_learning": "Начать обучение",
+    "pro": "Pro",
     "edit_content": "Редактировать контент",
     "delete_course_confirm": "Вы уверены, что хотите удалить этот курс?",
     "delete_course_title": "Удалить {{name}}?",

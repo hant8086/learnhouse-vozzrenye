@@ -222,7 +222,7 @@ function Store({ orgslug, offers }: StoreProps) {
           <div>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight">Store</h1>
             {org?.name && (
-              <p className="text-sm text-gray-400 mt-0.5">Unlock premium content from {org.name}</p>
+              <p className="text-sm text-gray-400 mt-0.5">Unlock Pro content from {org.name}</p>
             )}
           </div>
         </div>
