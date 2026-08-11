@@ -6,6 +6,7 @@ from src.routers import audit as audit_router_module
 from src.routers import code_execution
 from src.routers import code_submissions
 from src.routers import health
+from src.routers import enrollment
 from src.routers import instance
 from src.routers import plans
 from src.routers import usergroups
@@ -382,6 +383,12 @@ v1_router.include_router(
     prefix="/health",
     tags=["health"],
     dependencies=[Depends(get_non_api_token_user)]
+)
+
+v1_router.include_router(
+    enrollment.router,
+    prefix="/enrollment",
+    tags=["enrollment"],
 )
 
 # Dev Routes

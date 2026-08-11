@@ -79,6 +79,7 @@ def _install_stub_modules(monkeypatch: pytest.MonkeyPatch) -> None:
         "code_execution",
         "code_submissions",
         "health",
+        "enrollment",
         "instance",
         "monitoring",
         "plans",
