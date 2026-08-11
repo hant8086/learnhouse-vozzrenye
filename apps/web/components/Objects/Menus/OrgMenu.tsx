@@ -1,7 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import CopilotBubble from '@components/Copilot/CopilotBubble'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
@@ -9,7 +8,6 @@ import { getUriWithOrg } from '@services/config/config'
 import { fetchRAGChatSessions, RAGChatSession } from '@services/ai/ai'
 import { HeaderProfileBox } from '@components/Security/HeaderProfileBox'
 import MenuLinks from './OrgMenuLinks'
-import { getOrgLogoMediaDirectory } from '@services/media/media'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { SearchBar } from '@components/Objects/Search/SearchBar'
@@ -136,12 +134,15 @@ export const OrgMenu = (props: any) => {
   return (
     <>
       <div className="backdrop-blur-lg h-[60px] blur-3xl" style={{ zIndex: 'var(--z-behind)', marginTop: topOffset }}></div>
+      {/* Background always follows the theme token (`bg-white`, repainted by
+          `html.dark` in globals.css), never a raw `primaryColor` hex: an org's
+          configured brand color has no dark counterpart, so painting it
+          directly here left the bar permanently light regardless of theme. */}
       <nav
         aria-label="Top navigation"
-        className={`backdrop-blur-lg fixed left-0 right-0 h-[60px] ${!primaryColor ? 'bg-white/90 nice-shadow' : ''}`}
+        className="backdrop-blur-lg fixed left-0 right-0 h-[60px] bg-white/90 nice-shadow"
         style={{
           zIndex: 'var(--z-nav)',
-          backgroundColor: primaryColor || undefined,
           top: topOffset
         }}
       >
@@ -149,17 +150,28 @@ export const OrgMenu = (props: any) => {
           <div className="flex items-center space-x-5 md:w-auto w-full">
             <div className="logo flex md:w-auto w-full justify-start">
               <Link href={getUriWithOrg(orgslug, '/')} aria-label={org?.name || 'Vozzrenye'}>
-                <div className="flex w-auto h-9 rounded-md items-center m-auto py-1 justify-center">
-                  {org?.logo_image ? (
-                    <img
-                      src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
-                      alt={org?.name || 'Vozzrenye'}
-                      style={{ width: 'auto', height: '100%' }}
-                      className="rounded-md"
-                    />
-                  ) : (
-                    <LearnHouseLogo logoFilter={colors.logoFilter} />
-                  )}
+                <div className="flex w-auto h-9 items-center gap-2.5 m-auto py-1 justify-center">
+                  {/* Theme-paired mark: `lrn.svg` on light backgrounds,
+                      `lrn_black.svg` (dark-fill variant) on dark ones, swapped
+                      purely by the `dark:` variant so there is no client-side
+                      theme check and no hydration flash. Replaces the admin-
+                      uploaded `org.logo_image` JPG, which bakes in a light
+                      background and read as a floating white tile once the
+                      nav itself started following the dark theme. */}
+                  <img
+                    src="/lrn.svg"
+                    alt={org?.name || 'Vozzrenye'}
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 rounded-md dark:hidden"
+                  />
+                  <img
+                    src="/lrn_black.svg"
+                    alt={org?.name || 'Vozzrenye'}
+                    width={36}
+                    height={36}
+                    className="hidden h-9 w-9 rounded-md dark:block"
+                  />
                   {/* Wordmark. The mark alone does not say who this is, so the
                       org name sits beside it, separated by a hairline rather
                       than a heavier divider. Taken from org config, never
@@ -466,17 +478,5 @@ const CopilotMenuButton = ({
         </button>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
-}
-
-const LearnHouseLogo = ({ logoFilter }: { logoFilter: string }) => {
-  return (
-    <Image
-      src="/lrn-text.svg"
-      alt="LearnHouse logo"
-      width={133}
-      height={40}
-      style={{ height: 'auto', filter: logoFilter }}
-    />
   )
 }

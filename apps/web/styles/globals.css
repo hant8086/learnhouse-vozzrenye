@@ -3284,14 +3284,18 @@ html.dark .vz-hairline-signal {
   );
 }
 
+/* White wordmark with a single cyan band sweeping through it — reads as a
+   slow neon glow, not the three-hue cyan/purple/gold cycle this replaced
+   (which read as a rainbow rather than a glow). */
 html.dark .vz-brand-text {
   background-image: linear-gradient(
     90deg,
-    var(--vz-cyan) 0%,
-    var(--vz-purple) 33%,
-    var(--vz-gold) 66%,
-    var(--vz-cyan) 100%
+    var(--vz-text-on-dark) 0%,
+    var(--vz-cyan) 50%,
+    var(--vz-text-on-dark) 100%
   );
+  animation-duration: 9s;
+  filter: drop-shadow(0 0 6px rgb(0 240 255 / 0.35));
 }
 
 html.dark .vz-frame::before {
@@ -3385,7 +3389,8 @@ html.dark .vz-scroll-progress__horizontal {
   html.dark .vz-brand-text {
     animation: none;
     background-image: none;
-    color: var(--vz-purple);
+    filter: none;
+    color: var(--vz-text-on-dark);
   }
 
   html.dark .vz-glass-card {

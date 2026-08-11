@@ -1,6 +1,7 @@
 'use client'
 import { useTranslation } from 'react-i18next'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import { useOrg } from '@components/Contexts/OrgContext'
 import { useArticle } from '@/hooks/queries/useArticle'
 import CanvaWithStaticFallback from '@components/Objects/Activities/DynamicCanva/CanvaWithStaticFallback'
 import ArticleGate from '@components/Objects/Articles/ArticleGate'
@@ -16,13 +17,16 @@ interface ArticleClientProps {
 export default function ArticleClient(props: ArticleClientProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
+  const org = useOrg() as any
 
   // FORK CHANGE (SEO): seeded from the server fetch in `page.tsx` so a PUBLIC
   // article's body exists in the delivered HTML. A locked article arrives
   // already scrubbed by the API and still hits the gate below — its content is
   // never in the HTML, for any user agent. `useArticle` forces a refetch on
-  // mount so a rehydrated token corrects the access state immediately.
-  const { data: article, isLoading } = useArticle(props.articleuuid, props.article)
+  // mount so a rehydrated token corrects the access state immediately. `org?.id`
+  // lets a slug-addressed article resolve the same `slug/{org_id}/{slug}` path
+  // the server used — see the comment in `useArticle` for why this is required.
+  const { data: article, isLoading } = useArticle(props.articleuuid, org?.id, props.article)
 
   // Loading or not-found: the server fetch failed with no article at all.
   if (isLoading && !article) {
@@ -68,7 +72,12 @@ export default function ArticleClient(props: ArticleClientProps) {
   return (
     <>
       <ScrollPath />
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      {/* Top spacing matches `GeneralWrapperStyled`'s `py-5` (20px) on mobile —
+          pages that route through it show a Breadcrumbs strip right under the
+          nav, which visually fills that gap. Articles render no breadcrumb,
+          so the larger `py-8` here (kept at `sm:` and up) read as an empty
+          hole on narrow screens. */}
+      <div className="mx-auto max-w-3xl px-4 pt-5 pb-8 sm:pt-8">
         <article className="space-y-6">
           {article.thumbnail_image && (
             <div className="vz-frame overflow-hidden">

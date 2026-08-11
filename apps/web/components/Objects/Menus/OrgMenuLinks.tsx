@@ -67,7 +67,13 @@ function MenuLinks(props: { orgslug: string; primaryColor?: string }) {
 
   return (
     <div className="pl-1">
-      <ul className="flex space-x-5">
+      {/* `flex-wrap` matters only on the mobile dropdown panel, which reuses
+          this same list: with 5-6 items (icon + label each) a single
+          non-wrapping row overflowed the viewport there. The desktop nav has
+          room for one row regardless, so this is a no-op there. `gap-*`
+          (not `space-x-*`) so wrapped rows get consistent spacing on both
+          axes instead of a leftover left-margin on each row's first item. */}
+      <ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
         {rendered.map((it) => {
           const content = (
             <li
