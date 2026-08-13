@@ -98,3 +98,20 @@ export async function getUserEnrollments(orgId: number, access_token: string) {
   if (!metadata.success) throw new Error(metadata.HTTPmessage || 'Failed to fetch enrollments')
   return metadata;
 }
+
+export interface UserAccess {
+  usergroup_id: number;
+  name: string;
+  description: string;
+  granted_at: string | null;
+}
+
+export async function getUserAccess(orgId: number, access_token: string) {
+  const result = await secureFetch(
+    `${getAPIUrl()}access/mine/org/${encodeURIComponent(String(orgId))}`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  );
+  const metadata = await getResponseMetadata(result);
+  if (!metadata.success) throw new Error(metadata.HTTPmessage || 'Failed to fetch access')
+  return metadata;
+}

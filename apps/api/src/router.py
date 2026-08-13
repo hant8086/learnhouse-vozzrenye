@@ -7,6 +7,7 @@ from src.routers import code_execution
 from src.routers import code_submissions
 from src.routers import health
 from src.routers import enrollment
+from src.routers import access
 from src.routers import instance
 from src.routers import plans
 from src.routers import usergroups
@@ -389,6 +390,13 @@ v1_router.include_router(
     enrollment.router,
     prefix="/enrollment",
     tags=["enrollment"],
+)
+
+v1_router.include_router(
+    access.router,
+    prefix="/access",
+    tags=["access"],
+    dependencies=[Depends(require_authenticated_user_or_api_token)],
 )
 
 # Dev Routes
