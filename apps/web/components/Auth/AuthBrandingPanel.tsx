@@ -75,7 +75,7 @@ export default function AuthBrandingPanel({ org, welcomeText, title, subtitle }:
 
   const displayMessage = welcome_message || welcomeText || ''
   // No-org platform copy (defaults mirror the platform login illustration).
-  const noOrgTitle = title || 'Welcome back to Vozzrenye.'
+  const noOrgTitle = title || 'С возвращением в Хранитель Воззрения'
   const noOrgSubtitle =
     subtitle || 'Pick up where you left off — your courses, students, and tools are waiting.'
   // Treat the no-org illustration like a photo background: dark scrim, no
@@ -148,7 +148,7 @@ export default function AuthBrandingPanel({ org, welcomeText, title, subtitle }:
               <Link prefetch href="https://vozzrenye.pro" target="_blank">
                 <img
                   src="/lrn.svg"
-                  alt="Vozzrenye"
+                  alt="Воззрение"
                   width={30}
                   height={30}
                   className={cn(
@@ -194,7 +194,7 @@ export default function AuthBrandingPanel({ org, welcomeText, title, subtitle }:
                           width={96}
                           height={96}
                           src={learnhouseIcon}
-                          alt="Vozzrenye"
+                          alt="Хранитель Воззрения"
                           className="object-contain"
                         />
                       )}
@@ -203,7 +203,9 @@ export default function AuthBrandingPanel({ org, welcomeText, title, subtitle }:
 
                   {/* Text content */}
                   <div className="space-y-1">
-                    <h1 className="font-black text-3xl tracking-tight">{org?.name || 'Vozzrenye'}</h1>
+                    <h1 className="font-black text-3xl tracking-tight">
+                      {org?.name || 'Хранитель Воззрения'}
+                    </h1>
                     {displayMessage && (
                       <p className={cn(
                         "text-lg max-w-sm leading-relaxed",

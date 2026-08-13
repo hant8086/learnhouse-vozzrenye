@@ -23,7 +23,9 @@ export default function StaticLegalFooter({ className = '' }: { className?: stri
   return (
     <footer className={`w-full py-3 px-6 ${className}`}>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-x-4 gap-y-1 text-xs font-medium">
-        <p className="text-gray-500">© {new Date().getFullYear()} Vozzrenye</p>
+        {/* ADR-022: the copyright line is a legal surface, so it carries the
+            mono-form «Воззрение», not the product name. */}
+        <p className="text-gray-500">© {new Date().getFullYear()} Воззрение</p>
         <nav className="flex items-center gap-x-4">
           {/* `signal` rather than a literal amber: it is the accent token, so
               it stays amber in light and becomes cyan in dark. A hardcoded

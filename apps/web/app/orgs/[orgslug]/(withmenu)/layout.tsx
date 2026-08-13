@@ -43,7 +43,7 @@ function OrgFooter() {
           <Link href="https://vozzrenye.pro" target="_blank" rel="noopener noreferrer">
             <Image
               src="/lrn.svg"
-              alt="Vozzrenye"
+              alt="Воззрение"
               width={24}
               height={24}
               style={{ height: 'auto' }}

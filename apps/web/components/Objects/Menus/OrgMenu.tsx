@@ -149,7 +149,7 @@ export const OrgMenu = (props: any) => {
         <div className="flex items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center space-x-5 md:w-auto w-full">
             <div className="logo flex md:w-auto w-full justify-start">
-              <Link href={getUriWithOrg(orgslug, '/')} aria-label={org?.name || 'Vozzrenye'}>
+              <Link href={getUriWithOrg(orgslug, '/')} aria-label={org?.name || 'Хранитель Воззрения'}>
                 <div className="flex w-auto h-9 items-center gap-2.5 m-auto py-1 justify-center">
                   {/* Theme-paired mark: `lrn.svg` on light backgrounds,
                       `lrn_black.svg` (dark-fill variant) on dark ones, swapped
@@ -160,14 +160,14 @@ export const OrgMenu = (props: any) => {
                       nav itself started following the dark theme. */}
                   <img
                     src="/lrn.svg"
-                    alt={org?.name || 'Vozzrenye'}
+                    alt={org?.name || 'Хранитель Воззрения'}
                     width={36}
                     height={36}
                     className="h-9 w-9 rounded-md dark:hidden"
                   />
                   <img
                     src="/lrn_black.svg"
-                    alt={org?.name || 'Vozzrenye'}
+                    alt={org?.name || 'Хранитель Воззрения'}
                     width={36}
                     height={36}
                     className="hidden h-9 w-9 rounded-md dark:block"
