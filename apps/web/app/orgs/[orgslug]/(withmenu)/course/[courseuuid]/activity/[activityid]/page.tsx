@@ -20,14 +20,16 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   // React-cached loaders — the page component below reuses these responses.
   const [org, course_meta, activity] = await Promise.all([
     loadOrg(params.orgslug),
-    loadCourseMeta(params.courseuuid, access_token),
-    loadActivity(params.activityid, access_token),
+    loadCourseMeta(params.courseuuid, access_token).catch(() => null),
+    loadActivity(params.activityid, access_token).catch(() => null),
   ])
 
   // Check if this is the course end page
   const isCourseEnd = params.activityid === 'end';
   const seoConfig = getOrgSeoConfig(org)
-  const rawTitle = isCourseEnd ? `Congratulations — ${course_meta.name} Course` : `${activity.name} — ${course_meta.name} Course`
+  const rawTitle = isCourseEnd
+    ? `Congratulations — ${course_meta?.name || 'Course'} Course`
+    : `${activity?.name || 'Activity'} — ${course_meta?.name || 'Course'} Course`
   const pageTitle = seoConfig.default_meta_title_suffix ? `${rawTitle}${seoConfig.default_meta_title_suffix}` : rawTitle
 
   const orgOgImageUrl = seoConfig.default_og_image
@@ -45,8 +47,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   // SEO
   return {
     title: pageTitle,
-    description: course_meta.description || seoConfig.default_meta_description || '',
-    keywords: course_meta.learnings,
+    description: course_meta?.description || seoConfig.default_meta_description || '',
+    keywords: course_meta?.learnings,
     robots: {
       index: true,
       follow: true,
@@ -62,22 +64,22 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     },
     openGraph: {
       title: pageTitle,
-      description: course_meta.description || seoConfig.default_meta_description || '',
-      publishedTime: course_meta.creation_date,
-      tags: course_meta.learnings,
+      description: course_meta?.description || seoConfig.default_meta_description || '',
+      publishedTime: course_meta?.creation_date,
+      tags: course_meta?.learnings,
       images: [
         {
           url: imageUrl,
           width: 800,
           height: 600,
-          alt: course_meta.name,
+          alt: course_meta?.name || pageTitle,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
       title: pageTitle,
-      description: course_meta.description || seoConfig.default_meta_description || '',
+      description: course_meta?.description || seoConfig.default_meta_description || '',
       images: [imageUrl],
       ...(seoConfig.twitter_handle && { site: seoConfig.twitter_handle }),
     },
@@ -99,13 +101,24 @@ const ActivityPage = async (params: any) => {
   const { activityid, courseuuid, orgslug } = await params.params
   const access_token = await loadServerAccessToken()
 
-  const [org, course, activity] = await Promise.all([
+  const [org, courseResult, activity] = await Promise.all([
     loadOrg(orgslug).catch(() => null),
-    loadCourseMeta(courseuuid, access_token).catch(() => null),
+    loadCourseMeta(courseuuid, access_token).then(
+      (data: any) => ({ data, status: null as number | null, failed: false }),
+      (error: any) => ({
+        data: null,
+        status: typeof error?.status === 'number' ? error.status : null,
+        failed: true,
+      })
+    ),
     // `activityid` is the literal 'end' on the course-completion screen, which
     // has no activity record — a failure here is expected, not exceptional.
     loadActivity(activityid, access_token).catch(() => null),
   ])
+
+  const course = courseResult.data
+  const courseAccessDenied = courseResult.status === 403
+  const courseLoadError = courseResult.failed && !courseAccessDenied
 
   const jsonLdImage = course?.thumbnail_image
     ? getCourseThumbnailMediaDirectory(org?.org_uuid, course?.course_uuid, course?.thumbnail_image)
@@ -129,6 +142,8 @@ const ActivityPage = async (params: any) => {
         orgslug={orgslug}
         activity={activity}
         course={course}
+        courseAccessDenied={courseAccessDenied}
+        courseLoadError={courseLoadError}
       />
     </>
   )

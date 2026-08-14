@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
-import { BookOpenCheck, CheckCircle, ChevronLeft, ChevronRight, MessageSquare, UserRoundPen, Edit2, Loader2, Maximize2, Minimize2, Trophy, Sparkles, XCircle, Lock, RotateCcw, Infinity as InfinityIcon } from 'lucide-react'
+import { BookOpenCheck, CheckCircle, ChevronLeft, ChevronRight, MessageSquare, UserRoundPen, Edit2, Loader2, Maximize2, Minimize2, Trophy, Sparkles, XCircle, RotateCcw, Infinity as InfinityIcon, AlertTriangle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { markActivityAsComplete, unmarkActivityAsComplete } from '@services/courses/activity'
 import { usePathname, useRouter } from 'next/navigation'
@@ -37,6 +37,7 @@ import { Breadcrumbs } from '@components/Objects/Breadcrumbs/Breadcrumbs'
 import { BookCopy } from 'lucide-react'
 import MiniInfoTooltip from '@components/Objects/MiniInfoTooltip'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
+import ActivityGate from '@components/Objects/Courses/ActivityGate'
 import ActivityIndicators from '@components/Pages/Courses/ActivityIndicators'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useTranslation } from 'react-i18next'
@@ -130,6 +131,8 @@ interface ActivityClientProps {
   orgslug: string
   activity: any | null
   course: any | null
+  courseAccessDenied?: boolean
+  courseLoadError?: boolean
 }
 
 interface ActivityActionsProps {
@@ -246,7 +249,12 @@ function ActivityClient(props: ActivityClientProps) {
   // header and the activity body exist in the delivered HTML. A locked activity
   // arrives already scrubbed by the API and still hits the locked screen below —
   // its content is never in the HTML, for any user agent.
-  const { data: course, isLoading: courseLoading } = useCourseMeta(courseuuid, props.course)
+  const {
+    data: course,
+    isLoading: courseLoading,
+    isError: courseQueryError,
+    refetch: refetchCourse,
+  } = useCourseMeta(courseuuid, props.course)
   const { data: activity, isLoading: activityLoading } = useActivity(activityid, props.activity)
   const session = useLHSession() as any;
   const pathname = usePathname()
@@ -458,6 +466,49 @@ function ActivityClient(props: ActivityClientProps) {
   }
     , [activity, pathname, isFocusMode])
 
+  const isAuthenticated = session?.status === 'authenticated'
+
+  // A course-level 403 is an access state, not a loading state. The activity
+  // endpoint preserves the lesson name while scrubbing its content, so the
+  // same purchase-oriented gate can explain what is behind the link.
+  if (props.courseAccessDenied && !course) {
+    return (
+      <ActivityGate
+        activity={activity}
+        activityid={activityid}
+        courseuuid={courseuuid}
+        orgslug={orgslug}
+        isAuthenticated={isAuthenticated}
+      />
+    )
+  }
+
+  const hasCourseError = props.courseLoadError || courseQueryError
+  if (!course && hasCourseError) {
+    return (
+      <GeneralWrapperStyled>
+        <div className="max-w-xl mx-auto my-16 px-4 text-center">
+          <div className="mx-auto w-14 h-14 rounded-full bg-rose-50 flex items-center justify-center mb-4">
+            <AlertTriangle className="text-rose-500" size={24} />
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            {t('course.loadError', 'This course could not be found or there was an error loading it.')}
+          </h1>
+          <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+            {t('auth.error_generic', 'Something went wrong. Please try again.')}
+          </p>
+          <button
+            type="button"
+            onClick={() => refetchCourse()}
+            className="inline-flex items-center justify-center px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
+          >
+            {t('auth.try_again', 'Try again')}
+          </button>
+        </div>
+      </GeneralWrapperStyled>
+    )
+  }
+
   if (courseLoading || !course) {
     return (
       <GeneralWrapperStyled>
@@ -511,39 +562,14 @@ function ActivityClient(props: ActivityClientProps) {
   const displayActivityType = allActivities[currentIndex]?.activity_type
 
   if (activity?.is_locked) {
-    const isAuthenticated = session?.status === 'authenticated'
     return (
-      <GeneralWrapperStyled>
-        <div className="max-w-2xl mx-auto my-16 bg-white rounded-2xl border border-gray-200/80 shadow-sm p-8 text-center">
-          <div className="mx-auto w-14 h-14 rounded-full bg-rose-50 flex items-center justify-center mb-4">
-            <Lock className="text-rose-500" size={24} />
-          </div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">
-            {t('course.locked_title', 'This activity is locked')}
-          </h1>
-          <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-            {isAuthenticated
-              ? t('course.locked_restricted', 'You need to be a member of the right user group to access this. Ask a course admin to add you.')
-              : t('course.locked_auth_required', 'You need to sign in to access this activity.')}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2 justify-center">
-            {!isAuthenticated && (
-              <Link
-                href={getUriWithOrg(orgslug, '/login')}
-                className="inline-flex items-center justify-center px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
-              >
-                {t('auth.sign_in', 'Sign in')}
-              </Link>
-            )}
-            <Link
-              href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
-              className="inline-flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors"
-            >
-              {t('course.back_to_course', 'Back to course')}
-            </Link>
-          </div>
-        </div>
-      </GeneralWrapperStyled>
+      <ActivityGate
+        activity={activity}
+        activityid={activityid}
+        courseuuid={courseuuid}
+        orgslug={orgslug}
+        isAuthenticated={isAuthenticated}
+      />
     )
   }
 

@@ -23,9 +23,9 @@ export function useActivity(activityUuid: string, initialData?: any) {
     // Critical: without this the seed is treated as fresh for the whole staleTime
     // and the mount refetch is skipped. A member whose access-token cookie expired
     // renders server-side as anonymous, so a restricted activity comes back
-    // `is_locked: true` — and they would then be shown the "ask a course admin to
-    // add you" screen despite having access. Forcing a refetch with the rehydrated
-    // token corrects it immediately.
+    // `is_locked: true` — and they would then be shown the anonymous paywall
+    // despite having access. Forcing a refetch with the rehydrated token corrects
+    // it immediately.
     initialDataUpdatedAt: initialData ? 0 : undefined,
   })
 }
