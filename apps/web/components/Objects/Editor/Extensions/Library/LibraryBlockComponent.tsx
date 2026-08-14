@@ -3,10 +3,12 @@ import React from 'react'
 import toast from 'react-hot-toast'
 import {
   ArrowLeftRight,
+  ArrowRight,
   BookCopy,
   Download,
   ExternalLink,
   Expand,
+  FileText,
   Gamepad2,
   LayoutGrid,
   Library,
@@ -27,7 +29,12 @@ import ResourcePicker, {
   type SelectedResource,
 } from '@components/Dashboard/Library/ResourcePicker'
 import { createMedia, getMediaById, getMediaFileDirectory } from '@services/media/media-resource'
-import { buildEmbedUrl, buildResourceUrl, type ResourceKind } from '@/lib/library/resourceEmbed'
+import {
+  buildActivityUrl,
+  buildEmbedUrl,
+  buildResourceUrl,
+  type ResourceKind,
+} from '@/lib/library/resourceEmbed'
 
 const UPLOAD_ACCEPT =
   'image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip'
@@ -38,6 +45,8 @@ const RESOURCE_ICONS: Partial<Record<ResourceKind, any>> = {
   community: Users,
   board: LayoutGrid,
   playground: Gamepad2,
+  article: FileText,
+  activity: BookCopy,
 }
 
 /** The subset of a Media row the block caches so it can paint before refetching. */
@@ -65,6 +74,10 @@ function LibraryBlockComponent(props: NodeViewProps) {
   const resourceUuid: string | null = props.node.attrs.resourceUuid
   const resourceType: ResourceKind | null = props.node.attrs.resourceType
   const snapshot = props.node.attrs.snapshot
+  const courseUuid: string | null = props.node.attrs.courseUuid || snapshot?.course_uuid || null
+  // The node-level field mirrors edits for compatibility; the snapshot is the
+  // source rendered to readers, including readers without target access.
+  const description: string = snapshot?.description ?? props.node.attrs.description ?? ''
   const display: string = props.node.attrs.display || 'inline'
 
   const [pickerOpen, setPickerOpen] = React.useState(false)
@@ -74,8 +87,9 @@ function LibraryBlockComponent(props: NodeViewProps) {
 
   const isMedia = resourceType === 'media'
 
-  // The snapshot is a point-in-time copy; refresh it so a renamed or replaced
-  // asset doesn't keep showing stale metadata (same approach as the video block).
+  // Media is allowed to refresh its file metadata. Link cards deliberately do
+  // not refresh: their title and description are a point-in-time snapshot, so
+  // readers still see a useful card when the target is gated or unavailable.
   React.useEffect(() => {
     if (!isMedia || !resourceUuid || !access_token) return
     let cancelled = false
@@ -95,12 +109,23 @@ function LibraryBlockComponent(props: NodeViewProps) {
   }, [isMedia, resourceUuid, access_token])
 
   const applySelection = (selected: SelectedResource) => {
+    const isLinkTarget = selected.resource_type === 'article' || selected.resource_type === 'activity'
+    const nextDescription = selected.description ?? ''
+    const nextSnapshot = selected.resource_type === 'media'
+      ? snapshotOf(selected.resource)
+      : {
+          name: selected.name ?? '',
+          description: nextDescription,
+          ...(selected.course_uuid ? { course_uuid: selected.course_uuid } : {}),
+        }
+
     props.updateAttributes({
       resourceUuid: selected.resource_uuid,
       resourceType: selected.resource_type,
-      snapshot: selected.resource_type === 'media' ? snapshotOf(selected.resource) : {
-        name: selected.name ?? '',
-      },
+      courseUuid: selected.course_uuid ?? null,
+      description: nextDescription,
+      snapshot: nextSnapshot,
+      ...(isLinkTarget ? { display: 'card' } : {}),
     })
     setPickerOpen(false)
   }
@@ -136,7 +161,13 @@ function LibraryBlockComponent(props: NodeViewProps) {
   }
 
   const clearSelection = () => {
-    props.updateAttributes({ resourceUuid: null, resourceType: null, snapshot: null })
+    props.updateAttributes({
+      resourceUuid: null,
+      resourceType: null,
+      courseUuid: null,
+      description: null,
+      snapshot: null,
+    })
   }
 
   const picker = (
@@ -150,7 +181,16 @@ function LibraryBlockComponent(props: NodeViewProps) {
         <ResourcePicker
           orgslug={org?.slug}
           mode="select"
-          tabs={['media', 'courses', 'podcasts', 'communities', 'boards', 'playgrounds']}
+          tabs={[
+            'media',
+            'courses',
+            'lessons',
+            'articles',
+            'podcasts',
+            'communities',
+            'boards',
+            'playgrounds',
+          ]}
           onSelect={applySelection}
           selectedUuid={resourceUuid || undefined}
         />
@@ -291,14 +331,61 @@ function LibraryBlockComponent(props: NodeViewProps) {
   // Other library resources (course, podcast, community, board, playground).
   const kind = (resourceType || 'course') as ResourceKind
   const Icon = RESOURCE_ICONS[kind] || Library
-  const baseUrl = org?.slug ? buildResourceUrl(kind, resourceUuid, org.slug) : null
+  const baseUrl = org?.slug
+    ? resourceType === 'activity'
+      ? buildActivityUrl(courseUuid || '', resourceUuid, org.slug)
+      : buildResourceUrl(kind, resourceUuid, org.slug)
+    : null
+  const isLinkCard = resourceType === 'article' || resourceType === 'activity'
+
+  const updateLinkDescription = (value: string) => {
+    props.updateAttributes({
+      description: value,
+      // Keep the cached card self-contained for readers who cannot open the target.
+      snapshot: { ...(snapshot || {}), name, description: value },
+    })
+  }
 
   return (
     <NodeViewWrapper className="my-4">
       <div className="group relative" contentEditable={false}>
         <div className="absolute top-2 right-2 z-10">{toolbar}</div>
 
-        {display === 'embed' && baseUrl ? (
+        {isLinkCard ? (
+          <div className="flex items-center gap-3 bg-white rounded-xl nice-shadow border border-gray-100 px-4 py-3">
+            <Icon size={22} className="text-signal flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
+              {isEditable ? (
+                <input
+                  type="text"
+                  value={description}
+                  onChange={(event) => updateLinkDescription(event.target.value)}
+                  placeholder={t('library.link_description_placeholder')}
+                  aria-label={t('library.link_description_label')}
+                  className="mt-1 w-full min-w-0 bg-transparent text-xs text-gray-700 placeholder:text-gray-400 outline-none border-b border-transparent focus:border-signal whitespace-nowrap"
+                />
+              ) : (
+                // Nothing when the author left it blank. `link_description_empty`
+                // is an editing hint — a reader seeing "Описание не добавлено"
+                // learns about our editor, not about the lesson behind the card.
+                description && (
+                  <p className="mt-1 text-xs text-gray-700 truncate whitespace-nowrap">
+                    {description}
+                  </p>
+                )
+              )}
+            </div>
+            {baseUrl && (
+              <a
+                href={baseUrl}
+                className="inline-flex items-center gap-1.5 flex-shrink-0 text-xs font-semibold text-signal hover:opacity-75 transition-opacity"
+              >
+                {t('library.follow_link')} <ArrowRight size={14} />
+              </a>
+            )}
+          </div>
+        ) : display === 'embed' && baseUrl ? (
           <div className="w-full rounded-xl overflow-hidden nice-shadow bg-white" style={{ height: '70vh', minHeight: 420 }}>
             <iframe
               src={buildEmbedUrl(kind, baseUrl)}

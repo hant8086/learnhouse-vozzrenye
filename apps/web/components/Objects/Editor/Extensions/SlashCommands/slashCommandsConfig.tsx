@@ -1,6 +1,7 @@
 import {
   AlertCircle,
   BadgeHelp,
+  BookCopy,
   Code,
   CodeSquare,
   Cuboid,
@@ -231,6 +232,23 @@ export const slashCommands: SlashCommandItem[] = [
     keywords: ['library', 'file', 'media', 'resource', 'reuse', 'existing', 'folder'],
     command: (editor) => {
       editor.chain().focus().insertContent({ type: 'blockLibrary' }).run()
+    },
+  },
+  {
+    id: 'lessons',
+    title: 'Уроки',
+    description: 'Добавить ссылку на урок или статью',
+    titleKey: 'editor.slash_commands.lessons',
+    descriptionKey: 'editor.slash_commands.lessons_description',
+    icon: <BookCopy size={18} />,
+    category: 'media',
+    keywords: ['уроки', 'урок', 'lesson', 'activity', 'article', 'статья', 'branch', 'link'],
+    command: (editor) => {
+      editor
+        .chain()
+        .focus()
+        .insertContent({ type: 'blockLibrary', attrs: { display: 'card' } })
+        .run()
     },
   },
 

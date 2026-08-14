@@ -1192,7 +1192,9 @@
       "communities": "Communities",
       "boards": "Boards",
       "playgrounds": "Playgrounds",
-      "media": "Media"
+      "media": "Media",
+      "articles": "Articles",
+      "lessons": "Lessons"
     },
     "add_content": "Add content",
     "upload_media": "Upload media",
@@ -1231,6 +1233,11 @@
     "no_items_description": "Create a folder or upload media to organize your content.",
     "no_resources": "No resources available",
     "open": "Open",
+    "choose_course": "Choose another course",
+    "link_description_label": "Card description",
+    "link_description_placeholder": "Add a one-line description",
+    "link_description_empty": "No description",
+    "follow_link": "Open",
     "private": "Private",
     "public": "Public",
     "remove_from_folder": "Remove from folder",
@@ -4678,6 +4685,10 @@
     "saving": "Saving...",
     "saved": "Saved",
     "save_error": "Could not save",
+    "slash_commands": {
+      "lessons": "Lessons",
+      "lessons_description": "Add a link to a lesson or article"
+    },
     "preview": "Preview",
     "desktop_only": "Desktop Only",
     "desktop_only_message": "The editor is only accessible from a desktop device.",

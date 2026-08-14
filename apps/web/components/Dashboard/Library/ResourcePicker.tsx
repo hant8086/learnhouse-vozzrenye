@@ -15,6 +15,8 @@ import {
   Plus,
   Loader2,
   File as FileIcon,
+  FileText,
+  ChevronLeft,
 } from 'lucide-react'
 import MediaPreview from '@components/Dashboard/Library/MediaPreview'
 import React from 'react'
@@ -23,11 +25,27 @@ import useSWR from 'swr'
 import { useTranslation } from 'react-i18next'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 
-export type TabKey = 'courses' | 'podcasts' | 'communities' | 'boards' | 'playgrounds' | 'media'
+export type TabKey =
+  | 'courses'
+  | 'podcasts'
+  | 'communities'
+  | 'boards'
+  | 'playgrounds'
+  | 'media'
+  | 'articles'
+  | 'lessons'
 
 // Singular resource kind stored on a resource activity's content.resource_type,
 // used by the student renderer to build the correct resource route.
-export type ResourceKind = 'course' | 'podcast' | 'community' | 'board' | 'playground' | 'media'
+export type ResourceKind =
+  | 'course'
+  | 'podcast'
+  | 'community'
+  | 'board'
+  | 'playground'
+  | 'media'
+  | 'article'
+  | 'activity'
 
 export const TAB_META: Record<
   TabKey,
@@ -39,6 +57,9 @@ export const TAB_META: Record<
   communities: { feature: 'communities', icon: Users, uuidKey: 'community_uuid', kind: 'community' },
   boards: { feature: 'boards', icon: LayoutGrid, uuidKey: 'board_uuid', kind: 'board' },
   playgrounds: { feature: 'playgrounds', icon: Gamepad2, uuidKey: 'playground_uuid', kind: 'playground' },
+  articles: { feature: 'library', icon: FileText, uuidKey: 'article_uuid', kind: 'article' },
+  // Activities are nested under courses, so this tab uses its own picker below.
+  lessons: { feature: 'courses', icon: BookCopy, uuidKey: 'activity_uuid', kind: 'activity' },
 }
 
 export function endpointFor(tab: TabKey, orgslug: string, org_id: any): string {
@@ -56,6 +77,11 @@ export function endpointFor(tab: TabKey, orgslug: string, org_id: any): string {
       return `${getAPIUrl()}boards/org/${org_id}`
     case 'playgrounds':
       return `${getAPIUrl()}playgrounds/org/${org_id}`
+    case 'articles':
+      return `${getAPIUrl()}articles/?org_id=${org_id}&page=1&limit=100&include_unpublished=true`
+    case 'lessons':
+      // The lessons picker starts with the same course catalog as the Courses tab.
+      return `${getAPIUrl()}courses/org_slug/${orgslug}/page/1/limit/100?include_unpublished=true`
   }
 }
 
@@ -63,6 +89,9 @@ export type SelectedResource = {
   resource_uuid: string
   resource_type: ResourceKind
   name?: string
+  description?: string
+  /** Activities are addressed by both their own uuid and their course uuid. */
+  course_uuid?: string
   /** The full row, so callers can cache display metadata without a refetch. */
   resource?: any
 }
@@ -79,7 +108,7 @@ type ResourceListProps = {
   selectedUuid?: string
 }
 
-function ResourceList({
+function GenericResourceList({
   tab,
   orgslug,
   mode,
@@ -136,6 +165,7 @@ function ResourceList({
       resource_uuid: item[uuidKey],
       resource_type: TAB_META[tab].kind,
       name: item.name,
+      description: tab === 'articles' ? item.excerpt ?? '' : '',
       resource: item,
     })
   }
@@ -249,6 +279,160 @@ function ResourceList({
   )
 }
 
+function LessonResourceList({
+  orgslug,
+  mode,
+  onSelect,
+  selectedUuid,
+}: Omit<ResourceListProps, 'tab' | 'folderUuid' | 'onChanged'>) {
+  const { t } = useTranslation()
+  const org = useOrg() as any
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
+  const [selectedCourseUuid, setSelectedCourseUuid] = React.useState<string | null>(null)
+  const [query, setQuery] = React.useState('')
+
+  const coursesEndpoint = org?.id ? endpointFor('courses', orgslug, org.id) : null
+  const { data: coursesData, isLoading: coursesLoading } = useSWR(
+    coursesEndpoint,
+    (url: string) => apiFetch(url, access_token)
+  )
+  const courses: any[] = Array.isArray(coursesData) ? coursesData : coursesData?.data ?? []
+  const selectedCourse = courses.find((course) => course.course_uuid === selectedCourseUuid)
+
+  const metadataEndpoint = selectedCourseUuid
+    ? `${getAPIUrl()}courses/${selectedCourseUuid}/meta?slim=true&with_unpublished_activities=true`
+    : null
+  const { data: metadata, isLoading: metadataLoading } = useSWR(
+    metadataEndpoint,
+    (url: string) => apiFetch(url, access_token)
+  )
+
+  const chapters: any[] = metadata?.chapters ?? []
+  const filteredChapters = query.trim()
+    ? chapters
+        .map((chapter) => ({
+          ...chapter,
+          activities: (chapter.activities ?? []).filter((activity: any) =>
+            `${chapter.name} ${activity.name}`.toLowerCase().includes(query.toLowerCase())
+          ),
+        }))
+        .filter((chapter) => chapter.activities.length > 0)
+    : chapters
+
+  const handleSelect = (activity: any) => {
+    if (!selectedCourse?.course_uuid) return
+    onSelect?.({
+      resource_uuid: activity.activity_uuid,
+      resource_type: 'activity',
+      course_uuid: selectedCourse.course_uuid,
+      name: activity.name,
+      description: '',
+      resource: { ...activity, course_uuid: selectedCourse.course_uuid },
+    })
+  }
+
+  if (!selectedCourseUuid) {
+    return (
+      <div className="flex flex-col gap-1.5 max-h-[430px] overflow-y-auto">
+        {coursesLoading ? (
+          <div className="py-10 flex justify-center text-gray-400">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+        ) : courses.length === 0 ? (
+          <div className="py-10 text-center text-sm text-gray-400">{t('library.no_resources')}</div>
+        ) : (
+          courses.map((course) => (
+            <button
+              key={course.course_uuid}
+              type="button"
+              onClick={() => setSelectedCourseUuid(course.course_uuid)}
+              className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-left transition-colors"
+            >
+              <span className="text-sm font-medium text-gray-800 truncate pr-3">{course.name}</span>
+              <BookCopy className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            </button>
+          ))
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedCourseUuid(null)
+          setQuery('')
+        }}
+        className="inline-flex items-center gap-1 mb-3 text-sm font-medium text-gray-600 hover:text-gray-900"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        {t('library.choose_course')}
+      </button>
+      <p className="mb-3 text-sm font-semibold text-gray-900 truncate">{selectedCourse?.name}</p>
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t('library.search')}
+          className="w-full pl-10 pr-3 py-2 bg-white nice-shadow rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10 border-0"
+        />
+      </div>
+
+      {metadataLoading ? (
+        <div className="py-10 flex justify-center text-gray-400">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </div>
+      ) : filteredChapters.length === 0 ? (
+        <div className="py-10 text-center text-sm text-gray-400">{t('library.no_resources')}</div>
+      ) : (
+        <div className="flex flex-col gap-4 max-h-[350px] overflow-y-auto pr-1">
+          {filteredChapters.map((chapter) => (
+            <section key={chapter.chapter_uuid || chapter.id}>
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {chapter.name}
+              </h3>
+              <div className="flex flex-col gap-1.5">
+                {(chapter.activities ?? []).map((activity: any) => {
+                  const isSelected = mode === 'select' && selectedUuid === activity.activity_uuid
+                  return (
+                    <div
+                      key={activity.activity_uuid}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-lg border transition-colors ${
+                        isSelected ? 'border-black bg-gray-50' : 'border-gray-100 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="text-sm font-medium text-gray-800 truncate pr-3">
+                        {activity.name}
+                      </span>
+                      {mode === 'select' && (
+                        <button
+                          type="button"
+                          onClick={() => handleSelect(activity)}
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold nice-shadow transition-colors ${
+                            isSelected ? 'bg-green-600 text-white' : 'bg-black text-white hover:bg-neutral-800'
+                          }`}
+                        >
+                          {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                          {isSelected ? t('library.added') : t('library.add')}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TabButton({
   tab,
   orgslug,
@@ -269,7 +453,7 @@ function TabButton({
   // Prefetch each tab's data so we can show a count and warm the cache. SWR
   // dedupes this against the active tab's ResourceList fetch (same key).
   const { data } = useSWR(
-    org?.id ? endpointFor(tab, orgslug, org.id) : null,
+    tab === 'lessons' ? null : org?.id ? endpointFor(tab, orgslug, org.id) : null,
     (url: string) => apiFetch(url, access_token)
   )
   const count = Array.isArray(data) ? data.length : data?.data?.length
@@ -286,7 +470,7 @@ function TabButton({
     >
       <Icon className="w-4 h-4" />
       {t(`library.tabs.${tab}`)}
-      {count !== undefined && (
+      {tab !== 'lessons' && count !== undefined && (
         <span
           className={`ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-semibold ${
             active ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'
@@ -349,15 +533,24 @@ function ResourcePicker({
         ))}
       </div>
 
-      <ResourceList
-        tab={activeTab}
-        orgslug={orgslug}
-        mode={mode}
-        folderUuid={folderUuid}
-        onChanged={onChanged}
-        onSelect={onSelect}
-        selectedUuid={selectedUuid}
-      />
+      {activeTab === 'lessons' ? (
+        <LessonResourceList
+          orgslug={orgslug}
+          mode={mode}
+          onSelect={onSelect}
+          selectedUuid={selectedUuid}
+        />
+      ) : (
+        <GenericResourceList
+          tab={activeTab}
+          orgslug={orgslug}
+          mode={mode}
+          folderUuid={folderUuid}
+          onChanged={onChanged}
+          onSelect={onSelect}
+          selectedUuid={selectedUuid}
+        />
+      )}
     </div>
   )
 }

@@ -20,9 +20,11 @@ import {
 import PlanBadge from '@components/Dashboard/Shared/PlanRestricted/PlanBadge'
 import { planMeetsRequirement } from '@services/plans/plans'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
+import { useTranslation } from 'react-i18next'
 
 const SlashCommandsList = forwardRef<SlashCommandsListRef, SlashCommandsListProps>(
   ({ items, command, currentPlan = 'free' }, ref) => {
+    const { t } = useTranslation()
     const { track } = useLHAnalytics('editor')
     const [selectedIndex, setSelectedIndex] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -110,6 +112,10 @@ const SlashCommandsList = forwardRef<SlashCommandsListRef, SlashCommandsListProp
               {categoryLabels[category]}
             </div>
             {categoryItems.map((item) => {
+              const title = item.titleKey ? t(item.titleKey, { defaultValue: item.title }) : item.title
+              const description = item.descriptionKey
+                ? t(item.descriptionKey, { defaultValue: item.description })
+                : item.description
               const currentIndex = overallIndex
               overallIndex++
               const available = isCommandAvailable(item)
@@ -133,7 +139,7 @@ const SlashCommandsList = forwardRef<SlashCommandsListRef, SlashCommandsListProp
                   <div className={`slash-commands-item-icon ${!available ? 'grayscale' : ''}`}>{item.icon}</div>
                   <div className="slash-commands-item-content">
                     <div className="slash-commands-item-title flex items-center gap-2">
-                      <span className={!available ? 'text-gray-400' : ''}>{item.title}</span>
+                      <span className={!available ? 'text-gray-400' : ''}>{title}</span>
                       {item.requiredPlan && (
                         <PlanBadge
                           currentPlan={currentPlan}
@@ -143,7 +149,7 @@ const SlashCommandsList = forwardRef<SlashCommandsListRef, SlashCommandsListProp
                       )}
                     </div>
                     <div className={`slash-commands-item-description ${!available ? 'text-gray-400' : ''}`}>
-                      {item.description}
+                      {description}
                     </div>
                   </div>
                 </button>

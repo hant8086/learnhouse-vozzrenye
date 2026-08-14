@@ -31,6 +31,14 @@ export default Node.create({
       resourceType: {
         default: null,
       },
+      // Activity links need the course uuid in addition to resourceUuid.
+      courseUuid: {
+        default: null,
+      },
+      // Author-provided copy for article/activity link cards.
+      description: {
+        default: null,
+      },
       snapshot: {
         default: null,
       },

@@ -12,6 +12,8 @@ export type ResourceKind =
   | 'board'
   | 'playground'
   | 'media'
+  | 'article'
+  | 'activity'
 
 /**
  * Base internal route for a Library resource. Boards live at a top-level
@@ -37,9 +39,33 @@ export function buildResourceUrl(
       return getUriWithOrg(orgslug, `/playground/${resourceUuid}`)
     case 'course':
       return getUriWithOrg(orgslug, `/course/${resourceUuid.replace('course_', '')}`)
+    case 'article':
+      return buildArticleUrl(resourceUuid, orgslug)
     default:
       return null
   }
+}
+
+/** Stable article link: use the prefixed uuid instead of the editable slug. */
+export function buildArticleUrl(articleUuid: string, orgslug: string): string | null {
+  if (!articleUuid) return null
+  const stableUuid = articleUuid.startsWith('article_')
+    ? articleUuid
+    : `article_${articleUuid}`
+  return getUriWithOrg(orgslug, `/articles/${stableUuid}`)
+}
+
+/** Activity routes need both identifiers because an activity is nested in a course. */
+export function buildActivityUrl(
+  courseUuid: string,
+  activityUuid: string,
+  orgslug: string
+): string | null {
+  if (!courseUuid || !activityUuid) return null
+  return getUriWithOrg(
+    orgslug,
+    `/course/${courseUuid.replace('course_', '')}/activity/${activityUuid.replace('activity_', '')}`
+  )
 }
 
 // Boards already render chrome-free; the (withmenu) kinds need ?chrome=none.

@@ -4116,6 +4116,10 @@
     "saving": "Сохранение...",
     "saved": "Сохранено",
     "save_error": "Не удалось сохранить",
+    "slash_commands": {
+      "lessons": "Уроки",
+      "lessons_description": "Добавить ссылку на урок или статью"
+    },
     "preview": "Предпросмотр",
     "desktop_only": "Только на компьютере",
     "desktop_only_message": "Редактор доступен только с настольного компьютера.",
@@ -5335,7 +5339,9 @@
       "communities": "Communities",
       "boards": "Boards",
       "playgrounds": "Playgrounds",
-      "media": "Media"
+      "media": "Media",
+      "articles": "Статьи",
+      "lessons": "Уроки"
     },
     "add_content": "Add content",
     "upload_media": "Upload media",
@@ -5374,6 +5380,11 @@
     "no_items_description": "Create a folder or upload media to organize your content.",
     "no_resources": "No resources available",
     "open": "Open",
+    "choose_course": "Выбрать другой курс",
+    "link_description_label": "Описание карточки",
+    "link_description_placeholder": "Добавьте описание в одну строку",
+    "link_description_empty": "Описание не добавлено",
+    "follow_link": "Открыть",
     "private": "Private",
     "public": "Public",
     "remove_from_folder": "Remove from folder",
