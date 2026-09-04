@@ -418,6 +418,9 @@
     "course_learnings": "Course Learnings",
     "course_learnings_desc": "What will you teach? (Press Enter to add)",
     "course_tags": "Course Tags",
+    "catalog_section": "Catalog section",
+    "catalog_section_none": "No section",
+    "other": "Other",
     "course_visibility": "Course Visibility",
     "create_course_btn": "Create Course",
     "creating_course": "Creating course...",
@@ -2040,6 +2043,8 @@
           "learnings_invalid_json": "Invalid JSON format",
           "tags_label": "Tags",
           "tags_placeholder": "Enter to add...",
+          "catalog_section_label": "Catalog section",
+          "catalog_section_none": "No section",
           "thumbnail_type_label": "Thumbnail Type",
           "thumbnail_type_image": "Image",
           "thumbnail_type_video": "Video",
@@ -2748,6 +2753,7 @@
           "seo": "SEO",
           "automations": "Automations",
           "menu": "Menu",
+          "catalog": "Catalog",
           "danger": "Danger Zone"
         },
         "pages": {
@@ -2762,6 +2768,10 @@
           "landing": {
             "title": "Landing Page",
             "subtitle": "Customize your organization landing page"
+          },
+          "catalog": {
+            "title": "Catalog sections",
+            "subtitle": "Organize courses into public catalog sections"
           },
           "other": {
             "title": "Other",
@@ -3111,6 +3121,21 @@
           "success": "CSV exported successfully",
           "error": "Failed to export CSV"
         }
+      },
+      "catalog": {
+        "description": "Create and order the sections shown on the public course catalog.",
+        "add": "Add section",
+        "new_section": "New section",
+        "key": "Key",
+        "title": "Title",
+        "move_up": "Move up",
+        "move_down": "Move down",
+        "remove": "Remove",
+        "empty": "No catalog sections configured.",
+        "save": "Save changes",
+        "saving": "Saving...",
+        "saved": "Catalog sections saved",
+        "save_error": "Could not save catalog sections"
       },
       "landing": {
         "title": "Landing Page",

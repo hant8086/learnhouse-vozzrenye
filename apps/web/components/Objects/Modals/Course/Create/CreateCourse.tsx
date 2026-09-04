@@ -24,6 +24,7 @@ import {  UploadCloud, Image as ImageIcon, Clipboard } from 'lucide-react'
 import UnsplashImagePicker from "@components/Dashboard/Pages/Course/EditCourseGeneral/UnsplashImagePicker"
 import AIImageButton from '@components/Objects/AI/AIImageButton'
 import FormTagInput from "@components/Objects/StyledElements/Form/TagInput"
+import CatalogSectionSelect from '@components/Objects/Catalog/CatalogSectionSelect'
 import { useTranslation } from "react-i18next"
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 import { useUpgradeModal } from '@components/Dashboard/Shared/PlanRestricted/UpgradeModalContext'
@@ -72,6 +73,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
       learnings: '',
       visibility: true,
       tags: '',
+      catalog_section_key: '',
       thumbnail: null
     },
     validationSchema,
@@ -86,6 +88,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
             description: values.description,
             learnings: values.learnings,
             tags: values.tags,
+            catalog_section_key: values.catalog_section_key,
             visibility: values.visibility
           },
           values.thumbnail,
@@ -340,6 +343,13 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
 					error={formik.errors.tags}
 				/>
 			</FormField>
+
+      <CatalogSectionSelect
+        value={formik.values.catalog_section_key}
+        onChange={(value) => formik.setFieldValue('catalog_section_key', value)}
+        label={t('courses.catalog_section')}
+        clearLabel={t('courses.catalog_section_none')}
+      />
 
       <FormField name="visibility">
         <FormLabelAndMessage

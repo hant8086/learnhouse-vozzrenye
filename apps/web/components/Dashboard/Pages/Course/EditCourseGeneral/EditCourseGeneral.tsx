@@ -12,6 +12,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import ThumbnailUpdate from './ThumbnailUpdate';
 import { useCourseFieldSync } from '@components/Contexts/CourseContext';
 import FormTagInput from '@components/Objects/StyledElements/Form/TagInput';
+import CatalogSectionSelect from '@components/Objects/Catalog/CatalogSectionSelect';
 import LearningItemsList from './LearningItemsList';
 import {
   CustomSelect,
@@ -120,11 +121,15 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
       about: courseStructure?.about || '',
       learnings: initializeLearnings(courseStructure?.learnings || ''),
       tags: courseStructure?.tags || '',
+      catalog_section_key: typeof courseStructure?.extra_metadata?.catalog_section_key === 'string'
+        ? courseStructure.extra_metadata.catalog_section_key
+        : '',
       public: courseStructure?.public || false,
       thumbnail_type: thumbnailType,
     };
   }, [courseStructure?.name, courseStructure?.description, courseStructure?.about,
       courseStructure?.learnings, courseStructure?.tags, courseStructure?.public,
+      courseStructure?.extra_metadata?.catalog_section_key,
       courseStructure?.thumbnail_type, initializeLearnings]);
 
   const formik = useFormik({
@@ -155,6 +160,13 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
 
     // Only sync when there are actual user changes AND values changed since last sync
     if (hasChanges) {
+      if (Object.prototype.hasOwnProperty.call(changes, 'catalog_section_key')) {
+        const metadata = { ...(courseStructure?.extra_metadata || {}) };
+        if (changes.catalog_section_key) metadata.catalog_section_key = changes.catalog_section_key;
+        else delete metadata.catalog_section_key;
+        changes.extra_metadata = metadata;
+        delete changes.catalog_section_key;
+      }
       const changesStr = JSON.stringify(changes);
       const prevStr = JSON.stringify(previousValuesRef.current);
       if (changesStr !== prevStr) {
@@ -164,7 +176,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
     } else {
       previousValuesRef.current = null;
     }
-  }, [formik.values, formik.initialValues, isLoading, isSaving, syncChanges]);
+  }, [formik.values, formik.initialValues, courseStructure?.extra_metadata, isLoading, isSaving, syncChanges]);
 
   // useCourseFieldSync handles the unmount cleanup (flushing pending edits
   // instead of discarding them), so no local cleanup is needed here.
@@ -301,6 +313,13 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                   />
                 </Form.Control>
               </FormField>
+
+              <CatalogSectionSelect
+                value={formik.values.catalog_section_key}
+                onChange={(value) => formik.setFieldValue('catalog_section_key', value)}
+                label={t('dashboard.courses.general.form.catalog_section_label')}
+                clearLabel={t('dashboard.courses.general.form.catalog_section_none')}
+              />
 
               <FormField name="thumbnail_type">
                 <FormLabelAndMessage label={t('dashboard.courses.general.form.thumbnail_type_label')} />

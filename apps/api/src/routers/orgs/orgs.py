@@ -20,7 +20,7 @@ from src.services.orgs.users import (
     remove_user_from_org,
     update_user_role,
 )
-from src.db.organization_config import OrganizationConfigBase
+from src.db.organization_config import OrganizationConfigBase, CourseCatalogConfig
 from src.db.users import AnonymousUser, PublicUser
 from src.db.organizations import (
     OrganizationCreate,
@@ -49,6 +49,7 @@ from src.services.orgs.orgs import (
     update_org_folders_config,
     update_org_folders_sort_config,
     update_org_courses_config,
+    update_org_course_catalog_config,
     update_org_podcasts_config,
     update_org_boards_config,
     update_org_playgrounds_config,
@@ -563,6 +564,30 @@ async def api_update_org_courses_config(
     """
     return await update_org_courses_config(
         request, courses_enabled, org_id, current_user, db_session
+    )
+
+
+@feature_config_router.put(
+    "/{org_id}/config/course-catalog",
+    summary="Update organization course catalog sections",
+    description="Replace the ordered public course catalog section registry. Admin only.",
+    responses={
+        200: {"description": "Course catalog configuration updated."},
+        401: {"description": "Not authenticated"},
+        403: {"description": "Caller is not an organization administrator"},
+        404: {"description": "Organization or configuration not found"},
+        422: {"description": "Invalid or duplicate section key"},
+    },
+)
+async def api_update_org_course_catalog_config(
+    request: Request,
+    org_id: int,
+    catalog_config: CourseCatalogConfig,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    return await update_org_course_catalog_config(
+        request, catalog_config, org_id, current_user, db_session
     )
 
 

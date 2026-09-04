@@ -5,6 +5,9 @@ import {
   errorHandling,
   getResponseMetadata,
 } from '@services/utils/ts/requests'
+import { collectCoursePages } from '@/lib/catalog/pagination'
+
+export { collectCoursePages }
 
 /*
  This file includes only POST, PUT, DELETE requests
@@ -15,15 +18,44 @@ export async function getOrgCourses(
   org_slug: string,
   next: any,
   access_token?: any,
-  include_unpublished: boolean = false
+  include_unpublished: boolean = false,
+  page: number = 1,
+  limit: number = 100,
 ) {
-  const url = `${getAPIUrl()}courses/org_slug/${org_slug}/page/1/limit/100${include_unpublished ? '?include_unpublished=true' : ''}`
+  const searchParams = new URLSearchParams()
+  if (include_unpublished) searchParams.set('include_unpublished', 'true')
+  const query = searchParams.toString()
+  const url = `${getAPIUrl()}courses/org_slug/${org_slug}/page/${Math.max(1, page)}/limit/${Math.min(100, Math.max(1, limit))}${query ? `?${query}` : ''}`
   const result: any = await fetch(
     url,
     RequestBodyWithAuthHeader('GET', null, next, access_token)
   )
   const res = await errorHandling(result)
   return res
+}
+
+/** Fetch every catalog page; the API intentionally caps each page at 100. */
+export async function getAllOrgCourses(
+  org_slug: string,
+  next: any,
+  access_token?: any,
+  include_unpublished: boolean = false,
+) {
+  const pageSize = 100
+  return collectCoursePages(
+    async (page, limit) => {
+      const pageCourses = await getOrgCourses(
+        org_slug,
+        next,
+        access_token,
+        include_unpublished,
+        page,
+        limit,
+      )
+      return Array.isArray(pageCourses) ? pageCourses : []
+    },
+    pageSize,
+  )
 }
 
 export async function searchOrgCourses(
@@ -112,6 +144,11 @@ export async function createNewCourse(
   formData.append('learnings', course_body.learnings || '')
   formData.append('tags', course_body.tags || '')
   formData.append('about', course_body.description || '')
+  if (course_body.catalog_section_key) {
+    formData.append('extra_metadata', JSON.stringify({
+      catalog_section_key: course_body.catalog_section_key,
+    }))
+  }
 
   if (thumbnail) {
     formData.append('thumbnail', thumbnail)

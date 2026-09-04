@@ -439,6 +439,9 @@
     "course_learnings": "Чему вы научитесь",
     "course_learnings_desc": "Чему вы будете учить? (Нажмите Enter, чтобы добавить)",
     "course_tags": "Теги курса",
+    "catalog_section": "Раздел каталога",
+    "catalog_section_none": "Без раздела",
+    "other": "Другие",
     "course_visibility": "Видимость курса",
     "create_course_btn": "Создать курс",
     "creating_course": "Создание курса...",
@@ -1603,6 +1606,8 @@
           "learnings_invalid_json": "Неверный формат JSON",
           "tags_label": "Теги",
           "tags_placeholder": "Нажмите Enter, чтобы добавить...",
+          "catalog_section_label": "Раздел каталога",
+          "catalog_section_none": "Без раздела",
           "thumbnail_type_label": "Тип миниатюры",
           "thumbnail_type_image": "Изображение",
           "thumbnail_type_video": "Видео",
@@ -2312,6 +2317,7 @@
           "automations": "Автоматизация",
           "api": "API Access",
           "menu": "Menu",
+          "catalog": "Каталог",
           "danger": "Опасная зона"
         },
         "pages": {
@@ -2326,6 +2332,10 @@
           "landing": {
             "title": "Лендинг",
             "subtitle": "Настройте лендинг вашей организации"
+          },
+          "catalog": {
+            "title": "Разделы каталога",
+            "subtitle": "Организуйте курсы по разделам публичного каталога"
           },
           "other": {
             "title": "Другое",
@@ -2604,6 +2614,21 @@
         "enterprise_feature": "Функция Enterprise",
         "enterprise_description": "Журналы аудита — это премиум-функция, доступная только для организаций с планом Enterprise. Обновитесь, чтобы получить полную видимость активностей вашей организации.",
         "upgrade_button": "Обновить до Enterprise"
+      },
+      "catalog": {
+        "description": "Создавайте и упорядочивайте разделы публичного каталога курсов.",
+        "add": "Добавить раздел",
+        "new_section": "Новый раздел",
+        "key": "Ключ",
+        "title": "Название",
+        "move_up": "Выше",
+        "move_down": "Ниже",
+        "remove": "Удалить",
+        "empty": "Разделы каталога не настроены.",
+        "save": "Сохранить",
+        "saving": "Сохранение...",
+        "saved": "Разделы каталога сохранены",
+        "save_error": "Не удалось сохранить разделы каталога"
       },
       "landing": {
         "title": "Лендинг",

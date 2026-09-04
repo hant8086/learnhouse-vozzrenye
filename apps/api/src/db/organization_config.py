@@ -1,5 +1,6 @@
 from typing import Literal, Optional
-from pydantic import BaseModel
+import re
+from pydantic import BaseModel, Field as PydanticField, field_validator
 from sqlalchemy import JSON, BigInteger, Column, ForeignKey
 from sqlmodel import Field, SQLModel
 
@@ -289,6 +290,44 @@ class SignupFieldsConfig(BaseModel):
     fields: list[SignupFieldItem] = Field(default_factory=list)
 
 
+class CourseCatalogSection(BaseModel):
+    """One editorial section in the public course catalog."""
+
+    key: str
+    title: str
+    order: int = 0
+
+    @field_validator("key")
+    @classmethod
+    def validate_key(cls, value: str) -> str:
+        value = value.strip().lower()
+        if not value or len(value) > 80 or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", value) is None:
+            raise ValueError("section keys must be lowercase kebab-case identifiers")
+        return value
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        value = value.strip()
+        if not value or len(value) > 160:
+            raise ValueError("section titles must contain 1-160 characters")
+        return value
+
+
+class CourseCatalogConfig(BaseModel):
+    """Organization-scoped ordered course catalog sections."""
+
+    sections: list[CourseCatalogSection] = PydanticField(default_factory=list)
+
+    @field_validator("sections")
+    @classmethod
+    def validate_sections(cls, value: list[CourseCatalogSection]) -> list[CourseCatalogSection]:
+        keys = [section.key for section in value]
+        if len(keys) != len(set(keys)):
+            raise ValueError("course catalog section keys must be unique")
+        return sorted(value, key=lambda section: (section.order, section.key))
+
+
 class CustomizationConfig(BaseModel):
     general: GeneralCustomization = GeneralCustomization()
     auth_branding: AuthBrandingConfig = AuthBrandingConfig()
@@ -296,6 +335,7 @@ class CustomizationConfig(BaseModel):
     landing: dict = Field(default_factory=dict)
     menu: MenuConfig = MenuConfig()
     signup_fields: SignupFieldsConfig = SignupFieldsConfig()
+    course_catalog: CourseCatalogConfig = CourseCatalogConfig()
 
 
 # ============================================================================

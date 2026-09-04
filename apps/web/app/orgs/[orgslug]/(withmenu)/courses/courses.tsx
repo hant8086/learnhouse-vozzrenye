@@ -10,9 +10,7 @@ import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import NewCourseButton from '@components/Objects/StyledElements/Buttons/NewCourseButton'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
 import { useTranslation } from 'react-i18next'
-import { BookCopy, Search, X, Users, Info, LogIn } from 'lucide-react'
-import Link from 'next/link'
-import { getUriWithOrg } from '@services/config/config'
+import { BookCopy, Search, X, Users, Info } from 'lucide-react'
 import FeatureGate from '@components/Dashboard/Shared/FeatureGate/FeatureGate'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -20,9 +18,9 @@ import { searchMatchesAny } from '@/lib/search/normalize'
 import { getUserGroups, getUserGroupResources } from '@services/usergroups/usergroups'
 import { useCourses } from '@/hooks/queries/useCourses'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
-import CatalogPagination, { useCatalogPagination } from '@components/Objects/Catalog/CatalogPagination'
 import { asArray } from '@services/utils/ts/requests'
 import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
+import { groupCatalogCourses } from '@/lib/catalog/sections'
 
 interface CourseProps {
   orgslug: string
@@ -117,6 +115,11 @@ function Courses(props: CourseProps) {
     return courses
   }, [allCourses, searchQuery, usergroupResourceUuids])
 
+  const catalogGroups = useMemo(
+    () => groupCatalogCourses(filteredCourses, org?.config?.config),
+    [filteredCourses, org?.config?.config],
+  )
+
   // Track non-empty searches (debounced so we don't fire on every keystroke)
   useEffect(() => {
     const query = searchQuery.trim()
@@ -129,20 +132,6 @@ function Courses(props: CourseProps) {
     }, 500)
     return () => clearTimeout(timer)
   }, [searchQuery, filteredCourses.length, allCourses.length, track])
-
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems: paginatedCourses,
-    pageNumbers,
-    goToPage,
-    resetPage,
-  } = useCatalogPagination(filteredCourses)
-
-  // Reset to page 1 when search or filter changes
-  React.useEffect(() => {
-    resetPage()
-  }, [searchQuery, selectedUsergroupId, resetPage])
 
   async function closeNewCourseModal() {
     setNewCourseModal(false)
@@ -283,12 +272,21 @@ function Courses(props: CourseProps) {
             </div>
           )}
 
-          <RevealGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {paginatedCourses.map((course: any, index: number) => (
-              <RevealItem key={course.course_uuid} className="flex h-full">
-                <CourseThumbnail course={course} orgslug={orgslug} isPriority={currentPage === 1 && index < 3} />
-              </RevealItem>
-            ))}
+          <div>
+          {catalogGroups.map(({ section, courses }) => (
+            <section key={section?.key ?? 'other'} className="mb-10">
+              <h2 className="mb-4 text-2xl font-bold tracking-tight text-gray-900">
+                {section?.title ?? t('courses.other', 'Other')}
+              </h2>
+              <RevealGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {courses.map((course: any, index: number) => (
+                  <RevealItem key={course.course_uuid} className="flex h-full">
+                    <CourseThumbnail course={course} orgslug={orgslug} isPriority={index < 3} />
+                  </RevealItem>
+                ))}
+              </RevealGroup>
+            </section>
+          ))}
             {filteredCourses.length === 0 && searchQuery && (
               <RevealItem className="col-span-full flex flex-col items-center justify-center px-4 py-12">
                 <Search className="w-12 h-12 text-gray-300 mb-4" />
@@ -303,43 +301,18 @@ function Courses(props: CourseProps) {
             {allCourses.length === 0 && !searchQuery && (
               <RevealItem className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-100 bg-gray-50/30 px-4 py-12">
                 <div className="p-4 bg-white rounded-full nice-shadow mb-4">
-                  {isAuthenticated ? (
-                    <BookCopy className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
-                  ) : (
-                    <LogIn className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
-                  )}
+                  <BookCopy className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
                 </div>
                 <h1 className="text-xl font-bold text-gray-600 mb-2">
-                  {isAuthenticated
-                    ? t('courses.no_courses')
-                    : t('courses.sign_in_to_see_courses', 'Log in to see your courses')}
+                  {t('courses.no_courses')}
                 </h1>
                 <p className="text-md text-gray-400 mb-6 text-center max-w-xs">
-                  {!isAuthenticated ? (
-                    t(
-                      'courses.sign_in_to_see_courses_description',
-                      'Courses in this academy may only be visible once you are signed in.',
-                    )
-                  ) : isUserAdmin ? (
+                  {isUserAdmin ? (
                     t('courses.create_courses_placeholder')
                   ) : (
                     t('courses.no_courses_available')
                   )}
                 </p>
-                {/* An anonymous visitor sees an empty list whenever the org has no
-                    PUBLIC courses — the API filters non-public ones out rather than
-                    erroring, so "no courses" and "not signed in" are indistinguishable
-                    from here. Prompt for sign-in instead of implying the academy is
-                    empty. */}
-                {!isAuthenticated && (
-                  <Link
-                    href={getUriWithOrg(orgslug, '/login')}
-                    className="inline-flex items-center gap-2 justify-center px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
-                  >
-                    <LogIn size={16} />
-                    {t('auth.sign_in', 'Sign in')}
-                  </Link>
-                )}
                 {isAuthenticated && isUserAdmin && (
                   <div className="mt-4">
                     <AuthenticatedClientElement
@@ -356,24 +329,7 @@ function Courses(props: CourseProps) {
                 )}
               </RevealItem>
             )}
-          </RevealGroup>
-
-          <CatalogPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageNumbers={pageNumbers}
-            onPageChange={goToPage}
-            previousLabel={t('pagination.previous')}
-            nextLabel={t('pagination.next')}
-            className="mt-8"
-          />
-
-          {/* Pagination info */}
-          {totalPages > 1 && (
-            <div className="mt-2 text-center text-sm text-gray-500">
-              {t('pagination.showing_page', { current: currentPage, total: totalPages })}
-            </div>
-          )}
+          </div>
         </div>
       </GeneralWrapperStyled>
     </div>

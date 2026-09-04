@@ -131,6 +131,18 @@ export async function updateOrgFoldersSort(
   return res
 }
 
+export async function updateOrgCourseCatalog(
+  org_id: number,
+  sections: Array<{ key: string; title: string; order: number }>,
+  access_token: string,
+) {
+  const result = await fetch(
+    `${getAPIUrl()}orgs/${org_id}/config/course-catalog`,
+    RequestBodyWithAuthHeader('PUT', { sections }, null, access_token),
+  )
+  return getResponseMetadata(result)
+}
+
 export async function uploadLandingContent(
   org_uuid: any,
   content_file: File,

@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { queryKeys } from '@lib/query/keys'
-import { getOrgCourses, getCourseMetadata } from '@services/courses/courses'
+import { getAllOrgCourses, getCourseMetadata } from '@services/courses/courses'
 
 export function useCourses(orgSlug: string) {
   const session = useLHSession() as any
@@ -11,7 +11,7 @@ export function useCourses(orgSlug: string) {
 
   return useQuery({
     queryKey: queryKeys.courses.list(orgSlug),
-    queryFn: () => getOrgCourses(orgSlug, {}, accessToken),
+    queryFn: () => getAllOrgCourses(orgSlug, {}, accessToken),
     enabled: !!orgSlug,
     staleTime: 60_000,
   })

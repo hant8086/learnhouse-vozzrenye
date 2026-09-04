@@ -8,6 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.organization_config import (
     OrganizationConfig,
     OrganizationConfigBase,
+    CourseCatalogConfig,
 )
 from src.security.rbac.rbac import (
     authorization_verify_based_on_org_admin_status,
@@ -1160,6 +1161,51 @@ async def update_org_courses_config(
         request, "courses", courses_enabled, org_id, current_user, db_session,
         v1_default={"enabled": True, "limit": 100},
     )
+
+
+async def update_org_course_catalog_config(
+    request: Request,
+    catalog_config: CourseCatalogConfig,
+    org_id: int,
+    current_user: PublicUser | AnonymousUser,
+    db_session: AsyncSession,
+):
+    """Replace the ordered catalog section registry without losing other config."""
+    statement = select(Organization).where(Organization.id == org_id)
+    org = (await db_session.execute(statement)).scalars().first()
+
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    await rbac_check(request, org.org_uuid, current_user, "update", db_session)
+
+    statement = select(OrganizationConfig).where(OrganizationConfig.org_id == org.id)
+    org_config = (await db_session.execute(statement)).scalars().first()
+    if org_config is None:
+        raise HTTPException(status_code=404, detail="Organization config not found")
+
+    # Re-validate at the service boundary because API tokens and internal callers
+    # may invoke this function without going through FastAPI model binding.
+    normalized = CourseCatalogConfig.model_validate(catalog_config).model_dump(mode="json")
+    updated_config = _deep_copy_config(org_config)
+    if _is_v2_config(updated_config):
+        customization = updated_config.get("customization")
+        if not isinstance(customization, dict):
+            customization = {}
+            updated_config["customization"] = customization
+        customization["course_catalog"] = normalized
+    else:
+        updated_config["course_catalog"] = normalized
+
+    org_config.config = updated_config
+    org_config.update_date = str(datetime.now())
+    db_session.add(org_config)
+    await db_session.commit()
+    await db_session.refresh(org_config)
+
+    from src.services.orgs.cache import invalidate_org_config_cache
+    invalidate_org_config_cache(org.id)
+    return {"detail": "Course catalog configuration updated", "course_catalog": normalized}
 
 
 async def update_org_podcasts_config(
