@@ -42,6 +42,10 @@ async def _build_trail_read(
     if not trail_runs_raw:
         return TrailRead(**trail.model_dump(), runs=[])
 
+    # Learner callers historically omitted user_id; the trail owner is the
+    # authoritative projection identity. Admin callers may explicitly pass a
+    # target user's id when reading another user's trail.
+    projection_user_id = user_id if user_id is not None else trail.user_id
     trail_run_ids = [tr.id for tr in trail_runs_raw]
     course_ids = list({tr.course_id for tr in trail_runs_raw})
 
@@ -85,8 +89,8 @@ async def _build_trail_read(
     steps_statement = select(TrailStep).where(
         TrailStep.trailrun_id.in_(trail_run_ids)  # type: ignore
     )
-    if user_id is not None:
-        steps_statement = steps_statement.where(TrailStep.user_id == user_id)
+    if projection_user_id is not None:
+        steps_statement = steps_statement.where(TrailStep.user_id == projection_user_id)
     all_steps = (await db_session.execute(steps_statement)).scalars().all()
 
     # Group steps by trailrun_id
@@ -127,9 +131,9 @@ async def _build_trail_read(
         )
         visible_by_key: dict[tuple[str, str | int], Activity] = {}
         accessible: set[str] = set()
-        if user_id is not None and pairs:
+        if projection_user_id is not None and pairs:
             accessible = await batch_accessible_restricted_uuids(
-                user_id,
+                projection_user_id,
                 [pair["purchased"].activity_uuid for pair in pairs.values()],
                 db_session,
             )

@@ -32,7 +32,7 @@ from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 from src.db.usergroups import UserGroup, UserGroupRead
 from src.db.user_organizations import UserOrganization
-from src.db.users import APITokenUser, User, UserRead
+from src.db.users import APITokenUser, PublicUser, User, UserRead
 from src.services.trail.trail import _build_trail_read
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
@@ -214,7 +214,8 @@ async def check_course_access(
 ) -> dict:
     """Check if a user can access a specific course within the token's org."""
 
-    await _get_user_in_org(user_id, token_user.org_id, db_session)
+    target_user = await _get_user_in_org(user_id, token_user.org_id, db_session)
+    target_public_user = PublicUser.model_validate(target_user)
 
     course = (await db_session.execute(
         select(Course).where(
@@ -933,7 +934,7 @@ async def get_user_trail_detail(
     visible_by_course_and_key: dict[tuple[int, tuple[str, str | int]], Activity] = {}
     for course_id in course_map:
         course_rows = [item for item in activity_map.values() if item.course_id == course_id]
-        visible_rows = await select_visible_activities(course_rows, token_user, db_session)
+        visible_rows = await select_visible_activities(course_rows, target_public_user, db_session)
         for item in visible_rows:
             if item.id is not None:
                 key = logical_activity_key(item, course_rows, activity_scope_map)

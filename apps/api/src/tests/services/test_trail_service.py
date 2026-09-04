@@ -164,7 +164,7 @@ class TestTrailService:
         trail = await _make_trail(db, org, admin_user, trail_uuid="trail_variant")
         trail_run = await _make_trail_run(db, trail, course, admin_user)
         await _make_trail_step(db, trail, trail_run, unpurchased, course, admin_user)
-        trail_payload = SimpleNamespace(model_dump=lambda: {
+        trail_payload = SimpleNamespace(user_id=trail.user_id, model_dump=lambda: {
             "id": trail.id, "trail_uuid": trail.trail_uuid, "org_id": trail.org_id,
             "user_id": trail.user_id, "creation_date": trail.creation_date, "update_date": trail.update_date,
         })
@@ -174,7 +174,7 @@ class TestTrailService:
             new=AsyncMock(return_value={purchased.activity_uuid}),
         ):
             projected = await _build_trail_read(
-                trail_payload, [trail_run], db, user_id=admin_user.id
+                trail_payload, [trail_run], db
             )
 
         assert projected.runs[0].steps[0].activity_id == purchased.id
@@ -186,7 +186,7 @@ class TestTrailService:
             new=AsyncMock(return_value=set()),
         ):
             refunded = await _build_trail_read(
-                trail_payload, [trail_run], db, user_id=admin_user.id
+                trail_payload, [trail_run], db
             )
         assert len(refunded.runs[0].steps) == 1
         assert refunded.runs[0].steps[0].activity_id == unpurchased.id
