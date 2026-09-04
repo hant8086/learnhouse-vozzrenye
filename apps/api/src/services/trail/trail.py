@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
-from sqlmodel import select, func, delete as sql_delete
+from sqlmodel import select, delete as sql_delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.courses.chapter_activities import ChapterActivity
 from fastapi import HTTPException, Request, status
@@ -22,6 +22,13 @@ from src.services.audit.audit import record_audit_event
 from src.db.user_audit_events import UserAuditEventType
 from src.services.webhooks.dispatch import dispatch_webhooks
 from src.security.rbac import check_resource_access, AccessAction
+from src.services.courses.activity_variants import (
+    is_logical_activity_completed,
+    logical_activity_key,
+    logical_keys,
+    valid_variant_pairs,
+)
+from src.services.courses.locks import batch_accessible_restricted_uuids
 
 
 async def _build_trail_read(
@@ -35,6 +42,10 @@ async def _build_trail_read(
     if not trail_runs_raw:
         return TrailRead(**trail.model_dump(), runs=[])
 
+    # Learner callers historically omitted user_id; the trail owner is the
+    # authoritative projection identity. Admin callers may explicitly pass a
+    # target user's id when reading another user's trail.
+    projection_user_id = user_id if user_id is not None else trail.user_id
     trail_run_ids = [tr.id for tr in trail_runs_raw]
     course_ids = list({tr.course_id for tr in trail_runs_raw})
 
@@ -46,22 +57,40 @@ async def _build_trail_read(
         )).scalars().all()
         course_map = {c.id: c for c in courses}
 
+    # Batch fetch activities once: variant siblings count as one logical step.
+    course_activities_map: dict[int, list[Activity]] = {}
+    if course_ids:
+        activity_rows = (await db_session.execute(
+            select(Activity, ChapterActivity)
+            .join(ChapterActivity, ChapterActivity.activity_id == Activity.id)
+            .where(ChapterActivity.course_id.in_(course_ids))  # type: ignore
+        )).all()
+        activity_scopes: dict[int, set[int]] = {}
+        for activity, chapter_activity in activity_rows:
+            course_activities_map.setdefault(activity.course_id, []).append(activity)
+            if activity.id is not None:
+                activity_scopes.setdefault(activity.id, set()).add(chapter_activity.chapter_id)
+        activity_scope_map = {
+            activity_id: tuple(sorted(chapters))
+            for activity_id, chapters in activity_scopes.items()
+        }
+    else:
+        activity_scope_map = {}
+
     # Batch fetch chapter activity counts per course (for total_steps)
     course_total_steps_map: dict[int, int] = {}
     if with_course_info and course_ids:
-        step_counts = (await db_session.execute(
-            select(ChapterActivity.course_id, func.count(ChapterActivity.id))  # type: ignore
-            .where(ChapterActivity.course_id.in_(course_ids))  # type: ignore
-            .group_by(ChapterActivity.course_id)
-        )).all()
-        course_total_steps_map = {row[0]: row[1] for row in step_counts}
+        course_total_steps_map = {
+            course_id: len(logical_keys(activities, activity_scope_map))
+            for course_id, activities in course_activities_map.items()
+        }
 
     # Batch fetch all trail steps for these trail runs
     steps_statement = select(TrailStep).where(
         TrailStep.trailrun_id.in_(trail_run_ids)  # type: ignore
     )
-    if user_id is not None:
-        steps_statement = steps_statement.where(TrailStep.user_id == user_id)
+    if projection_user_id is not None:
+        steps_statement = steps_statement.where(TrailStep.user_id == projection_user_id)
     all_steps = (await db_session.execute(steps_statement)).scalars().all()
 
     # Group steps by trailrun_id
@@ -89,12 +118,50 @@ async def _build_trail_read(
             course_total_steps=course_total_steps_map.get(tr.course_id, 0) if with_course_info else 0,
         )
 
-        # Attach steps with course data (expunge to avoid dirty-tracking the data override)
+        # Attach one completion row per logical activity (expunge to avoid
+        # dirty-tracking the data override).
+        emitted_keys: set[tuple[str, str | int]] = set()
+        activity_by_id = {
+            activity.id: activity
+            for activity in course_activities_map.get(tr.course_id, [])
+            if activity.id is not None
+        }
+        pairs = valid_variant_pairs(
+            course_activities_map.get(tr.course_id, []), activity_scope_map
+        )
+        visible_by_key: dict[tuple[str, str | int], Activity] = {}
+        accessible: set[str] = set()
+        if projection_user_id is not None and pairs:
+            accessible = await batch_accessible_restricted_uuids(
+                projection_user_id,
+                [pair["purchased"].activity_uuid for pair in pairs.values()],
+                db_session,
+            )
+        for group, pair in pairs.items():
+            selected = pair["purchased"] if pair["purchased"].activity_uuid in accessible else pair["unpurchased"]
+            visible_by_key[("variant", f"{selected.course_id}:{group}")] = selected
         for step in steps_by_run.get(tr.id, []):
+            # Build a detached response value. ``model_copy`` retains
+            # SQLAlchemy instrumentation and can attempt to dirty a garbage
+            # collected ORM instance when its JSON payload is replaced.
+            step_for_read = TrailStep(**step.model_dump())
+            activity = activity_by_id.get(step.activity_id)
+            if activity is not None:
+                key = logical_activity_key(
+                    activity,
+                    course_activities_map.get(tr.course_id, []),
+                    activity_scope_map,
+                )
+                if key in emitted_keys:
+                    continue
+                emitted_keys.add(key)
+                visible = visible_by_key.get(key)
+                if visible is not None and visible.id is not None:
+                    step_for_read.activity_id = visible.id
             db_session.expunge(step)
             step_course = course_map.get(step.course_id)
-            step.data = {"course": step_course.model_dump() if step_course else None}
-            run.steps.append(step)
+            step_for_read.data = {"course": step_course.model_dump() if step_course else None}
+            run.steps.append(step_for_read)
 
         trail_runs.append(run)
 
@@ -277,7 +344,12 @@ async def add_activity_to_trail(
     )
     trailstep = (await db_session.execute(statement)).scalars().first()
 
-    is_new_completion = trailstep is None
+    # A sibling completion is the same logical step.  This prevents a
+    # purchase/refund switch from inserting a second TrailStep and firing
+    # duplicate activity/course-completed events.
+    is_new_completion = trailstep is None and not await is_logical_activity_completed(
+        activity, user.id, db_session
+    )
     if is_new_completion:
         trailstep = TrailStep(
             trailrun_id=trailrun.id if trailrun.id is not None else 0,

@@ -55,6 +55,7 @@ import {
   DropdownMenuTrigger,
 } from '@components/ui/dropdown-menu'
 import { ActivityPreviewHoverCard } from '@components/Objects/Activities/ActivityPreview/ActivityPreview'
+import ActivityVariantEditor from './ActivityVariantEditor'
 
 type ActivitiyElementProps = {
   orgslug: string
@@ -88,6 +89,7 @@ function ActivityElement(props: ActivitiyElementProps) {
   const [editVideoModalOpen, setEditVideoModalOpen] = React.useState(false)
   const [editDocumentModalOpen, setEditDocumentModalOpen] = React.useState(false)
   const [editScormModalOpen, setEditScormModalOpen] = React.useState(false)
+  const [variantModalOpen, setVariantModalOpen] = React.useState(false)
   const activityUUID = props.activity.activity_uuid
   const isMobile = useMediaQuery('(max-width: 767px)')
   const org = useOrg() as any;
@@ -472,6 +474,11 @@ function ActivityElement(props: ActivitiyElementProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => setVariantModalOpen(true)}>
+                    <Puzzle size={14} />
+                    {t('courses.access_variant')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setSelectedActivity(props.activity.id)}>
                     <Pencil size={14} />
                     {t('dashboard.courses.structure.actions.rename')}
@@ -499,6 +506,35 @@ function ActivityElement(props: ActivitiyElementProps) {
               </div>
             </div>
           )}
+
+          <Modal
+            isDialogOpen={variantModalOpen}
+            onOpenChange={setVariantModalOpen}
+            minHeight="no-min"
+            minWidth="md"
+            dialogTitle={t('courses.access_variant')}
+            dialogDescription={t('courses.access_variant_group')}
+            dialogContent={
+              <ActivityVariantEditor
+                activity={props.activity}
+                onSaved={(metadata) => {
+                  const updatedStructure = {
+                    ...course.courseStructure,
+                    chapters: course.courseStructure.chapters.map((ch: any) => ({
+                      ...ch,
+                      activities: ch.activities.map((a: any) =>
+                        a.activity_uuid === activityUUID ? { ...a, extra_metadata: metadata } : a
+                      ),
+                    })),
+                  }
+                  dispatchCourse({ type: 'setCourseStructure', payload: updatedStructure })
+                  dispatchCourse({ type: 'setIsSaved' })
+                  setVariantModalOpen(false)
+                  queryClient.invalidateQueries({ queryKey: queryKeys.courses.meta(cleanCourseUuid(props.course_uuid)) })
+                }}
+              />
+            }
+          />
 
           {/* Delete confirmation modal - hidden trigger clicked from dropdown */}
           <ConfirmationModal

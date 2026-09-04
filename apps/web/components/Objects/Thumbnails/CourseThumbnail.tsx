@@ -41,6 +41,7 @@ type Course = {
   // tells whether the current user already belongs to one of those groups.
   is_paid?: boolean
   has_access?: boolean
+  tags?: string | null
   authors?: Array<{
     user: {
       id: string
@@ -162,6 +163,10 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
   // gated (paid/membership). When the user is not a member yet, the card
   // renders a "locked / paid" CTA instead of the usual start-learning action.
   const isGated = course.is_paid === true && course.has_access !== true
+  const courseTags = (course.tags || '')
+    .split(/[,;|]/)
+    .map((tag) => tag.trim())
+    .filter(Boolean)
 
   return (
     <div
@@ -241,12 +246,27 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
           >
             {course.name}
           </Link>
+          {course.is_paid === true && (
+            <span className="ml-2 shrink-0 rounded-full bg-gray-900 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+              {t('courses.pro', 'Pro')}
+            </span>
+          )}
         </div>
         
         {course.description && (
           <p className="text-[11px] text-gray-500 line-clamp-2 min-h-[1.5rem]">
             {course.description}
           </p>
+        )}
+
+        {courseTags.length > 0 && (
+          <div className="flex flex-wrap gap-1" aria-label={t('courses.tags')}>
+            {courseTags.map((tag) => (
+              <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-[9px] font-medium text-gray-600">
+                {tag}
+              </span>
+            ))}
+          </div>
         )}
 
         <div className="pt-1.5 flex items-center justify-between border-t border-gray-100">

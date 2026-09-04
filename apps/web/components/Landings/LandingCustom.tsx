@@ -30,8 +30,9 @@ function LandingSectionHeading({ eyebrow, title }: { eyebrow: string; title: Rea
   )
 }
 
-function courseRefId(ref: LandingCourse | string): string {
-  return typeof ref === 'string' ? ref : ref.course_uuid
+function normalizeCourseRef(ref: LandingCourse | string | null | undefined): string | null {
+  const courseUuid = typeof ref === 'string' ? ref : ref?.course_uuid
+  return courseUuid?.trim() || null
 }
 
 function LandingCustom({ landing, orgslug }: LandingCustomProps) {
@@ -46,6 +47,24 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
     enabled: !!orgslug,
     staleTime: 60_000,
   })
+
+  // Editorial sections control ordering, not catalog visibility. The catalog
+  // tail renders every remaining published course and excludes courses already
+  // shown by either a featured-courses or showcase section.
+  const editorialCourseIds = new Set(
+    landing.sections
+      .flatMap((section) => {
+        if (section.type === 'featured-courses') {
+          return (section.courses as Array<LandingCourse | string>).map(normalizeCourseRef)
+        }
+        if (section.type === 'showcase') {
+          const persisted = section as typeof section & { courses?: Array<LandingCourse | string> }
+          return (persisted.courseIds ?? persisted.courses ?? []).map(normalizeCourseRef)
+        }
+        return []
+      })
+      .filter((courseUuid): courseUuid is string => Boolean(courseUuid))
+  )
 
   const renderSection = (section: LandingSection) => {
     switch (section.type) {
@@ -242,10 +261,12 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
           )
         }
 
-        const featuredCourseIds = new Set(section.courses.map(courseRefId))
-        const featuredCourses = allCourses.filter((course: any) =>
-          featuredCourseIds.has(course.course_uuid)
+        const sectionCourseIds = new Set(
+          (section.courses as Array<LandingCourse | string>)
+            .map(normalizeCourseRef)
+            .filter((courseUuid): courseUuid is string => Boolean(courseUuid))
         )
+        const featuredCourses = allCourses.filter((course: any) => sectionCourseIds.has(course.course_uuid))
 
         return (
           <div 
@@ -277,6 +298,20 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
   return (
     <div className="flex flex-col items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-16 h-full">
       {landing.sections.map((section) => renderSection(section))}
+      {allCourses && allCourses.some((course: any) => !editorialCourseIds.has(course.course_uuid)) && (
+        <section className="w-full py-16">
+          <LandingSectionHeading eyebrow="ORG / COURSE CATALOG" title={t('courses.courses')} />
+          <RevealGroup className="grid grid-cols-1 gap-6 w-full sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {allCourses
+              .filter((course: any) => !editorialCourseIds.has(course.course_uuid))
+              .map((course: any) => (
+                <RevealItem key={`catalog-${course.course_uuid}`} className="flex w-full justify-center">
+                  <CourseThumbnailLanding course={course} orgslug={orgslug} />
+                </RevealItem>
+              ))}
+          </RevealGroup>
+        </section>
+      )}
     </div>
   )
 }

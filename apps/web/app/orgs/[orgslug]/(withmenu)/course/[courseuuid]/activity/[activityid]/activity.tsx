@@ -1183,7 +1183,7 @@ export function MarkStatus(props: {
       chapter.activities.forEach((activity: any) => {
         totalActivities++;
         const isCompleted = run.steps.find(
-          (step: any) => step.activity_uuid === activity.activity_uuid && step.complete === true
+          (step: any) => step.activity_id === activity.id && step.complete === true
         );
         if (isCompleted) {
           completedActivities++;

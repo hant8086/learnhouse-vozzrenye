@@ -960,6 +960,64 @@ class TestGetUserTrailDetail:
             await get_user_trail_detail(token_user, user.id, db, course_uuid="nonexistent")
         assert exc.value.status_code == 404
 
+    @pytest.mark.asyncio
+    async def test_variant_detail_uses_target_user_membership_and_sibling_completion(
+        self, token_user, user, course, chapter, course_chapter, chapter_activity, db
+    ):
+        # Make the target learner entitled to purchased while the API token's
+        # creator is deliberately unrelated; projection must use user_id.
+        token_user.created_by_user_id = 999
+        activity = (await db.execute(select(Activity).where(Activity.id == 1))).scalars().one()
+        activity.extra_metadata = {
+            "access_variant": "purchased", "access_variant_group": "l7",
+        }
+        unpurchased = Activity(
+            id=2, name="Unpurchased", activity_type=ActivityTypeEnum.TYPE_DYNAMIC,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_DYNAMIC_PAGE, published=True,
+            org_id=course.org_id, course_id=course.id, activity_uuid="activity_unpurchased",
+            extra_metadata={"access_variant": "unpurchased", "access_variant_group": "l7"},
+            creation_date=str(datetime.now()), update_date=str(datetime.now()),
+        )
+        db.add(unpurchased)
+        await db.flush()
+        db.add(ChapterActivity(
+            chapter_id=chapter.id, activity_id=unpurchased.id, course_id=course.id,
+            org_id=course.org_id, order=2, creation_date=str(datetime.now()), update_date=str(datetime.now()),
+        ))
+        group = UserGroup(
+            id=5, name="Paid", description="Paid", org_id=course.org_id,
+            usergroup_uuid="usergroup_paid", creation_date=str(datetime.now()), update_date=str(datetime.now()),
+        )
+        db.add(group)
+        await db.flush()
+        db.add_all([
+            UserGroupResource(usergroup_id=group.id, resource_uuid=activity.activity_uuid, org_id=course.org_id),
+            UserGroupUser(usergroup_id=group.id, user_id=user.id, org_id=course.org_id),
+        ])
+        trail = Trail(
+            id=1, org_id=course.org_id, user_id=user.id, trail_uuid="trail_variant",
+            creation_date=str(datetime.now()), update_date=str(datetime.now()),
+        )
+        db.add(trail)
+        await db.flush()
+        run = TrailRun(
+            id=1, trail_id=trail.id, course_id=course.id, org_id=course.org_id, user_id=user.id,
+            creation_date=str(datetime.now()), update_date=str(datetime.now()),
+        )
+        db.add(run)
+        await db.flush()
+        db.add(TrailStep(
+            trailrun_id=run.id, trail_id=trail.id, activity_id=unpurchased.id, course_id=course.id,
+            org_id=course.org_id, user_id=user.id, complete=True, teacher_verified=False, grade="",
+            creation_date=str(datetime.now()), update_date=str(datetime.now()),
+        ))
+        await db.commit()
+
+        result = await get_user_trail_detail(token_user, user.id, db)
+        shown = result["courses"][0]["chapters"][0]["activities"][0]
+        assert shown["activity_id"] == activity.id
+        assert shown["completed"] is True
+
 
 class TestGetUserCertificates:
 

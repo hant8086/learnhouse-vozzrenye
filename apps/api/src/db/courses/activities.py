@@ -107,3 +107,6 @@ class ActivityRead(ActivityBase):
     last_modified_by_username: Optional[str] = None
     # Computed per-request: true if current user cannot access this activity.
     is_locked: bool = False
+    # Set when a learner requested the hidden sibling and the API followed the
+    # variant projection.  Next uses this to canonicalize the browser URL.
+    resolved_activity_uuid: Optional[str] = None

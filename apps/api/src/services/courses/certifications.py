@@ -20,6 +20,7 @@ from src.db.courses.activities import Activity
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.trail_steps import TrailStep
 from src.db.users import PublicUser, AnonymousUser
+from src.services.courses.activity_variants import load_activity_scopes, logical_activity_key, logical_keys
 from src.security.rbac import check_resource_access, AccessAction
 from src.services.analytics.analytics import track
 from src.services.analytics import events as analytics_events
@@ -568,31 +569,31 @@ async def is_course_fully_completed(
     # activity is never shown to the learner, so counting it in the total would
     # make the course impossible to complete (and permanently withhold the
     # certificate).
-    total_activities = (await db_session.execute(
-        select(func.count(ChapterActivity.id))
-        .join(Activity, Activity.id == ChapterActivity.activity_id)
+    activities = list((await db_session.execute(
+        select(Activity)
+        .join(ChapterActivity, ChapterActivity.activity_id == Activity.id)
         .where(ChapterActivity.course_id == course_id, Activity.published == True)
-    )).scalar_one()
-    if not total_activities:
+    )).scalars().all())
+    activity_scopes = await load_activity_scopes(activities, db_session)
+    total_keys = logical_keys(activities, activity_scopes)
+    if not total_keys:
         return False
 
-    completed_activities = (await db_session.execute(
-        select(func.count(func.distinct(TrailStep.activity_id)))
-        .join(
-            ChapterActivity,
-            (ChapterActivity.activity_id == TrailStep.activity_id)
-            & (ChapterActivity.course_id == TrailStep.course_id),
-        )
-        .join(Activity, Activity.id == ChapterActivity.activity_id)
+    completed_ids = set((await db_session.execute(
+        select(TrailStep.activity_id)
         .where(
             TrailStep.user_id == user_id,
             TrailStep.course_id == course_id,
             TrailStep.complete == True,
-            Activity.published == True,
+            TrailStep.activity_id.in_([a.id for a in activities]),  # type: ignore
         )
-    )).scalar_one()
-
-    return completed_activities >= total_activities
+    )).scalars().all())
+    completed_keys = {
+        logical_activity_key(activity, activities, activity_scopes)
+        for activity in activities
+        if activity.id in completed_ids
+    }
+    return total_keys.issubset(completed_keys)
 
 
 async def sync_trailrun_status(

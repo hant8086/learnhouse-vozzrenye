@@ -32,13 +32,21 @@ from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 from src.db.usergroups import UserGroup, UserGroupRead
 from src.db.user_organizations import UserOrganization
-from src.db.users import APITokenUser, User, UserRead
+from src.db.users import APITokenUser, PublicUser, User, UserRead
 from src.services.trail.trail import _build_trail_read
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
     is_course_fully_completed,
     sync_trailrun_status,
     create_certificate_user,
+)
+from src.services.courses.activity_variants import (
+    count_logical_steps,
+    count_completed_logical_steps,
+    load_activity_scopes,
+    logical_activity_key,
+    is_logical_activity_completed,
+    select_visible_activities,
 )
 from src.services.email.utils import get_base_url_from_request
 from src.services.orgs.join_notifications import notify_user_joined_org
@@ -404,11 +412,7 @@ async def get_user_progress(
         raise HTTPException(status_code=404, detail="Course not found")
 
     # Total activities in the course
-    total = (await db_session.execute(
-        select(func.count(ChapterActivity.id)).where(  # type: ignore
-            ChapterActivity.course_id == course.id
-        )
-    )).scalar_one()
+    total = await count_logical_steps(course.id, db_session)
 
     # Completed activities - select only activity_id to avoid loading full rows
     completed_activity_ids = (await db_session.execute(
@@ -419,13 +423,29 @@ async def get_user_progress(
         )
     )).scalars().all()
 
+    completed_count = await count_completed_logical_steps(user_id=user_id, course_id=course.id, db_session=db_session)
+    completed_logical_ids: list[int] = []
+    seen_completed_keys: set[tuple[str, str | int]] = set()
+    activity_rows = (await db_session.execute(
+        select(Activity)
+        .join(ChapterActivity, ChapterActivity.activity_id == Activity.id)
+        .where(ChapterActivity.course_id == course.id)
+    )).scalars().all()
+    activity_scopes = await load_activity_scopes(activity_rows, db_session)
+    for activity in activity_rows:
+        if activity.id in completed_activity_ids:
+            key = logical_activity_key(activity, activity_rows, activity_scopes)
+            if key not in seen_completed_keys and activity.id is not None:
+                seen_completed_keys.add(key)
+                completed_logical_ids.append(activity.id)
+
     return {
         "course_uuid": course.course_uuid,
         "user_id": user_id,
         "total_activities": total,
-        "completed_activities": len(completed_activity_ids),
-        "completion_percentage": round(len(completed_activity_ids) / total * 100, 1) if total > 0 else 0,
-        "completed_activity_ids": completed_activity_ids,
+        "completed_activities": completed_count,
+        "completion_percentage": round(completed_count / total * 100, 1) if total > 0 else 0,
+        "completed_activity_ids": completed_logical_ids,
     }
 
 
@@ -496,7 +516,9 @@ async def complete_activity(
         )
     )).scalars().first()
 
-    is_new = existing_step is None
+    is_new = existing_step is None and not await is_logical_activity_completed(
+        activity, user_id, db_session
+    )
     if is_new:
         step = TrailStep(
             trailrun_id=trailrun.id if trailrun.id is not None else 0,
@@ -668,6 +690,18 @@ async def complete_course(
     if not activity_ids:
         return {"detail": "No activities in course", "completed_count": 0}
 
+    activity_rows = (await db_session.execute(
+        select(Activity).where(Activity.id.in_(activity_ids))  # type: ignore
+    )).scalars().all()
+    activity_scopes = await load_activity_scopes(activity_rows, db_session)
+    logical_activity_ids: list[int] = []
+    seen_logical: set[tuple[str, str | int]] = set()
+    for activity in activity_rows:
+        key = logical_activity_key(activity, activity_rows, activity_scopes)
+        if key not in seen_logical and activity.id is not None:
+            seen_logical.add(key)
+            logical_activity_ids.append(activity.id)
+
     # Get already completed activities
     existing_steps = (await db_session.execute(
         select(TrailStep).where(
@@ -679,7 +713,7 @@ async def complete_course(
     already_completed = {s.activity_id for s in existing_steps}
 
     new_count = 0
-    for activity_id in activity_ids:
+    for activity_id in logical_activity_ids:
         if activity_id not in already_completed:
             step = TrailStep(
                 trailrun_id=trailrun.id if trailrun.id is not None else 0,
@@ -723,8 +757,12 @@ async def complete_course(
         "course_uuid": course_uuid,
         "user_id": user_id,
         "completed_count": new_count,
-        "already_completed_count": len(already_completed),
-        "total_activities": len(activity_ids),
+        "already_completed_count": len({
+            logical_activity_key(activity, activity_rows, activity_scopes)
+            for activity in activity_rows
+            if activity.id in already_completed
+        }),
+        "total_activities": len(logical_activity_ids),
         "course_completed": course_completed,
         "certificate_awarded": certificate_awarded,
     }
@@ -758,24 +796,11 @@ async def get_all_user_progress(
     course_map = {c.id: c for c in courses}
 
     # Batch fetch total activities per course
-    total_counts = (await db_session.execute(
-        select(ChapterActivity.course_id, func.count(ChapterActivity.id))  # type: ignore
-        .where(ChapterActivity.course_id.in_(course_ids))  # type: ignore
-        .group_by(ChapterActivity.course_id)
-    )).all()
-    total_map = {row[0]: row[1] for row in total_counts}
-
-    # Batch fetch completed steps
-    completed_counts = (await db_session.execute(
-        select(TrailStep.course_id, func.count(TrailStep.id))  # type: ignore
-        .where(
-            TrailStep.user_id == user_id,
-            TrailStep.course_id.in_(course_ids),  # type: ignore
-            TrailStep.complete == True,
-        )
-        .group_by(TrailStep.course_id)
-    )).all()
-    completed_map = {row[0]: row[1] for row in completed_counts}
+    total_map = {course_id: await count_logical_steps(course_id, db_session) for course_id in course_ids}
+    completed_map = {
+        course_id: await count_completed_logical_steps(user_id=user_id, course_id=course_id, db_session=db_session)
+        for course_id in course_ids
+    }
 
     result = []
     for tr in trail_runs:
@@ -810,7 +835,8 @@ async def get_user_trail_detail(
     """Build a full trail breakdown for a user — every chapter + every activity
     with per-activity completion status. Optionally filtered to a single course."""
 
-    await _get_user_in_org(user_id, token_user.org_id, db_session)
+    target_user = await _get_user_in_org(user_id, token_user.org_id, db_session)
+    target_public_user = PublicUser.model_validate(target_user)
 
     target_course: Optional[Course] = None
     if course_uuid is not None:
@@ -904,7 +930,24 @@ async def get_user_trail_detail(
             TrailStep.course_id.in_(course_map.keys()),  # type: ignore
         )
     )).scalars().all()
-    step_by_activity: dict[int, TrailStep] = {s.activity_id: s for s in trail_steps}
+    activity_scope_map = await load_activity_scopes(activity_map.values(), db_session)
+    visible_by_course_and_key: dict[tuple[int, tuple[str, str | int]], Activity] = {}
+    for course_id in course_map:
+        course_rows = [item for item in activity_map.values() if item.course_id == course_id]
+        visible_rows = await select_visible_activities(course_rows, target_public_user, db_session)
+        for item in visible_rows:
+            if item.id is not None:
+                key = logical_activity_key(item, course_rows, activity_scope_map)
+                visible_by_course_and_key[(course_id, key)] = item
+    step_by_logical: dict[tuple[int, tuple[str, str | int]], TrailStep] = {}
+    for step in trail_steps:
+        act = activity_map.get(step.activity_id)
+        if act is None:
+            continue
+        course_rows = [item for item in activity_map.values() if item.course_id == step.course_id]
+        key = logical_activity_key(act, course_rows, activity_scope_map)
+        if step.complete:
+            step_by_logical.setdefault((step.course_id, key), step)
 
     course_blocks: list[dict] = []
     for course_id, course in course_map.items():
@@ -913,6 +956,7 @@ async def get_user_trail_detail(
         chapter_blocks: list[dict] = []
         course_total = 0
         course_completed = 0
+        course_seen_logical: set[tuple[str, str | int]] = set()
 
         for chapter_id, chapter_order in chapters_by_course.get(course_id, []):
             chapter = chapter_map.get(chapter_id)
@@ -922,24 +966,32 @@ async def get_user_trail_detail(
             activity_blocks: list[dict] = []
             chap_total = 0
             chap_completed = 0
+            chapter_seen_logical: set[tuple[str, str | int]] = set()
 
             for ca in chapter_activities_by_chapter.get(chapter_id, []):
                 act = activity_map.get(ca.activity_id)
                 if not act:
                     continue
-                step = step_by_activity.get(act.id)
+                course_activity_rows = [item for item in activity_map.values() if item.course_id == course_id]
+                logical_key = logical_activity_key(act, course_activity_rows, activity_scope_map)
+                if logical_key in course_seen_logical:
+                    continue
+                course_seen_logical.add(logical_key)
+                chapter_seen_logical.add(logical_key)
+                step = step_by_logical.get((course_id, logical_key))
+                visible_act = visible_by_course_and_key.get((course_id, logical_key), act)
                 completed = bool(step and step.complete)
                 chap_total += 1
                 if completed:
                     chap_completed += 1
                 activity_blocks.append({
-                    "activity_uuid": act.activity_uuid,
-                    "activity_id": act.id,
-                    "name": act.name,
-                    "activity_type": _enum_value(act.activity_type),
-                    "activity_sub_type": _enum_value(act.activity_sub_type),
+                    "activity_uuid": visible_act.activity_uuid,
+                    "activity_id": visible_act.id,
+                    "name": visible_act.name,
+                    "activity_type": _enum_value(visible_act.activity_type),
+                    "activity_sub_type": _enum_value(visible_act.activity_sub_type),
                     "order": ca.order,
-                    "published": act.published,
+                    "published": visible_act.published,
                     "completed": completed,
                     "teacher_verified": bool(step.teacher_verified) if step else False,
                     "grade": step.grade if step else "",
@@ -956,7 +1008,7 @@ async def get_user_trail_detail(
                 "activities": activity_blocks,
             })
 
-            course_total += chap_total
+            course_total = len(course_seen_logical)
             course_completed += chap_completed
 
         course_blocks.append({
@@ -2469,11 +2521,7 @@ async def get_course_analytics(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    total_activities = (await db_session.execute(
-        select(func.count(ChapterActivity.id)).where(  # type: ignore
-            ChapterActivity.course_id == course.id
-        )
-    )).scalar_one()
+    total_activities = await count_logical_steps(course.id, db_session)
 
     trail_runs = (await db_session.execute(
         select(TrailRun).where(
@@ -2490,17 +2538,29 @@ async def get_course_analytics(
     if trail_runs and total_activities:
         # Single GROUP BY query replaces one query per enrolled user
         completion_rows = (await db_session.execute(
-            select(TrailStep.user_id, func.count(TrailStep.id))  # type: ignore
+            select(TrailStep.user_id, TrailStep.activity_id)
             .where(
                 TrailStep.course_id == course.id,
                 TrailStep.complete == True,
             )
-            .group_by(TrailStep.user_id)
         )).all()
-        completed_by_user = {row[0]: row[1] for row in completion_rows}
+        activity_rows = (await db_session.execute(
+            select(Activity)
+            .join(ChapterActivity, ChapterActivity.activity_id == Activity.id)
+            .where(ChapterActivity.course_id == course.id)
+        )).scalars().all()
+        activity_scopes = await load_activity_scopes(activity_rows, db_session)
+        activity_by_id = {activity.id: activity for activity in activity_rows}
+        completed_keys_by_user: dict[int, set[tuple[str, str | int]]] = {}
+        for user_id, activity_id in completion_rows:
+            activity = activity_by_id.get(activity_id)
+            if activity is None:
+                continue
+            key = logical_activity_key(activity, activity_rows, activity_scopes)
+            completed_keys_by_user.setdefault(user_id, set()).add(key)
         if trail_runs:
             total_pct = sum(
-                completed_by_user.get(tr.user_id, 0) / total_activities * 100
+                len(completed_keys_by_user.get(tr.user_id, set())) / total_activities * 100
                 for tr in trail_runs
             )
             average_completion_percentage = round(total_pct / len(trail_runs), 1)

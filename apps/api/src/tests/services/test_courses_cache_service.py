@@ -50,7 +50,7 @@ class TestCourseListCache:
             set_cached_courses_list("org-1", 2, 25, [{"id": 2}])
 
         assert redis_client.setex.call_count == 2
-        assert redis_client.setex.call_args_list[0].args[0] == "courses_cache:list:org-1:2:25"
+        assert redis_client.setex.call_args_list[0].args[0] == "courses_cache:v2:list:org-1:2:25"
         assert redis_client.setex.call_args_list[0].args[1] == CACHE_TTL_COURSES_LIST
         mock_debug.assert_called_once()
 
@@ -60,7 +60,7 @@ class TestCourseListCache:
 
     def test_invalidate_courses_cache_covers_delete_paths(self):
         redis_client = Mock()
-        redis_client.keys.return_value = [b"courses_cache:list:org-1:1:10"]
+        redis_client.keys.return_value = [b"courses_cache:v2:list:org-1:1:10"]
 
         with patch(
             "src.services.courses.cache.get_redis_client",
@@ -74,7 +74,7 @@ class TestCourseListCache:
             redis_client.keys.side_effect = RuntimeError("boom")
             invalidate_courses_cache("org-1")
 
-        redis_client.delete.assert_called_once_with(b"courses_cache:list:org-1:1:10")
+        redis_client.delete.assert_called_once_with(b"courses_cache:v2:list:org-1:1:10")
         mock_debug.assert_called_once()
 
     def test_invalidate_courses_cache_returns_quickly_when_redis_is_unavailable(self):
