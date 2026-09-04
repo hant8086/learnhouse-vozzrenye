@@ -3133,6 +3133,10 @@
           "featured_courses": {
             "label": "Courses",
             "description": "Add a section to showcase selected courses"
+          },
+          "showcase": {
+            "label": "Technology Offer",
+            "description": "Add a complete guided landing with platform intro and course selection"
           }
         },
         "add_section": "Add Section",
@@ -3253,7 +3257,49 @@
           "select": "Select"
         },
         "org_id_not_found": "Organization ID not found",
-        "unknown_section_type": "Unknown section type"
+        "unknown_section_type": "Unknown section type",
+        "showcase_editor": {
+          "title": "Technology Offer Section",
+          "steps": {
+            "greeting": "1 · Welcome",
+            "features": "2 · Benefits",
+            "path": "3 · Path",
+            "courses": "4 · Courses",
+            "offer": "5 · Offer"
+          },
+          "fields": {
+            "eyebrow": "Eyebrow",
+            "heading": "Heading",
+            "description": "Description",
+            "stats": "Key numbers (up to four)",
+            "courses_title": "Courses title",
+            "courses_description": "Courses description",
+            "offer_eyebrow": "Offer eyebrow",
+            "offer_heading": "Offer heading",
+            "offer_description": "Offer description",
+            "highlight": "Highlight",
+            "cta_label": "Button label",
+            "cta_href": "Button link"
+          },
+          "placeholders": {
+            "value": "12+",
+            "stat_label": "Courses",
+            "feature_title": "Benefit title",
+            "feature_description": "What the learner gets",
+            "step_title": "Step title",
+            "step_description": "What happens at this step"
+          },
+          "icons": {
+            "layers": "Complete system",
+            "route": "Clear path",
+            "practice": "Practice",
+            "progress": "Progress"
+          },
+          "defaults": {
+            "greeting_eyebrow": "PLATFORM / WELCOME",
+            "greeting_heading": "Learn the technology with intention"
+          }
+        }
       },
       "seo": {
         "org_seo": {

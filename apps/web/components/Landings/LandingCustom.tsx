@@ -1,7 +1,7 @@
 'use client'
 
 import React, { type ReactNode } from 'react'
-import { LandingSection } from '@components/Dashboard/Pages/Org/OrgEditLanding/landing_types'
+import type { LandingCourse, LandingSection } from '@components/Dashboard/Pages/Org/OrgEditLanding/landing_types'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import { getOrgCourses } from '@services/courses/courses'
@@ -10,6 +10,7 @@ import CourseThumbnailLanding from '@components/Objects/Thumbnails/CourseThumbna
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useTranslation } from 'react-i18next'
 import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
+import LandingShowcase from '@components/Landings/Showcase/LandingShowcase'
 
 interface LandingCustomProps {
   landing: {
@@ -27,6 +28,10 @@ function LandingSectionHeading({ eyebrow, title }: { eyebrow: string; title: Rea
       <div className="vz-hairline mt-4" />
     </header>
   )
+}
+
+function courseRefId(ref: LandingCourse | string): string {
+  return typeof ref === 'string' ? ref : ref.course_uuid
 }
 
 function LandingCustom({ landing, orgslug }: LandingCustomProps) {
@@ -237,8 +242,9 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
           )
         }
 
-        const featuredCourses = allCourses.filter((course: any) => 
-          section.courses.includes(course.course_uuid)
+        const featuredCourseIds = new Set(section.courses.map(courseRefId))
+        const featuredCourses = allCourses.filter((course: any) =>
+          featuredCourseIds.has(course.course_uuid)
         )
 
         return (
@@ -261,6 +267,8 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             </RevealGroup>
           </div>
         )
+      case 'showcase':
+        return <LandingShowcase key={`showcase-${section.greetingHeading}`} section={section} orgslug={orgslug} />
       default:
         return null
     }

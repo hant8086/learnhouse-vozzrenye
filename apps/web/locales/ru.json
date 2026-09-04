@@ -2626,6 +2626,10 @@
           "featured_courses": {
             "label": "Курсы",
             "description": "Добавьте секцию для демонстрации выбранных курсов"
+          },
+          "showcase": {
+            "label": "Оффер технологии",
+            "description": "Добавьте готовый лендинг: приветствие платформы и выбор курсов"
           }
         },
         "add_section": "Добавить секцию",
@@ -2746,7 +2750,49 @@
           "select": "Выбрать"
         },
         "org_id_not_found": "ID организации не найден",
-        "unknown_section_type": "Unknown section type"
+        "unknown_section_type": "Unknown section type",
+        "showcase_editor": {
+          "title": "Секция оффера технологии",
+          "steps": {
+            "greeting": "1 · Приветствие",
+            "features": "2 · Преимущества",
+            "path": "3 · Путь",
+            "courses": "4 · Курсы",
+            "offer": "5 · Оффер"
+          },
+          "fields": {
+            "eyebrow": "Надзаголовок",
+            "heading": "Заголовок",
+            "description": "Описание",
+            "stats": "Ключевые числа (до четырёх)",
+            "courses_title": "Заголовок курсов",
+            "courses_description": "Описание курсов",
+            "offer_eyebrow": "Надзаголовок оффера",
+            "offer_heading": "Заголовок оффера",
+            "offer_description": "Описание оффера",
+            "highlight": "Преимущество",
+            "cta_label": "Текст кнопки",
+            "cta_href": "Ссылка кнопки"
+          },
+          "placeholders": {
+            "value": "12+",
+            "stat_label": "Курсы",
+            "feature_title": "Название преимущества",
+            "feature_description": "Что получает учащийся",
+            "step_title": "Название шага",
+            "step_description": "Что происходит на этом шаге"
+          },
+          "icons": {
+            "layers": "Целостная система",
+            "route": "Понятный путь",
+            "practice": "Практика",
+            "progress": "Прогресс"
+          },
+          "defaults": {
+            "greeting_eyebrow": "ПЛАТФОРМА / ПРИВЕТСТВИЕ",
+            "greeting_heading": "Изучайте технологию осознанно"
+          }
+        }
       },
       "theme": {
         "primary_color": "Основной цвет",

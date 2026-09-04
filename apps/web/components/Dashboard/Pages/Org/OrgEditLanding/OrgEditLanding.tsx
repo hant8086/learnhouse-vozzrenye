@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { LandingObject, LandingSection, LandingHeroSection, LandingTextAndImageSection, LandingLogos, LandingPeople, LandingBackground, LandingButton, LandingImage, LandingFeaturedCourses } from './landing_types'
+import { LandingObject, LandingSection, LandingHeroSection, LandingTextAndImageSection, LandingLogos, LandingPeople, LandingBackground, LandingButton, LandingImage, LandingFeaturedCourses, LandingShowcase } from './landing_types'
 import { Plus, Trash2, GripVertical, LayoutTemplate, ImageIcon, Users, Award, Edit, Link, Upload, Save, BookOpen, TextIcon } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Input } from "@components/ui/input"
@@ -45,6 +45,11 @@ const getSectionTypes = (t: any) => ({
     icon: BookOpen,
     label: t('dashboard.organization.landing.section_types.featured_courses.label'),
     description: t('dashboard.organization.landing.section_types.featured_courses.description')
+  },
+  showcase: {
+    icon: LayoutTemplate,
+    label: t('dashboard.organization.landing.section_types.showcase.label'),
+    description: t('dashboard.organization.landing.section_types.showcase.description')
   }
 }) as const
 
@@ -129,11 +134,11 @@ const OrgEditLanding = () => {
   const access_token = session?.data?.tokens?.access_token
   const queryClient = useQueryClient()
   const SECTION_TYPES = getSectionTypes(t)
-  
+
   const getSectionDisplayName = (section: LandingSection) => {
     return SECTION_TYPES[section.type as keyof typeof SECTION_TYPES].label
   }
-  
+
   const [isLandingEnabled, setIsLandingEnabled] = React.useState(false)
   const [landingData, setLandingData] = React.useState<LandingObject>({
     sections: [],
@@ -217,6 +222,8 @@ const OrgEditLanding = () => {
           title: t('dashboard.organization.landing.courses_editor.title_placeholder'),
           courses: []
         }
+      case 'showcase':
+        return createEmptyShowcase(t)
       default:
         throw new Error('Invalid section type')
     }
@@ -299,8 +306,8 @@ const OrgEditLanding = () => {
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
-            <Button 
-              variant="default" 
+            <Button
+              variant="default"
               onClick={handleSave}
               disabled={isSaving}
               className="bg-black hover:bg-black/90"
@@ -338,24 +345,24 @@ const OrgEditLanding = () => {
                                 {...provided.draggableProps}
                                 onClick={() => setSelectedSection(index)}
                                 className={`p-4 bg-white/80 backdrop-blur-xs rounded-lg cursor-pointer border  ${
-                                  selectedSection === index 
-                                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20 shadow-xs' 
+                                  selectedSection === index
+                                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20 shadow-xs'
                                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 hover:shadow-xs'
                                 } ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500/20 rotate-2' : ''}`}
                               >
                                 <div className="flex items-center justify-between group">
                                   <div className="flex items-center space-x-3">
-                                    <div {...provided.dragHandleProps} 
+                                    <div {...provided.dragHandleProps}
                                       className={`p-1.5 rounded-md transition-colors duration-200 ${
-                                        selectedSection === index 
-                                          ? 'text-blue-500 bg-blue-100/50' 
+                                        selectedSection === index
+                                          ? 'text-blue-500 bg-blue-100/50'
                                           : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                                       }`}>
                                       <GripVertical size={16} />
                                     </div>
                                     <div className={`p-1.5 rounded-md ${
-                                      selectedSection === index 
-                                        ? 'text-blue-600 bg-blue-100/50' 
+                                      selectedSection === index
+                                        ? 'text-blue-600 bg-blue-100/50'
                                         : 'text-gray-600 bg-gray-100/50'
                                     }`}>
                                       {React.createElement(SECTION_TYPES[section.type as keyof typeof SECTION_TYPES].icon, {
@@ -363,8 +370,8 @@ const OrgEditLanding = () => {
                                       })}
                                     </div>
                                     <span className={`text-sm font-medium truncate capitalize ${
-                                      selectedSection === index 
-                                        ? 'text-blue-700' 
+                                      selectedSection === index
+                                        ? 'text-blue-700'
                                         : 'text-gray-700'
                                     }`}>
                                       {getSectionDisplayName(section)}
@@ -478,6 +485,8 @@ const SectionEditor: React.FC<SectionEditorProps> = ({ section, onChange }) => {
       return <PeopleSectionEditor section={section} onChange={onChange} />
     case 'featured-courses':
       return <FeaturedCoursesEditor section={section} onChange={onChange} />
+    case 'showcase':
+      return <ShowcaseSectionEditor section={section} onChange={onChange} />
     default:
       return <div>Unknown section type</div>
   }
@@ -511,7 +520,7 @@ const HeroSectionEditor: React.FC<{
         <LayoutTemplate className="w-5 h-5 text-gray-500" />
         <h3 className="font-medium text-lg">{t('dashboard.organization.landing.hero_editor.title')}</h3>
       </div>
-      
+
       <div className="space-y-4">
         {/* Title */}
         <div>
@@ -634,7 +643,7 @@ const HeroSectionEditor: React.FC<{
                 onValueChange={(value) => {
                   onChange({
                     ...section,
-                    background: { 
+                    background: {
                       type: value as LandingBackground['type'],
                       color: value === 'solid' ? '#ffffff' : undefined,
                       colors: value === 'gradient' ? PREDEFINED_GRADIENTS['sunrise'].colors : undefined,
@@ -687,7 +696,7 @@ const HeroSectionEditor: React.FC<{
                   <Label>{t('dashboard.organization.landing.hero_editor.gradient_type')}</Label>
                   <Select
                     value={Object.values(PREDEFINED_GRADIENTS).some(
-                      preset => preset.colors[0] === section.background.colors?.[0] && 
+                      preset => preset.colors[0] === section.background.colors?.[0] &&
                                 preset.colors[1] === section.background.colors?.[1]
                     ) ? 'preset' : 'custom'}
                     onValueChange={(value) => {
@@ -723,7 +732,7 @@ const HeroSectionEditor: React.FC<{
                 </div>
 
                 {!Object.values(PREDEFINED_GRADIENTS).some(
-                  preset => preset.colors[0] === section.background.colors?.[0] && 
+                  preset => preset.colors[0] === section.background.colors?.[0] &&
                             preset.colors[1] === section.background.colors?.[1]
                 ) ? (
                   <div className="space-y-4">
@@ -792,7 +801,7 @@ const HeroSectionEditor: React.FC<{
                     <Label>{t('dashboard.organization.landing.hero_editor.gradient_preset')}</Label>
                     <Select
                       value={Object.entries(PREDEFINED_GRADIENTS).find(
-                        ([_, gradient]) => 
+                        ([_, gradient]) =>
                           gradient.colors[0] === section.background.colors?.[0] &&
                           gradient.colors[1] === section.background.colors?.[1]
                       )?.[0] || 'sunrise'}
@@ -812,7 +821,7 @@ const HeroSectionEditor: React.FC<{
                         {Object.entries(PREDEFINED_GRADIENTS).map(([name]) => (
                           <SelectItem key={name} value={name}>
                             <div className="flex items-center space-x-2">
-                              <div 
+                              <div
                                 className="w-8 h-8 rounded-md"
                                 style={{
                                   background: `linear-gradient(${PREDEFINED_GRADIENTS[name as keyof typeof PREDEFINED_GRADIENTS].direction}, ${PREDEFINED_GRADIENTS[name as keyof typeof PREDEFINED_GRADIENTS].colors.join(', ')})`
@@ -850,7 +859,7 @@ const HeroSectionEditor: React.FC<{
                 </div>
 
                 <div className="mt-2">
-                  <div 
+                  <div
                     className="w-full h-20 rounded-lg"
                     style={{
                       background: `linear-gradient(${section.background.direction}, ${section.background.colors?.join(', ')})`
@@ -1145,7 +1154,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded, classNam
     // Validate file using reusable utility
     const { validateFile } = await import('@/lib/file-validation')
     const validation = validateFile(file, ['image'])
-    
+
     if (!validation.valid) {
       toast.error(validation.error!)
       e.target.value = '' // Clear the input
@@ -1203,7 +1212,7 @@ const TextAndImageSectionEditor: React.FC<{
         <ImageIcon className="w-5 h-5 text-gray-500" />
         <h3 className="font-medium text-lg">{t('dashboard.organization.landing.text_image_editor.title')}</h3>
       </div>
-      
+
       <div className="space-y-4">
         {/* Title */}
         <div>
@@ -1304,7 +1313,7 @@ const LogosSectionEditor: React.FC<{
         <Award className="w-5 h-5 text-gray-500" />
         <h3 className="font-medium text-lg">{t('dashboard.organization.landing.logos_editor.title')}</h3>
       </div>
-      
+
       <div>
         <Label>{t('dashboard.organization.landing.logos_editor.logos')}</Label>
         <div className="space-y-3 mt-2">
@@ -1406,7 +1415,7 @@ const PeopleSectionEditor: React.FC<{
         <Users className="w-5 h-5 text-gray-500" />
         <h3 className="font-medium text-lg">{t('dashboard.organization.landing.people_editor.title')}</h3>
       </div>
-      
+
       <div className="space-y-4">
         {/* Title */}
         <div>
@@ -1559,7 +1568,7 @@ const FeaturedCoursesEditor: React.FC<{
         <BookOpen className="w-5 h-5 text-gray-500" />
         <h3 className="font-medium text-lg">{t('dashboard.organization.landing.courses_editor.title')}</h3>
       </div>
-      
+
       <div className="space-y-4">
         {/* Title */}
         <div>
@@ -1579,16 +1588,16 @@ const FeaturedCoursesEditor: React.FC<{
             {courses ? (
               <div className="grid gap-4">
                 {courses.map((course: any) => (
-                  <div 
-                    key={course.course_uuid} 
+                  <div
+                    key={course.course_uuid}
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden">
                         {course.course_thumbnail && (
-                           
-                          <img 
-                            src={course.course_thumbnail} 
+
+                          <img
+                            src={course.course_thumbnail}
                             alt={course.name}
                             className="w-full h-full object-cover"
                           />
@@ -1626,4 +1635,223 @@ const FeaturedCoursesEditor: React.FC<{
   )
 }
 
-export default OrgEditLanding 
+export default OrgEditLanding
+
+function createEmptyShowcase(t: any): LandingShowcase {
+  return {
+    type: 'showcase',
+    greetingEyebrow: t('dashboard.organization.landing.showcase_editor.defaults.greeting_eyebrow'),
+    greetingHeading: t('dashboard.organization.landing.showcase_editor.defaults.greeting_heading'),
+    greetingDescription: '',
+    stats: [
+      { value: '', label: '' },
+      { value: '', label: '' },
+      { value: '', label: '' },
+      { value: '', label: '' },
+    ],
+    features: [
+      { icon: 'layers', title: '', description: '' },
+      { icon: 'route', title: '', description: '' },
+      { icon: 'practice', title: '', description: '' },
+      { icon: 'progress', title: '', description: '' },
+    ],
+    steps: [
+      { number: '01', title: '', description: '' },
+      { number: '02', title: '', description: '' },
+      { number: '03', title: '', description: '' },
+    ],
+    offer: {
+      eyebrow: '',
+      heading: '',
+      description: '',
+      highlights: ['', '', ''],
+      ctaLabel: '',
+      ctaHref: '/courses',
+    },
+    courseIds: [],
+    coursesTitle: '',
+    coursesDescription: '',
+  }
+}
+
+const SHOWCASE_STEPS = ['greeting', 'features', 'path', 'courses', 'offer'] as const
+
+const ShowcaseSectionEditor: React.FC<{
+  section: LandingShowcase
+  onChange: (section: LandingShowcase) => void
+}> = ({ section, onChange }) => {
+  const { t } = useTranslation()
+  const org = useOrg() as any
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
+  const [activeStep, setActiveStep] = React.useState<typeof SHOWCASE_STEPS[number]>('greeting')
+
+  const { data: courses } = useQuery({
+    queryKey: org?.slug ? queryKeys.courses.list(org.slug) : ['showcase-courses-disabled'],
+    queryFn: () => getOrgCourses(org.slug, null, access_token),
+    enabled: !!(org?.slug && access_token),
+    staleTime: 5 * 60_000,
+  })
+
+  const update = (patch: Partial<LandingShowcase>) => onChange({ ...section, ...patch })
+
+  return (
+    <div className="space-y-6 p-6 bg-white rounded-lg nice-shadow">
+      <div className="flex items-center space-x-2">
+        <LayoutTemplate className="w-5 h-5 text-gray-500" />
+        <h3 className="font-medium text-lg">{t('dashboard.organization.landing.showcase_editor.title')}</h3>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {SHOWCASE_STEPS.map((step) => (
+          <button
+            key={step}
+            type="button"
+            onClick={() => setActiveStep(step)}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              activeStep === step ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {t(`dashboard.organization.landing.showcase_editor.steps.${step}`)}
+          </button>
+        ))}
+      </div>
+
+      {activeStep === 'greeting' && (
+        <div className="space-y-4">
+          <div>
+            <Label>{t('dashboard.organization.landing.showcase_editor.fields.eyebrow')}</Label>
+            <Input value={section.greetingEyebrow} onChange={(event) => update({ greetingEyebrow: event.target.value })} />
+          </div>
+          <div>
+            <Label>{t('dashboard.organization.landing.showcase_editor.fields.heading')}</Label>
+            <Textarea rows={2} value={section.greetingHeading} onChange={(event) => update({ greetingHeading: event.target.value })} />
+          </div>
+          <div>
+            <Label>{t('dashboard.organization.landing.showcase_editor.fields.description')}</Label>
+            <Textarea rows={4} value={section.greetingDescription} onChange={(event) => update({ greetingDescription: event.target.value })} />
+          </div>
+
+          <div className="space-y-3 rounded-xl bg-gray-50 p-4">
+            <Label>{t('dashboard.organization.landing.showcase_editor.fields.stats')}</Label>
+            {section.stats.map((stat, index) => (
+              <div key={index} className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
+                <Input placeholder={t('dashboard.organization.landing.showcase_editor.placeholders.value')} value={stat.value}
+                  onChange={(event) => update({ stats: section.stats.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item) })}
+                />
+                <Input placeholder={t('dashboard.organization.landing.showcase_editor.placeholders.stat_label')} value={stat.label}
+                  onChange={(event) => update({ stats: section.stats.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item) })}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeStep === 'features' && (
+        <div className="space-y-5">
+          {section.features.map((feature, index) => (
+            <div key={index} className="space-y-3 rounded-xl border p-4">
+              <Select value={feature.icon} onValueChange={(value: LandingShowcase['features'][number]['icon']) =>
+                update({ features: section.features.map((item, itemIndex) => itemIndex === index ? { ...item, icon: value } : item) })
+              }>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="layers">{t('dashboard.organization.landing.showcase_editor.icons.layers')}</SelectItem>
+                  <SelectItem value="route">{t('dashboard.organization.landing.showcase_editor.icons.route')}</SelectItem>
+                  <SelectItem value="practice">{t('dashboard.organization.landing.showcase_editor.icons.practice')}</SelectItem>
+                  <SelectItem value="progress">{t('dashboard.organization.landing.showcase_editor.icons.progress')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input placeholder={t('dashboard.organization.landing.showcase_editor.placeholders.feature_title')} value={feature.title}
+                onChange={(event) => update({ features: section.features.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item) })}
+              />
+              <Textarea rows={3} placeholder={t('dashboard.organization.landing.showcase_editor.placeholders.feature_description')} value={feature.description}
+                onChange={(event) => update({ features: section.features.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item) })}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeStep === 'path' && (
+        <div className="space-y-5">
+          {section.steps.map((step, index) => (
+            <div key={index} className="space-y-3 rounded-xl border p-4">
+              <div className="grid grid-cols-[80px_minmax(0,1fr)] gap-3">
+                <Input value={step.number}
+                  onChange={(event) => update({ steps: section.steps.map((item, itemIndex) => itemIndex === index ? { ...item, number: event.target.value } : item) })}
+                />
+                <Input placeholder={t('dashboard.organization.landing.showcase_editor.placeholders.step_title')} value={step.title}
+                  onChange={(event) => update({ steps: section.steps.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item) })}
+                />
+              </div>
+              <Textarea rows={3} placeholder={t('dashboard.organization.landing.showcase_editor.placeholders.step_description')} value={step.description}
+                onChange={(event) => update({ steps: section.steps.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item) })}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeStep === 'courses' && (
+        <div className="space-y-5">
+          <div>
+            <Label>{t('dashboard.organization.landing.showcase_editor.fields.courses_title')}</Label>
+            <Input value={section.coursesTitle} onChange={(event) => update({ coursesTitle: event.target.value })} />
+          </div>
+          <div>
+            <Label>{t('dashboard.organization.landing.showcase_editor.fields.courses_description')}</Label>
+            <Textarea rows={3} value={section.coursesDescription} onChange={(event) => update({ coursesDescription: event.target.value })} />
+          </div>
+          <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border p-3">
+            {(courses ?? []).map((course: any) => {
+              const checked = section.courseIds.includes(course.course_uuid)
+              return (
+                <label key={course.course_uuid} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-gray-50">
+                  <input type="checkbox" className="h-4 w-4 accent-black" checked={checked}
+                    onChange={() => update({
+                      courseIds: checked
+                        ? section.courseIds.filter((id) => id !== course.course_uuid)
+                        : [...section.courseIds, course.course_uuid],
+                    })}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{course.name}</span>
+                </label>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeStep === 'offer' && (
+        <div className="space-y-4">
+          <Input placeholder={t('dashboard.organization.landing.showcase_editor.fields.offer_eyebrow')} value={section.offer.eyebrow}
+            onChange={(event) => update({ offer: { ...section.offer, eyebrow: event.target.value } })}
+          />
+          <Input placeholder={t('dashboard.organization.landing.showcase_editor.fields.offer_heading')} value={section.offer.heading}
+            onChange={(event) => update({ offer: { ...section.offer, heading: event.target.value } })}
+          />
+          <Textarea rows={3} placeholder={t('dashboard.organization.landing.showcase_editor.fields.offer_description')} value={section.offer.description}
+            onChange={(event) => update({ offer: { ...section.offer, description: event.target.value } })}
+          />
+          <div className="space-y-3">
+            {section.offer.highlights.map((highlight, index) => (
+              <Input key={index} placeholder={`${t('dashboard.organization.landing.showcase_editor.fields.highlight')} ${index + 1}`} value={highlight}
+                onChange={(event) => update({ offer: { ...section.offer, highlights: section.offer.highlights.map((item, itemIndex) => itemIndex === index ? event.target.value : item) } })}
+              />
+            ))}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input placeholder={t('dashboard.organization.landing.showcase_editor.fields.cta_label')} value={section.offer.ctaLabel}
+              onChange={(event) => update({ offer: { ...section.offer, ctaLabel: event.target.value } })}
+            />
+            <Input placeholder={t('dashboard.organization.landing.showcase_editor.fields.cta_href')} value={section.offer.ctaHref}
+              onChange={(event) => update({ offer: { ...section.offer, ctaHref: event.target.value } })}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

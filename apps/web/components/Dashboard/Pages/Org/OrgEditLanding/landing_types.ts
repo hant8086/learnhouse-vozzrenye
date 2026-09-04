@@ -64,7 +64,8 @@ export interface LandingCourse {
 
 export interface LandingFeaturedCourses {
   type: 'featured-courses';
-  courses: LandingCourse[];
+  // The editor persists UUID strings; object refs are retained for legacy configs.
+  courses: Array<LandingCourse | string>;
   title: string;
 }
 
@@ -84,9 +85,49 @@ export interface LandingHeroSection {
   contentAlign?: 'left' | 'center' | 'right';
 }
 
-export type LandingSection = LandingTextAndImageSection | LandingHeroSection | LandingLogos | LandingPeople | LandingFeaturedCourses;
+export interface ShowcaseStat {
+  value: string;
+  label: string;
+}
+
+export interface ShowcaseFeature {
+  icon: 'layers' | 'route' | 'practice' | 'progress';
+  title: string;
+  description: string;
+}
+
+export interface ShowcaseStep {
+  number: string;
+  title: string;
+  description: string;
+}
+
+export interface ShowcaseOffer {
+  eyebrow: string;
+  heading: string;
+  description: string;
+  highlights: Array<string>;
+  ctaLabel: string;
+  ctaHref: string;
+}
+
+export interface LandingShowcase {
+  type: 'showcase';
+  greetingEyebrow: string;
+  greetingHeading: string;
+  greetingDescription: string;
+  stats: Array<ShowcaseStat>;
+  features: Array<ShowcaseFeature>;
+  steps: Array<ShowcaseStep>;
+  offer: ShowcaseOffer;
+  courseIds: Array<string>;
+  coursesTitle: string;
+  coursesDescription: string;
+}
+
+export type LandingSection = LandingTextAndImageSection | LandingHeroSection | LandingLogos | LandingPeople | LandingFeaturedCourses | LandingShowcase;
 
 export interface LandingObject {
   sections: LandingSection[];
   enabled?: boolean;
-} 
+}

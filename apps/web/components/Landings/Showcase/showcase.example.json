@@ -1,0 +1,34 @@
+{
+  "type": "showcase",
+  "greetingEyebrow": "PLATFORM / WELCOME",
+  "greetingHeading": "Learn the technology with intention",
+  "greetingDescription": "One clear path from fundamentals to deliberate practice.",
+  "stats": [
+    { "value": "12+", "label": "Courses" },
+    { "value": "40h", "label": "Practice" },
+    { "value": "3", "label": "Stages" },
+    { "value": "∞", "label": "Access" }
+  ],
+  "features": [
+    { "icon": "layers", "title": "Complete system", "description": "Concepts, examples, and practice in one curriculum." },
+    { "icon": "route", "title": "Clear path", "description": "Always know which course comes next." },
+    { "icon": "practice", "title": "Applied practice", "description": "Build artifacts instead of watching passive lessons." },
+    { "icon": "progress", "title": "Visible progress", "description": "Measure understanding across every stage." }
+  ],
+  "steps": [
+    { "number": "01", "title": "Orient", "description": "Understand the landscape and choose your entry point." },
+    { "number": "02", "title": "Practice", "description": "Apply each concept through guided work." },
+    { "number": "03", "title": "Consolidate", "description": "Ship a project that proves the skill." }
+  ],
+  "offer": {
+    "eyebrow": "START HERE",
+    "heading": "Choose your technology track",
+    "description": "A curated offer for learners who want structure without noise.",
+    "highlights": ["Structured path", "Practical projects", "Progress tracking"],
+    "ctaLabel": "Browse courses",
+    "ctaHref": "/courses"
+  },
+  "courseIds": [],
+  "coursesTitle": "Recommended starting courses",
+  "coursesDescription": "Select courses in the landing editor to populate this catalog."
+}
