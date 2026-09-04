@@ -1,7 +1,7 @@
 'use client'
 
 import React, { type ReactNode } from 'react'
-import { LandingSection } from '@components/Dashboard/Pages/Org/OrgEditLanding/landing_types'
+import type { LandingCourse, LandingSection } from '@components/Dashboard/Pages/Org/OrgEditLanding/landing_types'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import { getOrgCourses } from '@services/courses/courses'
@@ -29,6 +29,10 @@ function LandingSectionHeading({ eyebrow, title }: { eyebrow: string; title: Rea
   )
 }
 
+function normalizeCourseRef(ref: LandingCourse | string | null | undefined): string | null {
+  return typeof ref === 'string' ? ref : ref?.course_uuid || null
+}
+
 function LandingCustom({ landing, orgslug }: LandingCustomProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -47,7 +51,10 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
   // course, while excluding featured UUIDs to avoid duplicate cards.
   const featuredCourseIds = new Set(
     landing.sections
-      .flatMap((section) => section.type === 'featured-courses' ? section.courses : [])
+      .flatMap((section) => section.type === 'featured-courses'
+        ? (section.courses as Array<LandingCourse | string>).map(normalizeCourseRef)
+        : [])
+      .filter((courseUuid): courseUuid is string => Boolean(courseUuid))
   )
 
   const renderSection = (section: LandingSection) => {
@@ -245,9 +252,12 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
           )
         }
 
-        const featuredCourses = allCourses.filter((course: any) =>
-          section.courses.includes(course.course_uuid)
+        const sectionCourseIds = new Set(
+          (section.courses as Array<LandingCourse | string>)
+            .map(normalizeCourseRef)
+            .filter((courseUuid): courseUuid is string => Boolean(courseUuid))
         )
+        const featuredCourses = allCourses.filter((course: any) => sectionCourseIds.has(course.course_uuid))
 
         return (
           <div 
