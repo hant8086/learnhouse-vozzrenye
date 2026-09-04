@@ -1,6 +1,7 @@
 """Focused contract tests for paired lesson projection."""
 
 from unittest.mock import AsyncMock, patch
+from types import SimpleNamespace
 
 import pytest
 
@@ -44,11 +45,21 @@ def test_only_exact_purchased_unpurchased_pair_is_variant_group():
     assert valid_variant_pairs([purchased, unpurchased, duplicate]) == {}
 
 
+def test_same_group_in_different_chapters_fails_safe():
+    purchased = activity(1, metadata={"access_variant": "purchased", "access_variant_group": "g"})
+    unpurchased = activity(2, metadata={"access_variant": "unpurchased", "access_variant_group": "g"})
+    scopes = {1: (10,), 2: (11,)}
+
+    assert valid_variant_pairs([purchased, unpurchased], scopes) == {}
+    assert logical_activity_key(purchased, [purchased, unpurchased], scopes) == ("activity", 1)
+
+
 @pytest.mark.asyncio
 async def test_anonymous_selects_unpurchased_and_member_selects_purchased():
     purchased = activity(1, metadata={"access_variant": "purchased", "access_variant_group": "g"})
     unpurchased = activity(2, metadata={"access_variant": "unpurchased", "access_variant_group": "g"})
     db = AsyncMock()
+    db.execute.return_value = SimpleNamespace(all=lambda: [(1, 10), (2, 10)])
 
     anonymous = await select_visible_activities([purchased, unpurchased], AnonymousUser(), db)
     assert anonymous == [unpurchased]
@@ -67,6 +78,7 @@ async def test_direct_hidden_read_resolves_to_visible_sibling():
     purchased = activity(1, metadata={"access_variant": "purchased", "access_variant_group": "g"})
     unpurchased = activity(2, metadata={"access_variant": "unpurchased", "access_variant_group": "g"})
     db = AsyncMock()
+    db.execute.return_value = SimpleNamespace(all=lambda: [(1, 10), (2, 10)])
 
     selected = await choose_activity_variant(purchased, [purchased, unpurchased], AnonymousUser(), db)
 

@@ -26,7 +26,9 @@ from src.services.courses.activity_variants import (
     is_logical_activity_completed,
     logical_activity_key,
     logical_keys,
+    valid_variant_pairs,
 )
+from src.services.courses.locks import batch_accessible_restricted_uuids
 
 
 async def _build_trail_read(
@@ -55,18 +57,27 @@ async def _build_trail_read(
     course_activities_map: dict[int, list[Activity]] = {}
     if course_ids:
         activity_rows = (await db_session.execute(
-            select(Activity)
+            select(Activity, ChapterActivity)
             .join(ChapterActivity, ChapterActivity.activity_id == Activity.id)
             .where(ChapterActivity.course_id.in_(course_ids))  # type: ignore
-        )).scalars().all()
-        for activity in activity_rows:
+        )).all()
+        activity_scopes: dict[int, set[int]] = {}
+        for activity, chapter_activity in activity_rows:
             course_activities_map.setdefault(activity.course_id, []).append(activity)
+            if activity.id is not None:
+                activity_scopes.setdefault(activity.id, set()).add(chapter_activity.chapter_id)
+        activity_scope_map = {
+            activity_id: tuple(sorted(chapters))
+            for activity_id, chapters in activity_scopes.items()
+        }
+    else:
+        activity_scope_map = {}
 
     # Batch fetch chapter activity counts per course (for total_steps)
     course_total_steps_map: dict[int, int] = {}
     if with_course_info and course_ids:
         course_total_steps_map = {
-            course_id: len(logical_keys(activities))
+            course_id: len(logical_keys(activities, activity_scope_map))
             for course_id, activities in course_activities_map.items()
         }
 
@@ -111,17 +122,42 @@ async def _build_trail_read(
             for activity in course_activities_map.get(tr.course_id, [])
             if activity.id is not None
         }
+        pairs = valid_variant_pairs(
+            course_activities_map.get(tr.course_id, []), activity_scope_map
+        )
+        visible_by_key: dict[tuple[str, str | int], Activity] = {}
+        accessible: set[str] = set()
+        if user_id is not None and pairs:
+            accessible = await batch_accessible_restricted_uuids(
+                user_id,
+                [pair["purchased"].activity_uuid for pair in pairs.values()],
+                db_session,
+            )
+        for group, pair in pairs.items():
+            selected = pair["purchased"] if pair["purchased"].activity_uuid in accessible else pair["unpurchased"]
+            visible_by_key[("variant", f"{selected.course_id}:{group}")] = selected
         for step in steps_by_run.get(tr.id, []):
+            # Build a detached response value. ``model_copy`` retains
+            # SQLAlchemy instrumentation and can attempt to dirty a garbage
+            # collected ORM instance when its JSON payload is replaced.
+            step_for_read = TrailStep(**step.model_dump())
             activity = activity_by_id.get(step.activity_id)
             if activity is not None:
-                key = logical_activity_key(activity, course_activities_map.get(tr.course_id, []))
+                key = logical_activity_key(
+                    activity,
+                    course_activities_map.get(tr.course_id, []),
+                    activity_scope_map,
+                )
                 if key in emitted_keys:
                     continue
                 emitted_keys.add(key)
+                visible = visible_by_key.get(key)
+                if visible is not None and visible.id is not None:
+                    step_for_read.activity_id = visible.id
             db_session.expunge(step)
             step_course = course_map.get(step.course_id)
-            step.data = {"course": step_course.model_dump() if step_course else None}
-            run.steps.append(step)
+            step_for_read.data = {"course": step_course.model_dump() if step_course else None}
+            run.steps.append(step_for_read)
 
         trail_runs.append(run)
 

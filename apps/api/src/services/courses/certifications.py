@@ -20,7 +20,7 @@ from src.db.courses.activities import Activity
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.trail_steps import TrailStep
 from src.db.users import PublicUser, AnonymousUser
-from src.services.courses.activity_variants import logical_activity_key, logical_keys
+from src.services.courses.activity_variants import load_activity_scopes, logical_activity_key, logical_keys
 from src.security.rbac import check_resource_access, AccessAction
 from src.services.analytics.analytics import track
 from src.services.analytics import events as analytics_events
@@ -574,7 +574,8 @@ async def is_course_fully_completed(
         .join(ChapterActivity, ChapterActivity.activity_id == Activity.id)
         .where(ChapterActivity.course_id == course_id, Activity.published == True)
     )).scalars().all())
-    total_keys = logical_keys(activities)
+    activity_scopes = await load_activity_scopes(activities, db_session)
+    total_keys = logical_keys(activities, activity_scopes)
     if not total_keys:
         return False
 
@@ -588,7 +589,7 @@ async def is_course_fully_completed(
         )
     )).scalars().all())
     completed_keys = {
-        logical_activity_key(activity, activities)
+        logical_activity_key(activity, activities, activity_scopes)
         for activity in activities
         if activity.id in completed_ids
     }

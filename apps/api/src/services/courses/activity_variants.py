@@ -6,7 +6,7 @@ place that interprets the two reserved metadata keys.
 """
 
 from dataclasses import dataclass
-from typing import Iterable, TypeVar
+from typing import Iterable, Mapping, TypeVar
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
@@ -41,6 +41,7 @@ def parse_activity_variant(activity: Activity) -> ActivityVariant | None:
 def logical_activity_key(
     activity: Activity,
     activities: Iterable[Activity] | None = None,
+    scope_by_activity_id: Mapping[int, tuple[int, ...]] | None = None,
 ) -> tuple[str, str | int]:
     """Stable key used by completion/count projections.
 
@@ -49,14 +50,17 @@ def logical_activity_key(
     """
     parsed = parse_activity_variant(activity)
     valid_groups = {
-        group for group in valid_variant_pairs(activities or [activity])
+        group for group in valid_variant_pairs(activities or [activity], scope_by_activity_id)
     }
     if parsed is None or parsed.group not in valid_groups:
         return ("activity", activity.id if activity.id is not None else activity.activity_uuid)
     return ("variant", f"{activity.course_id}:{parsed.group}")
 
 
-def valid_variant_pairs(activities: Iterable[Activity]) -> dict[str, dict[str, Activity]]:
+def valid_variant_pairs(
+    activities: Iterable[Activity],
+    scope_by_activity_id: Mapping[int, tuple[int, ...]] | None = None,
+) -> dict[str, dict[str, Activity]]:
     """Return only exact purchased/unpurchased pairs from one course.
 
     A group is valid only when it has exactly two rows, one of each variant,
@@ -79,9 +83,16 @@ def valid_variant_pairs(activities: Iterable[Activity]) -> dict[str, dict[str, A
             continue
         if len({row.course_id for _, row in parsed_rows}) != 1:
             continue
-        # A ChapterActivity row is not present on the model.  Within a tree
-        # read rows are already chapter-scoped; direct reads additionally use
-        # the caller's course-scoped set.  Never infer pairing across courses.
+        # Tree reads are chapter-scoped. Course-wide callers provide chapter
+        # memberships so equal group names in different chapters fail safe.
+        if scope_by_activity_id is not None:
+            scopes = {
+                scope_by_activity_id.get(row.id, ())
+                for _, row in parsed_rows
+                if row.id is not None
+            }
+            if len(scopes) != 1 or not next(iter(scopes)):
+                continue
         pairs[group] = {parsed.variant: row for parsed, row in parsed_rows if parsed is not None}
     return pairs
 
@@ -96,7 +107,8 @@ async def choose_activity_variant(
     parsed = parse_activity_variant(activity)
     if parsed is None:
         return activity
-    pair = valid_variant_pairs(siblings).get(parsed.group)
+    scope_by_activity_id = await load_activity_scopes(siblings, db_session)
+    pair = valid_variant_pairs(siblings, scope_by_activity_id).get(parsed.group)
     if pair is None:
         return activity
 
@@ -146,12 +158,33 @@ async def select_visible_activities(
     return result
 
 
+async def load_activity_scopes(
+    activities: Iterable[Activity], db_session: AsyncSession
+) -> dict[int, tuple[int, ...]]:
+    """Return sorted chapter memberships for course-wide projections."""
+    ids = [activity.id for activity in activities if activity.id is not None]
+    if not ids:
+        return {}
+    rows = (await db_session.execute(
+        select(ChapterActivity.activity_id, ChapterActivity.chapter_id).where(
+            ChapterActivity.activity_id.in_(ids)  # type: ignore
+        )
+    )).all()
+    scopes: dict[int, set[int]] = {}
+    for activity_id, chapter_id in rows:
+        scopes.setdefault(activity_id, set()).add(chapter_id)
+    return {activity_id: tuple(sorted(chapters)) for activity_id, chapters in scopes.items()}
+
+
 T = TypeVar("T")
 
 
-def logical_keys(activities: Iterable[Activity]) -> set[tuple[str, str | int]]:
+def logical_keys(
+    activities: Iterable[Activity],
+    scope_by_activity_id: Mapping[int, tuple[int, ...]] | None = None,
+) -> set[tuple[str, str | int]]:
     rows = list(activities)
-    return {logical_activity_key(activity, rows) for activity in rows}
+    return {logical_activity_key(activity, rows, scope_by_activity_id) for activity in rows}
 
 
 async def count_logical_steps(course_id: int, db_session: AsyncSession, *, published_only: bool = False) -> int:
@@ -163,7 +196,8 @@ async def count_logical_steps(course_id: int, db_session: AsyncSession, *, publi
     if published_only:
         statement = statement.where(Activity.published == True)
     activities = (await db_session.execute(statement)).scalars().all()
-    return len(logical_keys(activities))
+    scopes = await load_activity_scopes(activities, db_session)
+    return len(logical_keys(activities, scopes))
 
 
 async def count_completed_logical_steps(
@@ -187,7 +221,8 @@ async def count_completed_logical_steps(
     if published_only:
         statement = statement.where(Activity.published == True)
     activities = (await db_session.execute(statement)).scalars().all()
-    return len(logical_keys(activities))
+    scopes = await load_activity_scopes(activities, db_session)
+    return len(logical_keys(activities, scopes))
 
 
 async def is_logical_activity_completed(
@@ -200,8 +235,9 @@ async def is_logical_activity_completed(
         select(Activity).where(Activity.course_id == activity.course_id)
     )).scalars().all()
     rows = list(siblings)
-    key = logical_activity_key(activity, rows)
-    ids = [row.id for row in rows if row.id is not None and logical_activity_key(row, rows) == key]
+    scopes = await load_activity_scopes(rows, db_session)
+    key = logical_activity_key(activity, rows, scopes)
+    ids = [row.id for row in rows if row.id is not None and logical_activity_key(row, rows, scopes) == key]
     if not ids:
         ids = [activity.id] if activity.id is not None else []
     if not ids:

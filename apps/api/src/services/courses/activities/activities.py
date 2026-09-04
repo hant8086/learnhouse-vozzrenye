@@ -146,6 +146,12 @@ async def get_activity(
     selected = await choose_activity_variant(activity, siblings, current_user, db_session)
     requested_uuid = activity.activity_uuid
     activity = selected
+    if activity.id != result[0].id:
+        last_modified_user = None
+        if activity.last_modified_by_id is not None:
+            last_modified_user = (await db_session.execute(
+                select(User).where(User.id == activity.last_modified_by_id)
+            )).scalars().first()
 
     # RBAC check
     await check_resource_access(request, db_session, current_user, course.course_uuid, AccessAction.READ)

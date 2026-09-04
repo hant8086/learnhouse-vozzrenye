@@ -17,7 +17,10 @@ logger = logging.getLogger(__name__)
 
 CACHE_TTL_COURSES_LIST = 60  # 1 min — public course list
 
+# v2 invalidates pre-variant anonymous snapshots, which contained only public
+# courses and would otherwise survive a deploy in Redis for their TTL.
 _KEY_PREFIX = "courses_cache"
+_LIST_KEY_PREFIX = "courses_cache:v2"
 
 
 def get_cached_courses_list(org_slug: str, page: int, limit: int) -> Optional[list]:
@@ -26,7 +29,7 @@ def get_cached_courses_list(org_slug: str, page: int, limit: int) -> Optional[li
     if r is None:
         return None
     try:
-        key = f"{_KEY_PREFIX}:list:{org_slug}:{page}:{limit}"
+        key = f"{_LIST_KEY_PREFIX}:list:{org_slug}:{page}:{limit}"
         raw = r.get(key)
         if raw:
             return json.loads(raw)
@@ -41,7 +44,7 @@ def set_cached_courses_list(org_slug: str, page: int, limit: int, data: list) ->
     if r is None:
         return
     try:
-        key = f"{_KEY_PREFIX}:list:{org_slug}:{page}:{limit}"
+        key = f"{_LIST_KEY_PREFIX}:list:{org_slug}:{page}:{limit}"
         r.setex(key, CACHE_TTL_COURSES_LIST, json.dumps(data, default=str))
     except Exception:
         logger.debug("Courses cache write failed for %s", org_slug, exc_info=True)
@@ -54,7 +57,7 @@ def invalidate_courses_cache(org_slug: str) -> None:
         return
     try:
         # Delete all list keys for this org
-        pattern = f"{_KEY_PREFIX}:list:{org_slug}:*"
+        pattern = f"{_LIST_KEY_PREFIX}:list:{org_slug}:*"
         keys = r.keys(pattern)
         if keys:
             r.delete(*keys)

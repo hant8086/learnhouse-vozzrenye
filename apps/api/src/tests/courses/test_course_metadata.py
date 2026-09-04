@@ -1,6 +1,7 @@
 """Tests for the headless extra_metadata JSONB field on Course."""
 
 from unittest.mock import AsyncMock, patch
+from datetime import datetime
 
 import pytest
 from sqlmodel import select
@@ -11,6 +12,9 @@ from src.db.courses.courses import (
     CourseRead,
     CourseUpdate,
 )
+from src.db.usergroup_resources import UserGroupResource
+from src.db.usergroups import UserGroup
+from src.db.users import AnonymousUser
 from src.services.courses.courses import (
     create_course,
     get_courses_orgslug,
@@ -153,3 +157,48 @@ async def test_get_courses_orgslug_returns_extra_metadata(
     )
     assert match is not None
     assert match.extra_metadata == metadata
+
+
+@pytest.mark.asyncio
+async def test_anonymous_catalog_includes_published_paid_course_and_badges(
+    db, org, course, mock_request
+):
+    paid = Course(
+        id=22,
+        name="Paid Preview",
+        description="preview",
+        public=False,
+        published=True,
+        open_to_contributors=False,
+        org_id=org.id,
+        course_uuid="course_paid_preview",
+        creation_date=str(datetime.now()),
+        update_date=str(datetime.now()),
+    )
+    db.add(paid)
+    await db.flush()
+    db.add(UserGroup(
+        id=999,
+        name="Paid members",
+        description="paid",
+        org_id=org.id,
+        usergroup_uuid="usergroup_paid",
+    ))
+    await db.flush()
+    db.add(UserGroupResource(
+        usergroup_id=999,
+        resource_uuid=paid.course_uuid,
+        org_id=org.id,
+    ))
+    await db.commit()
+
+    with patch("src.services.courses.cache.get_cached_courses_list", return_value=None), patch(
+        "src.services.courses.cache.set_cached_courses_list"
+    ):
+        results = await get_courses_orgslug(
+            mock_request, AnonymousUser(), org.slug, db, page=1, limit=10
+        )
+
+    preview = next(item for item in results if item.course_uuid == paid.course_uuid)
+    assert preview.is_paid is True
+    assert preview.has_access is False

@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
 from src.db.courses.courses import Course
+from src.db.courses.chapter_activities import ChapterActivity
 from src.db.trail_runs import TrailRun
 from src.db.trail_steps import TrailStep
 from src.db.trails import Trail, TrailCreate
@@ -115,6 +116,81 @@ async def _make_bogus_activity(db, org, *, activity_uuid, course_id):
 
 
 class TestTrailService:
+    @pytest.mark.asyncio
+    async def test_trail_projects_completed_sibling_to_currently_visible_variant(
+        self, db, org, course, chapter, admin_user
+    ):
+        purchased = Activity(
+            id=10,
+            name="Purchased lesson",
+            activity_type=ActivityTypeEnum.TYPE_DYNAMIC,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_DYNAMIC_PAGE,
+            content={"body": "A"},
+            published=True,
+            org_id=org.id,
+            course_id=course.id,
+            activity_uuid="activity_purchased",
+            extra_metadata={"access_variant": "purchased", "access_variant_group": "l7"},
+            creation_date=str(datetime.now()),
+            update_date=str(datetime.now()),
+        )
+        unpurchased = Activity(
+            id=11,
+            name="Unpurchased lesson",
+            activity_type=ActivityTypeEnum.TYPE_DYNAMIC,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_DYNAMIC_PAGE,
+            content={"body": "B"},
+            published=True,
+            org_id=org.id,
+            course_id=course.id,
+            activity_uuid="activity_unpurchased",
+            extra_metadata={"access_variant": "unpurchased", "access_variant_group": "l7"},
+            creation_date=str(datetime.now()),
+            update_date=str(datetime.now()),
+        )
+        db.add_all([purchased, unpurchased])
+        await db.flush()
+        db.add_all([
+            ChapterActivity(
+                chapter_id=chapter.id, activity_id=purchased.id, course_id=course.id,
+                org_id=org.id, order=2, creation_date=str(datetime.now()), update_date=str(datetime.now()),
+            ),
+            ChapterActivity(
+                chapter_id=chapter.id, activity_id=unpurchased.id, course_id=course.id,
+                org_id=org.id, order=3, creation_date=str(datetime.now()), update_date=str(datetime.now()),
+            ),
+        ])
+        await db.commit()
+        trail = await _make_trail(db, org, admin_user, trail_uuid="trail_variant")
+        trail_run = await _make_trail_run(db, trail, course, admin_user)
+        await _make_trail_step(db, trail, trail_run, unpurchased, course, admin_user)
+        trail_payload = SimpleNamespace(model_dump=lambda: {
+            "id": trail.id, "trail_uuid": trail.trail_uuid, "org_id": trail.org_id,
+            "user_id": trail.user_id, "creation_date": trail.creation_date, "update_date": trail.update_date,
+        })
+
+        with patch(
+            "src.services.trail.trail.batch_accessible_restricted_uuids",
+            new=AsyncMock(return_value={purchased.activity_uuid}),
+        ):
+            projected = await _build_trail_read(
+                trail_payload, [trail_run], db, user_id=admin_user.id
+            )
+
+        assert projected.runs[0].steps[0].activity_id == purchased.id
+        assert projected.runs[0].course_total_steps == 1
+
+        await _make_trail_step(db, trail, trail_run, purchased, course, admin_user)
+        with patch(
+            "src.services.trail.trail.batch_accessible_restricted_uuids",
+            new=AsyncMock(return_value=set()),
+        ):
+            refunded = await _build_trail_read(
+                trail_payload, [trail_run], db, user_id=admin_user.id
+            )
+        assert len(refunded.runs[0].steps) == 1
+        assert refunded.runs[0].steps[0].activity_id == unpurchased.id
+
     @pytest.mark.asyncio
     async def test_build_trail_read_handles_empty_and_populated_runs(
         self, db, org, course, activity, admin_user

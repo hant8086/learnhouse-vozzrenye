@@ -5,7 +5,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import HTTPException
 
-from src.db.courses.activities import ActivityCreate, ActivityRead, ActivityTypeEnum, ActivitySubTypeEnum, ActivityUpdate
+from src.db.courses.activities import Activity, ActivityCreate, ActivityRead, ActivityTypeEnum, ActivitySubTypeEnum, ActivityUpdate
+from src.db.courses.chapter_activities import ChapterActivity
+from src.db.users import AnonymousUser
+from datetime import datetime
 from src.db.organizations import OrganizationRead
 from src.services.courses.activities.activities import (
     _apply_activity_lock,
@@ -142,6 +145,55 @@ class TestGetEditorBootstrap:
 
 
 class TestGetActivity:
+    @pytest.mark.asyncio
+    async def test_hidden_uuid_resolves_without_serializing_hidden_content(
+        self, mock_request, db, org, course, chapter
+    ):
+        purchased = Activity(
+            id=10, name="Purchased", activity_type=ActivityTypeEnum.TYPE_DYNAMIC,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_DYNAMIC_PAGE,
+            content={"secret": "purchased"}, published=True, org_id=org.id,
+            course_id=course.id, activity_uuid="activity_purchased",
+            extra_metadata={"access_variant": "purchased", "access_variant_group": "l7"},
+            creation_date=str(datetime.now()), update_date=str(datetime.now()),
+        )
+        unpurchased = Activity(
+            id=11, name="Unpurchased", activity_type=ActivityTypeEnum.TYPE_DYNAMIC,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_DYNAMIC_PAGE,
+            content={"safe": "unpurchased"}, published=True, org_id=org.id,
+            course_id=course.id, activity_uuid="activity_unpurchased",
+            extra_metadata={"access_variant": "unpurchased", "access_variant_group": "l7"},
+            creation_date=str(datetime.now()), update_date=str(datetime.now()),
+        )
+        db.add_all([purchased, unpurchased])
+        await db.flush()
+        db.add_all([
+            ChapterActivity(chapter_id=chapter.id, activity_id=purchased.id, course_id=course.id,
+                            org_id=org.id, order=2, creation_date=str(datetime.now()), update_date=str(datetime.now())),
+            ChapterActivity(chapter_id=chapter.id, activity_id=unpurchased.id, course_id=course.id,
+                            org_id=org.id, order=3, creation_date=str(datetime.now()), update_date=str(datetime.now())),
+        ])
+        await db.commit()
+
+        with patch(
+            "src.services.courses.activities.activities.check_resource_access",
+            new_callable=AsyncMock,
+        ), patch(
+            "src.services.courses.activities.activities.check_ee_activity_paid_access",
+            new_callable=AsyncMock,
+            return_value=True,
+        ), patch(
+            "src.services.courses.activities.activities._apply_activity_lock",
+            new_callable=AsyncMock,
+        ):
+            result = await get_activity(
+                mock_request, purchased.activity_uuid, AnonymousUser(), db
+            )
+
+        assert result.activity_uuid == unpurchased.activity_uuid
+        assert result.resolved_activity_uuid == unpurchased.activity_uuid
+        assert result.content == unpurchased.content
+
     @pytest.mark.asyncio
     async def test_raises_404_for_unknown_activity(
         self, mock_request, db, org, course, chapter, admin_user
