@@ -30,6 +30,8 @@ type Course = {
   thumbnail_image: string
   org_id: string | number
   update_date: string
+  tags?: string | null
+  is_paid?: boolean
   authors?: Array<{
     user: {
       id: string
@@ -136,6 +138,10 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
   const thumbnailImage = course.thumbnail_image
     ? getCourseThumbnailMediaDirectory(org?.org_uuid, course.course_uuid, course.thumbnail_image)
     : '/empty_thumbnail.png'
+  const courseTags = (course.tags || '')
+    .split(/[,;|]/)
+    .map((tag) => tag.trim())
+    .filter(Boolean)
 
   return (
     <div className="relative m-2 flex w-full max-w-sm shrink-0 flex-col overflow-hidden bg-white vz-frame vz-frame-interactive sm:min-w-[280px]">
@@ -153,7 +159,21 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
       <div className='flex flex-col w-full p-4 space-y-3'>
         <div className="space-y-2">
           <h2 className="font-bold text-gray-800 leading-tight text-base min-h-[2.75rem] line-clamp-2">{course.name}</h2>
+          {course.is_paid === true && (
+            <span className="inline-flex w-fit rounded-full bg-gray-900 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+              {t('courses.pro', 'Pro')}
+            </span>
+          )}
           <p className='text-xs text-gray-700 leading-normal min-h-[3.75rem] line-clamp-3'>{course.description}</p>
+          {courseTags.length > 0 && (
+            <div className="flex flex-wrap gap-1" aria-label={t('courses.tags')}>
+              {courseTags.map((tag) => (
+                <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-[9px] font-medium text-gray-600">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="flex flex-wrap items-center justify-between gap-2">

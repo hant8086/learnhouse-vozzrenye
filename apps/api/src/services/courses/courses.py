@@ -310,8 +310,10 @@ async def get_courses_orgslug(
     )
 
     if isinstance(current_user, AnonymousUser):
-        # For anonymous users, only show public AND published courses
-        query = query.where(Course.public == True, Course.published == True)
+        # The catalog is a discovery surface: every published course is
+        # listed, including paid/restricted courses.  Content access remains
+        # enforced by check_resource_access on course/activity reads.
+        query = query.where(Course.published == True)
     else:
         # For authenticated users with admin access viewing dashboard, show all courses
         if can_view_unpublished:
@@ -362,25 +364,25 @@ async def get_courses_orgslug(
     # Fetch usergroup links + user's memberships in a single batch so the
     # catalog can render `is_paid` / `has_access` per course without an
     # N+1 query. Anonymous users short-circuit: they only ever see public
-    # courses (filter above), so gating fields stay False.
+    # courses (filter above), but still expose linked-group state for the
+    # catalog's paid/restricted badge.
     course_usergroups: dict[str, set[int]] = {}
     user_usergroup_ids: set[int] = set()
-    if not is_anon:
-        ug_stmt = select(
-            UserGroupResource.resource_uuid,
-            UserGroupResource.usergroup_id,
-        ).where(UserGroupResource.resource_uuid.in_(course_uuids))
-        ug_rows = (await db_session.execute(ug_stmt)).all()
-        for resource_uuid, usergroup_id in ug_rows:
-            course_usergroups.setdefault(resource_uuid, set()).add(usergroup_id)
+    ug_stmt = select(
+        UserGroupResource.resource_uuid,
+        UserGroupResource.usergroup_id,
+    ).where(UserGroupResource.resource_uuid.in_(course_uuids))
+    ug_rows = (await db_session.execute(ug_stmt)).all()
+    for resource_uuid, usergroup_id in ug_rows:
+        course_usergroups.setdefault(resource_uuid, set()).add(usergroup_id)
 
-        if course_usergroups:
-            all_ug_ids = {ug_id for ids in course_usergroups.values() for ug_id in ids}
-            membership_stmt = select(UserGroupUser.usergroup_id).where(
-                UserGroupUser.user_id == acting_user_id,
-                UserGroupUser.usergroup_id.in_(all_ug_ids),
-            )
-            user_usergroup_ids = set((await db_session.execute(membership_stmt)).scalars().all())
+    if not is_anon and course_usergroups:
+        all_ug_ids = {ug_id for ids in course_usergroups.values() for ug_id in ids}
+        membership_stmt = select(UserGroupUser.usergroup_id).where(
+            UserGroupUser.user_id == acting_user_id,
+            UserGroupUser.usergroup_id.in_(all_ug_ids),
+        )
+        user_usergroup_ids = set((await db_session.execute(membership_stmt)).scalars().all())
 
     # Fetch all authors for all courses in a single query
     authors_query = (
@@ -417,8 +419,8 @@ async def get_courses_orgslug(
             **course.model_dump(),
             "id": course.id or 0,  # Ensure id is never None
             "authors": course_authors.get(course.course_uuid, []),
-            "is_paid": bool(linked_groups) and not course.public,
-            "has_access": not course.public and bool(linked_groups & user_usergroup_ids),
+            "is_paid": bool(linked_groups),
+            "has_access": bool(linked_groups & user_usergroup_ids),
         })
         course_reads.append(course_read)
 
@@ -452,8 +454,8 @@ async def get_courses_count_orgslug(
     )
 
     if isinstance(current_user, AnonymousUser):
-        # For anonymous users, only count public AND published courses
-        query = query.where(Course.public == True, Course.published == True)
+        # Catalog counts include paid/restricted courses as discovery entries.
+        query = query.where(Course.published == True)
     elif not isinstance(current_user, AnonymousUser) and await is_user_superadmin(acting_user_id, db_session):
         # Superadmins see all courses (no additional filter)
         pass
@@ -525,8 +527,9 @@ async def search_courses(
     search_acting_user_id = resolve_acting_user_id(current_user)
 
     if isinstance(current_user, AnonymousUser):
-        # For anonymous users, only show public AND published courses
-        query = query.where(Course.public == True, Course.published == True)
+        # Discovery includes all published courses; access checks still gate
+        # their content when the learner opens one.
+        query = query.where(Course.published == True)
     elif await is_user_superadmin(search_acting_user_id, db_session):
         # Superadmins see all courses (no additional filter)
         pass
@@ -589,25 +592,24 @@ async def search_courses(
         )
 
     # Batch usergroup links + memberships so search results also carry gating
-    # state. Anonymous users only ever see public courses (filter above).
+    # state. Anonymous users also receive linked-group state for paid badges.
     course_usergroups: dict[str, set[int]] = {}
     user_usergroup_ids: set[int] = set()
-    if not isinstance(current_user, AnonymousUser):
-        ug_stmt = select(
-            UserGroupResource.resource_uuid,
-            UserGroupResource.usergroup_id,
-        ).where(UserGroupResource.resource_uuid.in_(course_uuids))
-        ug_rows = (await db_session.execute(ug_stmt)).all()
-        for resource_uuid, usergroup_id in ug_rows:
-            course_usergroups.setdefault(resource_uuid, set()).add(usergroup_id)
+    ug_stmt = select(
+        UserGroupResource.resource_uuid,
+        UserGroupResource.usergroup_id,
+    ).where(UserGroupResource.resource_uuid.in_(course_uuids))
+    ug_rows = (await db_session.execute(ug_stmt)).all()
+    for resource_uuid, usergroup_id in ug_rows:
+        course_usergroups.setdefault(resource_uuid, set()).add(usergroup_id)
 
-        if course_usergroups:
-            all_ug_ids = {ug_id for ids in course_usergroups.values() for ug_id in ids}
-            membership_stmt = select(UserGroupUser.usergroup_id).where(
-                UserGroupUser.user_id == search_acting_user_id,
-                UserGroupUser.usergroup_id.in_(all_ug_ids),
-            )
-            user_usergroup_ids = set((await db_session.execute(membership_stmt)).scalars().all())
+    if not isinstance(current_user, AnonymousUser) and course_usergroups:
+        all_ug_ids = {ug_id for ids in course_usergroups.values() for ug_id in ids}
+        membership_stmt = select(UserGroupUser.usergroup_id).where(
+            UserGroupUser.user_id == search_acting_user_id,
+            UserGroupUser.usergroup_id.in_(all_ug_ids),
+        )
+        user_usergroup_ids = set((await db_session.execute(membership_stmt)).scalars().all())
 
     course_reads = []
     for course in courses:
@@ -616,8 +618,8 @@ async def search_courses(
             **course.model_dump(),
             "id": course.id or 0,
             "authors": course_authors.get(course.course_uuid, []),
-            "is_paid": bool(linked_groups) and not course.public,
-            "has_access": not course.public and bool(linked_groups & user_usergroup_ids),
+            "is_paid": bool(linked_groups),
+            "has_access": bool(linked_groups & user_usergroup_ids),
         })
         course_reads.append(course_read)
 

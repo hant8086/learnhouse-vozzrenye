@@ -25,6 +25,7 @@ from src.services.courses.locks import (
     is_locked_for_user,
     is_org_admin,
 )
+from src.services.courses.activity_variants import choose_activity_variant, select_visible_activities
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,16 @@ async def get_activity(
 
     activity, course, last_modified_user = result
 
+    # Learner reads must never expose the requested hidden sibling.  Resolve
+    # against the complete course pair before serializing content; editor
+    # bootstrap intentionally has its own unfiltered path below.
+    siblings = list((await db_session.execute(
+        select(Activity).where(Activity.course_id == course.id)
+    )).scalars().all())
+    selected = await choose_activity_variant(activity, siblings, current_user, db_session)
+    requested_uuid = activity.activity_uuid
+    activity = selected
+
     # RBAC check
     await check_resource_access(request, db_session, current_user, course.course_uuid, AccessAction.READ)
 
@@ -148,6 +159,8 @@ async def get_activity(
     )
 
     activity_read = ActivityRead.model_validate(activity)
+    if activity.activity_uuid != requested_uuid:
+        activity_read.resolved_activity_uuid = activity.activity_uuid
     activity_read.content = activity_read.content if has_paid_access else { "paid_access": False }
     # Include last modified user info
     activity_read.last_modified_by_username = last_modified_user.username if last_modified_user else None
@@ -205,8 +218,11 @@ async def get_editor_bootstrap(
 
     activity, course, org, org_config, last_modified_user, parent_chapter = db_result
 
+    # This endpoint is an authoring-only bootstrap.  Requiring update access
+    # prevents a learner from using it as an unfiltered content side channel;
+    # privileged editors retain the exact row they opened.
     await check_resource_access(
-        request, db_session, current_user, course.course_uuid, AccessAction.READ
+        request, db_session, current_user, course.course_uuid, AccessAction.UPDATE
     )
 
     has_paid_access = await check_ee_activity_paid_access(
@@ -350,10 +366,19 @@ async def get_activityby_id(
 
     activity, course = result
 
+    siblings = list((await db_session.execute(
+        select(Activity).where(Activity.course_id == course.id)
+    )).scalars().all())
+    requested_uuid = activity.activity_uuid
+    activity = await choose_activity_variant(activity, siblings, current_user, db_session)
+
     # RBAC check
     await check_resource_access(request, db_session, current_user, course.course_uuid, AccessAction.READ)
 
-    return ActivityRead.model_validate(activity)
+    result = ActivityRead.model_validate(activity)
+    if activity.activity_uuid != requested_uuid:
+        result.resolved_activity_uuid = activity.activity_uuid
+    return result
 
 
 async def update_activity(
@@ -387,6 +412,13 @@ async def update_activity(
     # Update only the fields that were explicitly set (not default values)
     # Using model_dump(exclude_unset=True) to get only the fields that were passed in
     update_data = activity_object.model_dump(exclude_unset=True)
+
+    # Metadata is an extensible bag used by video/caption integrations as
+    # well as access variants.  Variant authoring must not erase unrelated
+    # keys when it submits only its two controls.
+    if "extra_metadata" in update_data and isinstance(update_data["extra_metadata"], dict):
+        existing_metadata = activity.extra_metadata if isinstance(activity.extra_metadata, dict) else {}
+        update_data["extra_metadata"] = {**existing_metadata, **update_data["extra_metadata"]}
 
     # Create a version snapshot before updating content
     # This preserves the current state for version history.
@@ -538,4 +570,6 @@ async def get_activities(
     _, chapter, course = results[0]
     await check_resource_access(request, db_session, current_user, course.course_uuid, AccessAction.READ)
 
-    return [ActivityRead.model_validate(activity) for activity, _, _ in results]
+    activities = [activity for activity, _, _ in results]
+    activities = await select_visible_activities(activities, current_user, db_session)
+    return [ActivityRead.model_validate(activity) for activity in activities]

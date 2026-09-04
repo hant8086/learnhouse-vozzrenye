@@ -1,4 +1,6 @@
 import ActivityClient from './activity'
+import { redirect } from 'next/navigation'
+import { getUriWithOrg } from '@services/config/config'
 import { getCourseThumbnailMediaDirectory, getOrgOgImageMediaDirectory } from '@services/media/media'
 import { Metadata } from 'next'
 import { getOrgSeoConfig, buildActivityJsonLd } from '@/lib/seo/utils'
@@ -115,6 +117,13 @@ const ActivityPage = async (params: any) => {
     // has no activity record — a failure here is expected, not exceptional.
     loadActivity(activityid, access_token).catch(() => null),
   ])
+
+  // The API resolves a hidden variant without serializing its content.  Make
+  // the canonical URL visible to the browser as well, so refresh/navigation
+  // never keeps an entitled or refunded learner on the sibling UUID.
+  if (activity?.resolved_activity_uuid) {
+    redirect(getUriWithOrg(orgslug, `/course/${courseuuid}/activity/${activity.resolved_activity_uuid.replace('activity_', '')}`))
+  }
 
   const course = courseResult.data
   const courseAccessDenied = courseResult.status === 403

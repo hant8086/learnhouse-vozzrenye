@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
-from sqlmodel import select, func, delete as sql_delete
+from sqlmodel import select, delete as sql_delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.courses.chapter_activities import ChapterActivity
 from fastapi import HTTPException, Request, status
@@ -22,6 +22,11 @@ from src.services.audit.audit import record_audit_event
 from src.db.user_audit_events import UserAuditEventType
 from src.services.webhooks.dispatch import dispatch_webhooks
 from src.security.rbac import check_resource_access, AccessAction
+from src.services.courses.activity_variants import (
+    is_logical_activity_completed,
+    logical_activity_key,
+    logical_keys,
+)
 
 
 async def _build_trail_read(
@@ -46,15 +51,24 @@ async def _build_trail_read(
         )).scalars().all()
         course_map = {c.id: c for c in courses}
 
+    # Batch fetch activities once: variant siblings count as one logical step.
+    course_activities_map: dict[int, list[Activity]] = {}
+    if course_ids:
+        activity_rows = (await db_session.execute(
+            select(Activity)
+            .join(ChapterActivity, ChapterActivity.activity_id == Activity.id)
+            .where(ChapterActivity.course_id.in_(course_ids))  # type: ignore
+        )).scalars().all()
+        for activity in activity_rows:
+            course_activities_map.setdefault(activity.course_id, []).append(activity)
+
     # Batch fetch chapter activity counts per course (for total_steps)
     course_total_steps_map: dict[int, int] = {}
     if with_course_info and course_ids:
-        step_counts = (await db_session.execute(
-            select(ChapterActivity.course_id, func.count(ChapterActivity.id))  # type: ignore
-            .where(ChapterActivity.course_id.in_(course_ids))  # type: ignore
-            .group_by(ChapterActivity.course_id)
-        )).all()
-        course_total_steps_map = {row[0]: row[1] for row in step_counts}
+        course_total_steps_map = {
+            course_id: len(logical_keys(activities))
+            for course_id, activities in course_activities_map.items()
+        }
 
     # Batch fetch all trail steps for these trail runs
     steps_statement = select(TrailStep).where(
@@ -89,8 +103,21 @@ async def _build_trail_read(
             course_total_steps=course_total_steps_map.get(tr.course_id, 0) if with_course_info else 0,
         )
 
-        # Attach steps with course data (expunge to avoid dirty-tracking the data override)
+        # Attach one completion row per logical activity (expunge to avoid
+        # dirty-tracking the data override).
+        emitted_keys: set[tuple[str, str | int]] = set()
+        activity_by_id = {
+            activity.id: activity
+            for activity in course_activities_map.get(tr.course_id, [])
+            if activity.id is not None
+        }
         for step in steps_by_run.get(tr.id, []):
+            activity = activity_by_id.get(step.activity_id)
+            if activity is not None:
+                key = logical_activity_key(activity, course_activities_map.get(tr.course_id, []))
+                if key in emitted_keys:
+                    continue
+                emitted_keys.add(key)
             db_session.expunge(step)
             step_course = course_map.get(step.course_id)
             step.data = {"course": step_course.model_dump() if step_course else None}
@@ -277,7 +304,12 @@ async def add_activity_to_trail(
     )
     trailstep = (await db_session.execute(statement)).scalars().first()
 
-    is_new_completion = trailstep is None
+    # A sibling completion is the same logical step.  This prevents a
+    # purchase/refund switch from inserting a second TrailStep and firing
+    # duplicate activity/course-completed events.
+    is_new_completion = trailstep is None and not await is_logical_activity_completed(
+        activity, user.id, db_session
+    )
     if is_new_completion:
         trailstep = TrailStep(
             trailrun_id=trailrun.id if trailrun.id is not None else 0,

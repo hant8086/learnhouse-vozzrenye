@@ -101,6 +101,27 @@ async def test_update_activity_sets_extra_metadata(
 
 
 @pytest.mark.asyncio
+async def test_variant_metadata_update_preserves_unrelated_keys(
+    db, org, course, chapter, activity, admin_user, mock_request, bypass_activity_rbac
+):
+    activity.extra_metadata = {"captions": {"enabled": True}, "access_variant_group": "old"}
+    db.add(activity)
+    await db.commit()
+    updated = await update_activity(
+        mock_request,
+        ActivityUpdate(extra_metadata={"access_variant": "purchased", "access_variant_group": "new"}),
+        activity.activity_uuid,
+        admin_user,
+        db,
+    )
+    assert updated.extra_metadata == {
+        "captions": {"enabled": True},
+        "access_variant": "purchased",
+        "access_variant_group": "new",
+    }
+
+
+@pytest.mark.asyncio
 async def test_create_documentpdf_activity_passes_extra_metadata(
     db, org, course, chapter, admin_user, mock_request, bypass_activity_rbac
 ):

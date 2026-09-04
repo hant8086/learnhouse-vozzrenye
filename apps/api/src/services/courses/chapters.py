@@ -24,6 +24,7 @@ from src.services.courses.locks import (
     is_locked_for_user,
     is_org_admin,
 )
+from src.services.courses.activity_variants import select_visible_activities
 
 
 ####################################################
@@ -129,7 +130,8 @@ async def get_chapter(
         .distinct(Activity.id) # type: ignore
     )
 
-    activities = (await db_session.execute(statement)).scalars().all()
+    activities = list((await db_session.execute(statement)).scalars().all())
+    activities = await select_visible_activities(activities, current_user, db_session)
 
     chapter = ChapterRead(
         **chapter.model_dump(),
@@ -290,6 +292,7 @@ async def get_course_chapters(
                     Activity.current_version,
                     Activity.last_modified_by_id,
                     Activity.lock_type,
+                    Activity.extra_metadata,
                     ChapterActivity.order,
                 )
                 .join(Activity, Activity.id == ChapterActivity.activity_id)  # type: ignore
@@ -304,23 +307,23 @@ async def get_course_chapters(
             chapter_activities_map: dict[int, list[ActivityRead]] = {}
             seen: set[tuple[int, int]] = set()
             for row in rows:
-                (
-                    chapter_id_val,
-                    a_id,
-                    a_org_id,
-                    a_course_id,
-                    a_name,
-                    a_type,
-                    a_sub_type,
-                    a_uuid,
-                    a_published,
-                    a_creation,
-                    a_update,
-                    a_version,
-                    a_last_modified_by,
-                    a_lock_type,
-                    _order,
-                ) = row
+                # Older test doubles/integrations may provide the pre-variant
+                # 15-column projection. Treat missing metadata as ordinary.
+                if len(row) == 16:
+                    (
+                        chapter_id_val, a_id, a_org_id, a_course_id, a_name,
+                        a_type, a_sub_type, a_uuid, a_published, a_creation,
+                        a_update, a_version, a_last_modified_by, a_lock_type,
+                        a_extra_metadata, _order,
+                    ) = row
+                else:
+                    (
+                        chapter_id_val, a_id, a_org_id, a_course_id, a_name,
+                        a_type, a_sub_type, a_uuid, a_published, a_creation,
+                        a_update, a_version, a_last_modified_by, a_lock_type,
+                        _order,
+                    ) = row
+                    a_extra_metadata = None
                 key = (chapter_id_val, a_id)
                 if key in seen:
                     continue
@@ -342,8 +345,38 @@ async def get_course_chapters(
                         current_version=a_version,
                         last_modified_by_id=a_last_modified_by,
                         lock_type=a_lock_type,
+                        extra_metadata=a_extra_metadata,
                     )
                 )
+            # Keep slim responses lightweight while still applying variant
+            # selection.  The resolver only needs identity + metadata.
+            for chapter_id_val, rows_for_chapter in list(chapter_activities_map.items()):
+                if with_unpublished_activities:
+                    continue
+                proxies = [
+                    Activity(
+                        id=row.id,
+                        name=row.name,
+                        activity_type=row.activity_type,
+                        activity_sub_type=row.activity_sub_type,
+                        content={},
+                        details=None,
+                        published=row.published,
+                        lock_type=row.lock_type,
+                        org_id=row.org_id,
+                        course_id=row.course_id,
+                        activity_uuid=row.activity_uuid,
+                        creation_date=row.creation_date,
+                        update_date=row.update_date,
+                        extra_metadata=row.extra_metadata,
+                    )
+                    for row in rows_for_chapter
+                ]
+                visible = await select_visible_activities(proxies, current_user, db_session)
+                visible_ids = {item.id for item in visible}
+                chapter_activities_map[chapter_id_val] = [
+                    item for item in rows_for_chapter if item.id in visible_ids
+                ]
         else:
             activity_statement = (
                 select(ChapterActivity, Activity)
@@ -366,6 +399,19 @@ async def get_course_chapters(
                 chapter_activities_map.setdefault(chapter_activity.chapter_id, []).append(
                     ActivityRead(**activity.model_dump())
                 )
+
+            for chapter_id_val, rows_for_chapter in list(chapter_activities_map.items()):
+                if with_unpublished_activities:
+                    continue
+                source = [
+                    activity for chapter_activity, activity in activity_results
+                    if chapter_activity.chapter_id == chapter_id_val
+                ]
+                visible = await select_visible_activities(source, current_user, db_session)
+                visible_ids = {item.id for item in visible}
+                chapter_activities_map[chapter_id_val] = [
+                    item for item in rows_for_chapter if item.id in visible_ids
+                ]
 
         for chapter in chapters:
             chapter.activities = chapter_activities_map.get(chapter.id, [])
