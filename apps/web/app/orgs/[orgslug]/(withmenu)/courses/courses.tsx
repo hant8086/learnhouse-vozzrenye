@@ -10,7 +10,9 @@ import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import NewCourseButton from '@components/Objects/StyledElements/Buttons/NewCourseButton'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
 import { useTranslation } from 'react-i18next'
-import { BookCopy, Search, X, Users, Info } from 'lucide-react'
+import { BookCopy, Search, X, Users, Info, LogIn } from 'lucide-react'
+import Link from 'next/link'
+import { getUriWithOrg } from '@services/config/config'
 import FeatureGate from '@components/Dashboard/Shared/FeatureGate/FeatureGate'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -273,20 +275,20 @@ function Courses(props: CourseProps) {
           )}
 
           <div>
-          {catalogGroups.map(({ section, courses }) => (
-            <section key={section?.key ?? 'other'} className="mb-10">
-              <h2 className="mb-4 text-2xl font-bold tracking-tight text-gray-900">
-                {section?.title ?? t('courses.other', 'Other')}
-              </h2>
-              <RevealGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {courses.map((course: any, index: number) => (
-                  <RevealItem key={course.course_uuid} className="flex h-full">
-                    <CourseThumbnail course={course} orgslug={orgslug} isPriority={index < 3} />
-                  </RevealItem>
-                ))}
-              </RevealGroup>
-            </section>
-          ))}
+            {catalogGroups.map(({ section, courses }) => (
+              <section key={section?.key ?? 'other'} className="mb-10">
+                <h2 className="mb-4 text-2xl font-bold tracking-tight text-gray-900">
+                  {section?.title ?? t('courses.other', 'Other')}
+                </h2>
+                <RevealGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {courses.map((course: any, index: number) => (
+                    <RevealItem key={course.course_uuid} className="flex h-full">
+                      <CourseThumbnail course={course} orgslug={orgslug} isPriority={index < 3} />
+                    </RevealItem>
+                  ))}
+                </RevealGroup>
+              </section>
+            ))}
             {filteredCourses.length === 0 && searchQuery && (
               <RevealItem className="col-span-full flex flex-col items-center justify-center px-4 py-12">
                 <Search className="w-12 h-12 text-gray-300 mb-4" />
@@ -298,21 +300,53 @@ function Courses(props: CourseProps) {
                 </p>
               </RevealItem>
             )}
+            {filteredCourses.length === 0 && !searchQuery && allCourses.length > 0 && (
+              <RevealItem className="col-span-full flex flex-col items-center justify-center px-4 py-12">
+                <BookCopy className="w-12 h-12 text-gray-300 mb-4" />
+                <h2 className="text-xl font-semibold text-gray-600 mb-2">
+                  {t('courses.no_courses')}
+                </h2>
+                <p className="text-gray-400">
+                  {t('courses.no_courses_available')}
+                </p>
+              </RevealItem>
+            )}
             {allCourses.length === 0 && !searchQuery && (
               <RevealItem className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-100 bg-gray-50/30 px-4 py-12">
                 <div className="p-4 bg-white rounded-full nice-shadow mb-4">
-                  <BookCopy className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
+                  {isAuthenticated ? (
+                    <BookCopy className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
+                  ) : (
+                    <LogIn className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
+                  )}
                 </div>
                 <h1 className="text-xl font-bold text-gray-600 mb-2">
-                  {t('courses.no_courses')}
+                  {isAuthenticated
+                    ? t('courses.no_courses')
+                    : t('courses.sign_in_to_see_courses', 'Log in to see your courses')}
                 </h1>
                 <p className="text-md text-gray-400 mb-6 text-center max-w-xs">
-                  {isUserAdmin ? (
+                  {!isAuthenticated ? (
+                    t(
+                      'courses.sign_in_to_see_courses_description',
+                      'Courses in this academy may only be visible once you are signed in.',
+                    )
+                  ) : isUserAdmin ? (
                     t('courses.create_courses_placeholder')
                   ) : (
                     t('courses.no_courses_available')
                   )}
                 </p>
+                {/* Keep the established sign-in affordance for an anonymous empty catalog. */}
+                {!isAuthenticated && (
+                  <Link
+                    href={getUriWithOrg(orgslug, '/login')}
+                    className="inline-flex items-center gap-2 justify-center px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
+                  >
+                    <LogIn size={16} />
+                    {t('auth.sign_in', 'Sign in')}
+                  </Link>
+                )}
                 {isAuthenticated && isUserAdmin && (
                   <div className="mt-4">
                     <AuthenticatedClientElement

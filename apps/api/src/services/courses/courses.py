@@ -24,6 +24,7 @@ from src.db.courses.courses import (
     AuthorWithRole,
     ThumbnailType,
 )
+from src.db.organization_config import normalize_course_catalog_section_key
 
 from src.security.auth import resolve_acting_user_id
 from src.security.org_auth import require_org_membership
@@ -60,10 +61,8 @@ def _merge_course_extra_metadata(
         if key == "catalog_section_key":
             if value is None or (isinstance(value, str) and not value.strip()):
                 merged.pop(key, None)
-            elif isinstance(value, str):
-                merged[key] = value.strip().lower()
             else:
-                raise ValueError("catalog_section_key must be a string or null")
+                merged[key] = normalize_course_catalog_section_key(value)
         else:
             merged[key] = value
     return merged or None
@@ -667,15 +666,18 @@ async def create_course(
     - For API tokens, the user who created the token becomes the CREATOR
     - Course creation is subject to organization limits and permissions
     """
-    course = Course.model_validate(
-        course_object.model_copy(
-            update={
-                "extra_metadata": _merge_course_extra_metadata(
-                    None, course_object.extra_metadata
-                )
-            }
+    try:
+        course = Course.model_validate(
+            course_object.model_copy(
+                update={
+                    "extra_metadata": _merge_course_extra_metadata(
+                        None, course_object.extra_metadata
+                    )
+                }
+            )
         )
-    )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     # SECURITY: Check if user has permission to create courses in this organization
     # Since this is a new course, we need to check organization-level permissions

@@ -290,6 +290,23 @@ class SignupFieldsConfig(BaseModel):
     fields: list[SignupFieldItem] = Field(default_factory=list)
 
 
+_COURSE_CATALOG_SECTION_KEY_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+
+
+def normalize_course_catalog_section_key(value: object) -> str:
+    """Normalize and validate a course catalog section identifier."""
+    if not isinstance(value, str):
+        raise ValueError("catalog_section_key must be a string or null")
+    normalized = value.strip().lower()
+    if (
+        not normalized
+        or len(normalized) > 80
+        or _COURSE_CATALOG_SECTION_KEY_RE.fullmatch(normalized) is None
+    ):
+        raise ValueError("section keys must be lowercase kebab-case identifiers")
+    return normalized
+
+
 class CourseCatalogSection(BaseModel):
     """One editorial section in the public course catalog."""
 
@@ -300,10 +317,7 @@ class CourseCatalogSection(BaseModel):
     @field_validator("key")
     @classmethod
     def validate_key(cls, value: str) -> str:
-        value = value.strip().lower()
-        if not value or len(value) > 80 or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", value) is None:
-            raise ValueError("section keys must be lowercase kebab-case identifiers")
-        return value
+        return normalize_course_catalog_section_key(value)
 
     @field_validator("title")
     @classmethod
@@ -367,6 +381,7 @@ class OrganizationConfigBase(BaseModel):
     cloud: OrgCloudConfig
     landing: dict = Field(default_factory=dict)
     seo: SeoOrgConfig = SeoOrgConfig()
+    course_catalog: CourseCatalogConfig = CourseCatalogConfig()
 
 
 # ============================================================================

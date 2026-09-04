@@ -6,10 +6,17 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlmodel import select
 
-from src.db.courses.courses import CourseUpdate
-from src.db.organization_config import CourseCatalogConfig, OrganizationConfig
-from src.services.courses.courses import _merge_course_extra_metadata
-from src.services.courses.courses import update_course
+from src.db.courses.courses import CourseCreate, CourseUpdate
+from src.db.organization_config import (
+    CourseCatalogConfig,
+    OrganizationConfig,
+    OrganizationConfigBase,
+    OrgCloudConfig,
+    OrgFeatureConfig,
+    OrgGeneralConfig,
+    normalize_course_catalog_section_key,
+)
+from src.services.courses.courses import _merge_course_extra_metadata, create_course, update_course
 from src.services.orgs.orgs import update_org_course_catalog_config
 
 
@@ -88,16 +95,66 @@ async def test_catalog_config_uses_v1_fallback_path(db, org, admin_user, mock_re
 
 def test_course_metadata_merge_and_clear_preserves_import_metadata():
     existing = {"source_key": "imported", "catalog_section_key": "old"}
-    merged = _merge_course_extra_metadata(existing, {"catalog_section_key": "New Section", "other": 1})
-    assert merged == {"source_key": "imported", "catalog_section_key": "new section", "other": 1}
+    merged = _merge_course_extra_metadata(existing, {"catalog_section_key": "Technology-Enlightenment", "other": 1})
+    assert merged == {"source_key": "imported", "catalog_section_key": "technology-enlightenment", "other": 1}
     assert _merge_course_extra_metadata(merged, {"catalog_section_key": None}) == {
         "source_key": "imported", "other": 1
     }
+    assert normalize_course_catalog_section_key("  KASHMIR-SHAIVISM ") == "kashmir-shaivism"
+
+    with pytest.raises(ValueError):
+        _merge_course_extra_metadata({}, {"catalog_section_key": "not a key"})
+    with pytest.raises(ValueError):
+        _merge_course_extra_metadata({}, {"catalog_section_key": ["not", "a", "key"]})
+
+
+def test_v1_config_roundtrip_retains_course_catalog_sections():
+    config = OrganizationConfigBase(
+        general=OrgGeneralConfig(),
+        features=OrgFeatureConfig(),
+        cloud=OrgCloudConfig(),
+        course_catalog={"sections": [{"key": "technology", "title": "Technology", "order": 1}]},
+    )
+    roundtrip = OrganizationConfigBase.model_validate(config.model_dump())
+    assert roundtrip.course_catalog.sections[0].key == "technology"
 
 
 def test_course_update_metadata_is_a_dict():
     update = CourseUpdate(extra_metadata={"catalog_section_key": "technology"})
     assert update.extra_metadata == {"catalog_section_key": "technology"}
+
+
+@pytest.mark.asyncio
+async def test_invalid_catalog_section_key_is_422_on_create_and_update(
+    db, org, course, admin_user, mock_request
+):
+    with pytest.raises(HTTPException) as create_error:
+        await create_course(
+            mock_request,
+            org.id,
+            CourseCreate(
+                org_id=org.id,
+                name="Invalid Metadata Course",
+                description="desc",
+                public=False,
+                open_to_contributors=False,
+                extra_metadata={"catalog_section_key": ["not", "a", "key"]},
+            ),
+            admin_user,
+            db,
+        )
+    assert create_error.value.status_code == 422
+
+    with patch("src.services.courses.courses.check_resource_access", new_callable=AsyncMock):
+        with pytest.raises(HTTPException) as update_error:
+            await update_course(
+                mock_request,
+                CourseUpdate(extra_metadata={"catalog_section_key": "not a valid-key"}),
+                course.course_uuid,
+                admin_user,
+                db,
+            )
+    assert update_error.value.status_code == 422
 
 
 @pytest.mark.asyncio
