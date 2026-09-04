@@ -214,8 +214,7 @@ async def check_course_access(
 ) -> dict:
     """Check if a user can access a specific course within the token's org."""
 
-    target_user = await _get_user_in_org(user_id, token_user.org_id, db_session)
-    target_public_user = PublicUser.model_validate(target_user)
+    await _get_user_in_org(user_id, token_user.org_id, db_session)
 
     course = (await db_session.execute(
         select(Course).where(
@@ -836,7 +835,8 @@ async def get_user_trail_detail(
     """Build a full trail breakdown for a user — every chapter + every activity
     with per-activity completion status. Optionally filtered to a single course."""
 
-    await _get_user_in_org(user_id, token_user.org_id, db_session)
+    target_user = await _get_user_in_org(user_id, token_user.org_id, db_session)
+    target_public_user = PublicUser.model_validate(target_user)
 
     target_course: Optional[Course] = None
     if course_uuid is not None:
