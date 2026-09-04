@@ -42,6 +42,14 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
     staleTime: 60_000,
   })
 
+  // Configured featured sections are editorial ordering, not a visibility
+  // filter. The catalog section below renders every remaining published
+  // course, while excluding featured UUIDs to avoid duplicate cards.
+  const featuredCourseIds = new Set(
+    landing.sections
+      .flatMap((section) => section.type === 'featured-courses' ? section.courses : [])
+  )
+
   const renderSection = (section: LandingSection) => {
     switch (section.type) {
       case 'hero':
@@ -237,7 +245,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
           )
         }
 
-        const featuredCourses = allCourses.filter((course: any) => 
+        const featuredCourses = allCourses.filter((course: any) =>
           section.courses.includes(course.course_uuid)
         )
 
@@ -269,6 +277,20 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
   return (
     <div className="flex flex-col items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-16 h-full">
       {landing.sections.map((section) => renderSection(section))}
+      {allCourses && allCourses.some((course: any) => !featuredCourseIds.has(course.course_uuid)) && (
+        <section className="w-full py-16">
+          <LandingSectionHeading eyebrow="ORG / COURSE CATALOG" title={t('courses.courses')} />
+          <RevealGroup className="grid grid-cols-1 gap-6 w-full sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {allCourses
+              .filter((course: any) => !featuredCourseIds.has(course.course_uuid))
+              .map((course: any) => (
+                <RevealItem key={`catalog-${course.course_uuid}`} className="flex w-full justify-center">
+                  <CourseThumbnailLanding course={course} orgslug={orgslug} />
+                </RevealItem>
+              ))}
+          </RevealGroup>
+        </section>
+      )}
     </div>
   )
 }

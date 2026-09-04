@@ -25,9 +25,9 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
   const session = useLHSession() as any
   const isAuthenticated = session?.status === 'authenticated'
 
-  // Limit to 12 courses (4x3 grid) for the home page
-  const displayedCourses = courses.slice(0, 12)
-  const hasMoreCourses = courses.length > 12
+  // The home landing is the public catalog. The API already returns the full
+  // published projection (including gated courses), so never truncate it here.
+  const displayedCourses = courses
 
   return (
     <div className="w-full">
@@ -95,16 +95,6 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
               </div>
             )}
           </RevealGroup>
-          {hasMoreCourses && (
-            <div className="mt-4 text-center">
-              <Link
-                href={getUriWithOrg(orgslug, '/courses')}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                {t('courses.view_all_courses')} ({courses.length})
-              </Link>
-            </div>
-          )}
         </div>
       </GeneralWrapperStyled>
     </div>
