@@ -201,15 +201,30 @@ async def get_course_meta(
     org = results[0][3]  # First result's Organization
     author_results = [(ra, u) for _, ra, u, _ in results if ra is not None and u is not None]
 
-    # DASHBOARD context lets authors/admins/usergroup members access unpublished
-    # courses; regular users still fall back to public view rules.
-    await check_resource_access(
+    # A published course is a discovery surface: its safe outline is visible
+    # regardless of course-level access.  Unpublished courses retain the
+    # normal dashboard/public gate, so they are never disclosed by preview.
+    is_published_preview = bool(course.published)
+    if not is_published_preview:
+        await check_resource_access(
+            request,
+            db_session,
+            current_user,
+            course.course_uuid,
+            AccessAction.READ,
+            context=AccessContext.DASHBOARD,
+        )
+
+    # Keep the access decision request-specific.  It is used only to decide
+    # whether the preview projection may include unlocked content; it does not
+    # replace the generic access checks on direct course/activity/start paths.
+    access_decision = await check_resource_access(
         request,
         db_session,
         current_user,
         course.course_uuid,
         AccessAction.READ,
-        context=AccessContext.DASHBOARD,
+        raise_on_deny=False,
     )
 
     # Permission check passed — try Redis cache for the heavy data.
@@ -240,7 +255,38 @@ async def get_course_meta(
             with_unpublished_activities,
             slim=slim,
             course=course,
+            allow_published_preview=is_published_preview,
         )
+
+    # Course-level grants identify a paid/restricted catalog entry.  The
+    # actual RBAC decision above also covers public/free/org-only courses and
+    # therefore remains the source of truth for this request.
+    linked_group_rows = (await db_session.execute(
+        select(UserGroupResource.usergroup_id).where(
+            UserGroupResource.resource_uuid == course.course_uuid
+        )
+    )).scalars().all()
+    is_paid = bool(linked_group_rows)
+    # Anonymous public-read permission is deliberately not an entitlement:
+    # guests must still authenticate before Start, and their overview remains
+    # an outline-only preview.  Signed-in users use the actual RBAC decision.
+    has_access = bool(
+        access_decision.allowed and not isinstance(current_user, AnonymousUser)
+    )
+
+    # A denied reader gets names/types only.  In particular this must also run
+    # for slim=false: no content/details can escape simply by opting out of
+    # the lightweight projection.  Keep chapter/activity rows present so the
+    # public TOC remains useful, but make every item visibly locked.
+    if is_published_preview and not has_access:
+        for chapter in chapters:
+            chapter.is_locked = True
+            chapter.description = ""
+            chapter.thumbnail_image = ""
+            for activity in chapter.activities:
+                activity.is_locked = True
+                activity.content = {}
+                activity.details = None
 
     # Convert to AuthorWithRole objects
     authors = [
@@ -259,7 +305,9 @@ async def get_course_meta(
         **course.model_dump(),
         org_uuid=org.org_uuid,
         authors=authors,
-        chapters=chapters
+        chapters=chapters,
+        is_paid=is_paid,
+        has_access=has_access,
     )
 
     # Cache only the anonymous (public, uniformly-stripped) view. See the read

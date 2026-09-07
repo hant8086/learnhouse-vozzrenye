@@ -5,18 +5,18 @@ import { useRouter } from 'next/navigation'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getUriWithOrg } from '@services/config/config'
 import { getOffersByResource } from '@services/payments/offers'
-import { UserPen, ClockIcon, ArrowRight, BookOpen, UserPlus } from 'lucide-react'
-import { OfferCard } from './OfferCard'
+import { UserPen, ClockIcon, ArrowRight, BookOpen } from 'lucide-react'
 import { applyForContributor } from '@services/courses/courses'
 import toast from 'react-hot-toast'
 import { useContributorStatus } from '../../../../hooks/useContributorStatus'
 import CourseProgress from '../CourseProgress/CourseProgress'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { useOrg, useOrgMembership } from '@components/Contexts/OrgContext'
+import { useOrg } from '@components/Contexts/OrgContext'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import { useTranslation } from 'react-i18next'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
+import { getCourseStartAction, selectFirstPublicOffer } from '@/lib/courses/startGate'
 
 interface CourseRun {
   status: string
@@ -42,6 +42,8 @@ interface Course {
     }>
   }>
   open_to_contributors?: boolean
+  is_paid?: boolean
+  has_access?: boolean
 }
 
 interface CourseActionsProps {
@@ -62,7 +64,6 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
   const { contributorStatus, refetch } = useContributorStatus(courseuuid)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   const org = useOrg() as any
-  const { isUserPartOfTheOrg } = useOrgMembership()
   const queryClient = useQueryClient()
   const { track } = useLHAnalytics('learner')
 
@@ -70,12 +71,15 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
   const cleanCourseUuid = course.course_uuid?.replace('course_', '');
   const resourceUuid = cleanCourseUuid ? `course_${cleanCourseUuid}` : null;
 
-  const isStarted = trailData?.runs?.find(
-    (run: any) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
-      return cleanRunCourseUuid === cleanCourseUuid;
-    }
-  ) ?? false;
+  const hasCourseAccess = course.is_paid === true ? course.has_access === true : true
+  const isStarted = hasCourseAccess
+    ? trailData?.runs?.find(
+      (run: any) => {
+        const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
+        return cleanRunCourseUuid === cleanCourseUuid;
+      }
+    ) ?? false
+    : false;
 
   // Public endpoint — no auth needed, works for unauthenticated visitors too
   const { data: offersResult, isLoading } = useQuery({
@@ -85,22 +89,32 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
     staleTime: 60_000,
   });
   const linkedOffers: any[] = asArray(offersResult);
+  const selectedOffer = selectFirstPublicOffer(linkedOffers);
+  const courseAction = getCourseStartAction({
+    course,
+    isAuthenticated: !!session.data?.user,
+    isStarted: !!isStarted,
+    returnPath: `/course/${cleanCourseUuid}`,
+    offer: selectedOffer,
+  });
 
   const handleCourseAction = async () => {
-    if (!session.data?.user) {
+    if (courseAction.kind === 'login') {
       track(AnalyticsEvent.CourseSignupPrompted, {
         reason: 'unauthenticated',
-        intended_action: isStarted ? 'leave_course' : 'start_course',
+        intended_action: 'start_course',
       })
-      router.push(getUriWithOrg(orgslug, '/signup'))
+      router.push(`${getUriWithOrg(orgslug, '/login')}?redirect=${encodeURIComponent(courseAction.returnPath)}`)
       return
     }
 
-    // Check if user is part of the organization
-    if (!isUserPartOfTheOrg) {
-      router.push(getUriWithOrg(orgslug, '/signup'))
+    if (courseAction.kind === 'offer') {
+      track(AnalyticsEvent.CourseOfferCtaClicked, { offer_uuid: courseAction.offer.offer_uuid })
+      router.push(getUriWithOrg(orgslug, `/store/offers/${courseAction.offer.offer_uuid}`))
       return
     }
+
+    if (courseAction.kind === 'unavailable') return
 
     setIsActionLoading(true)
     const loadingToast = toast.loading(
@@ -108,7 +122,7 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
     )
 
     try {
-      if (isStarted) {
+      if (courseAction.kind === 'leave') {
         await removeCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
         if (org?.id) queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
         track(AnalyticsEvent.CourseLeft, { course_uuid: cleanCourseUuid })
@@ -385,76 +399,10 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
     return <div className="animate-pulse h-20 bg-gray-100 rounded-lg nice-shadow" />
   }
 
-  // Show join organization prompt for authenticated users who are not part of the org
-  if (session.data?.user && !isUserPartOfTheOrg) {
+  if (courseAction.kind === 'unavailable') {
     return (
       <div className="bg-white shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4">
-        <div className="space-y-4">
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg nice-shadow">
-            <div className="flex items-center gap-3">
-              <UserPlus className="w-5 h-5 text-amber-800" />
-              <h3 className="text-amber-800 font-semibold">{t('courses.join_org_required')}</h3>
-            </div>
-            <p className="text-amber-700 text-sm mt-1">
-              {t('courses.join_org_required_description')}
-            </p>
-          </div>
-          <a
-            href={getUriWithOrg(orgslug, '/signup')}
-            className="w-full bg-neutral-900 text-white py-3 rounded-lg nice-shadow font-semibold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
-          >
-            <UserPlus className="w-5 h-5" />
-            {t('courses.join_organization')}
-          </a>
-        </div>
-      </div>
-    )
-  }
-
-  if (linkedOffers.length > 0) {
-    // User already enrolled / started — show "you own this" notice + leave button
-    if (isStarted) {
-      return (
-        <div className="bg-white nice-shadow rounded-lg overflow-hidden p-4">
-          <div className="space-y-4">
-            <div className="p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <h3 className="text-green-800 font-semibold">{t('courses.you_own_this_course')}</h3>
-              </div>
-              <p className="text-green-700 text-sm mt-1">
-                {t('courses.you_own_this_course_description')}
-              </p>
-            </div>
-            <button
-              onClick={handleCourseAction}
-              disabled={isActionLoading}
-              aria-label={t('courses.leave_course')}
-              className="w-full py-3 rounded-lg nice-shadow font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400"
-            >
-              {isActionLoading
-                ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                : renderActionButton('leave')
-              }
-            </button>
-            {renderContributorButton()}
-          </div>
-        </div>
-      )
-    }
-
-    // Not enrolled — show all available offers
-    return (
-      <div className="space-y-3">
-        {linkedOffers.length > 1 && (
-          <p className="text-xs text-gray-400 font-medium px-1">
-            {linkedOffers.length} options available
-          </p>
-        )}
-        {linkedOffers.map((offer: any) => (
-          <OfferCard key={offer.offer_id} offer={offer} orgslug={orgslug} />
-        ))}
-        {renderContributorButton()}
+        <p className="text-sm text-neutral-600">{t('courses.access_unavailable', 'Access unavailable')}</p>
       </div>
     )
   }

@@ -1,19 +1,19 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { useOrg, useOrgMembership } from '@components/Contexts/OrgContext'
+import { useOrg } from '@components/Contexts/OrgContext'
 import { getUriWithOrg } from '@services/config/config'
 import { getOffersByResource } from '@services/payments/offers'
-import { LogIn, LogOut, ShoppingCart, Lock, UserPlus } from 'lucide-react'
+import { LogIn, LogOut } from 'lucide-react'
 import { removeCourse, startCourse } from '@services/courses/activity'
 import { revalidateTags, asArray } from '@services/utils/ts/requests'
 import UserAvatar from '../../UserAvatar'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
-import Link from 'next/link'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 import { useTranslation } from 'react-i18next'
+import { getCourseStartAction, selectFirstPublicOffer } from '@/lib/courses/startGate'
 
 interface Author {
   user: {
@@ -47,6 +47,8 @@ interface Course {
       activity_type: string
     }>
   }>
+  is_paid?: boolean
+  has_access?: boolean
 }
 
 interface CourseActionsMobileProps {
@@ -131,7 +133,6 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
 const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseActionsMobileProps) => {
   const router = useRouter()
   const session = useLHSession() as any
-  const { isUserPartOfTheOrg } = useOrgMembership()
   const org = useOrg() as any
   const queryClient = useQueryClient()
   const { track } = useLHAnalytics('learner')
@@ -141,12 +142,15 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
   const resourceUuid = cleanCourseUuid ? `course_${cleanCourseUuid}` : null;
     const { t } = useTranslation()
 
-  const isStarted = trailData?.runs?.find(
-    (run: any) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
-      return cleanRunCourseUuid === cleanCourseUuid;
-    }
-  ) ?? false;
+  const hasCourseAccess = course.is_paid === true ? course.has_access === true : true
+  const isStarted = hasCourseAccess
+    ? trailData?.runs?.find(
+      (run: any) => {
+        const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
+        return cleanRunCourseUuid === cleanCourseUuid;
+      }
+    ) ?? false
+    : false;
 
   // Public endpoint — no auth needed, works for unauthenticated visitors too
   const { data: offersResult, isLoading } = useQuery({
@@ -156,26 +160,36 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
     staleTime: 60_000,
   });
   const linkedOffers: any[] = asArray(offersResult);
+  const selectedOffer = selectFirstPublicOffer(linkedOffers);
+  const courseAction = getCourseStartAction({
+    course,
+    isAuthenticated: !!session.data?.user,
+    isStarted: !!isStarted,
+    returnPath: `/course/${cleanCourseUuid}`,
+    offer: selectedOffer,
+  });
 
   const handleCourseAction = async () => {
-    if (!session.data?.user) {
+    if (courseAction.kind === 'login') {
       track(AnalyticsEvent.CourseSignupPrompted, {
         reason: 'unauthenticated',
-        intended_action: isStarted ? 'leave_course' : 'start_course',
+        intended_action: 'start_course',
       })
-      router.push(getUriWithOrg(orgslug, '/signup'))
+      router.push(`${getUriWithOrg(orgslug, '/login')}?redirect=${encodeURIComponent(courseAction.returnPath)}`)
       return
     }
 
-    // Check if user is part of the organization
-    if (!isUserPartOfTheOrg) {
-      router.push(getUriWithOrg(orgslug, '/signup'))
+    if (courseAction.kind === 'offer') {
+      track(AnalyticsEvent.CourseOfferCtaClicked, { offer_uuid: courseAction.offer.offer_uuid })
+      router.push(getUriWithOrg(orgslug, `/store/offers/${courseAction.offer.offer_uuid}`))
       return
     }
+
+    if (courseAction.kind === 'unavailable') return
 
     setIsActionLoading(true)
     try {
-      if (isStarted) {
+      if (courseAction.kind === 'leave') {
         await removeCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
         await revalidateTags(['courses'], orgslug)
         queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
@@ -218,28 +232,10 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
     return <div className="animate-pulse h-16 bg-gray-100 rounded-lg mt-4 mb-8" />
   }
 
-  // Show join organization prompt for authenticated users who are not part of the org
-  if (session.data?.user && !isUserPartOfTheOrg) {
+  if (courseAction.kind === 'unavailable') {
     return (
       <div className="bg-white/90 backdrop-blur-sm shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4 my-6 mx-2">
-        <div className="flex flex-col space-y-3">
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-amber-800" />
-              <span className="text-amber-800 text-sm font-semibold">{t('courses.join_org_required')}</span>
-            </div>
-            <p className="text-amber-700 text-xs mt-1">
-              {t('courses.join_org_required_description')}
-            </p>
-          </div>
-          <a
-            href={getUriWithOrg(orgslug, '/signup')}
-            className="w-full py-2 px-4 rounded-lg bg-neutral-900 text-white font-semibold text-sm hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
-          >
-            <UserPlus className="w-4 h-4" />
-            {t('courses.join_organization')}
-          </a>
-        </div>
+        <p className="text-sm text-neutral-600">{t('courses.access_unavailable', 'Access unavailable')}</p>
       </div>
     )
   }
@@ -262,71 +258,7 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
       <div className="flex flex-col space-y-4">
         <MultipleAuthors authors={sortedAuthors} />
         
-        {linkedOffers.length > 0 ? (() => {
-          const offer = linkedOffers[0];
-          const formattedPrice = offer?.amount != null
-            ? new Intl.NumberFormat('en-US', { style: 'currency', currency: offer.currency ?? 'USD' }).format(offer.amount)
-            : null;
-          const storeHref = org?.slug ? getUriWithOrg(org.slug, `/store/offers/${offer.offer_id}`) : '#';
-
-          return (
-            <div className="space-y-3">
-              {isStarted ? (
-                <>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      <span className="text-green-800 text-sm font-semibold">{t('courses.you_own_this_course')}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleCourseAction}
-                    disabled={isActionLoading}
-                    className="w-full py-2 px-4 rounded-lg bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors flex items-center justify-center gap-2 disabled:bg-red-400"
-                  >
-                    {isActionLoading ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <LogOut className="w-4 h-4" />
-                        {t('courses.leave_course')}
-                      </>
-                    )}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Lock className="w-4 h-4 text-gray-600" />
-                      <div>
-                        <span className="text-gray-900 text-sm font-semibold">{offer.offer_name}</span>
-                        {formattedPrice && (
-                          <p className="text-gray-500 text-xs">{formattedPrice}{offer.offer_type === 'subscription' ? ' / month' : ' one-time'}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Link href={storeHref}>
-                    <button
-                      onClick={() => track(AnalyticsEvent.CourseOfferCtaClicked, {
-                        offer_uuid: offer.offer_uuid,
-                        offer_type: offer.offer_type,
-                        amount: offer.amount,
-                        currency: offer.currency,
-                      })}
-                      className="w-full py-2 px-4 rounded-lg bg-neutral-900 text-white font-semibold text-sm hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      {formattedPrice ? `Get Access — ${formattedPrice}` : 'Purchase Course'}
-                    </button>
-                  </Link>
-                </>
-              )}
-            </div>
-          );
-        })() : (
-          <button
+        <button
             onClick={handleCourseAction}
             disabled={isActionLoading}
             className={`w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
@@ -340,7 +272,7 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
             ) : !session.data?.user ? (
               <>
                 <LogIn className="w-4 h-4" />
-                {t('onboarding.welcome.get_started')}
+                {t('courses.start_course')}
               </>
             ) : isStarted ? (
               <>
@@ -354,10 +286,9 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
               </>
             )}
           </button>
-        )}
       </div>
     </div>
   )
 }
 
-export default CourseActionsMobile 
+export default CourseActionsMobile

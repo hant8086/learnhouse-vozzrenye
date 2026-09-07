@@ -237,6 +237,7 @@ async def get_course_chapters(
     limit: int = 10,
     slim: bool = False,
     course: "Course | None" = None,
+    allow_published_preview: bool = False,
 ) -> List[ChapterRead]:
 
     # Skip the duplicate Course lookup when the caller (e.g. get_course_meta)
@@ -267,8 +268,12 @@ async def get_course_chapters(
     chapters = [ChapterRead(**chapter.model_dump(), activities=[]) for chapter in chapters]
 
     # RBAC check — cheap when the caller already ran it on this request
-    # (the checker is memoized on request.state).
-    await check_resource_access(request, db_session, current_user, course.course_uuid, AccessAction.READ)  # type: ignore
+    # (the checker is memoized on request.state).  The course overview has one
+    # deliberate exception: a published course may expose a lock-stripped
+    # outline preview even when the reader cannot open its content.  The
+    # caller still force-locks every item after this method returns.
+    if not allow_published_preview:
+        await check_resource_access(request, db_session, current_user, course.course_uuid, AccessAction.READ)  # type: ignore
 
     chapter_ids = [chapter.id for chapter in chapters]
     if chapter_ids:

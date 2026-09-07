@@ -96,6 +96,7 @@ class TestCourseMetaCache:
             return_value=redis_client,
         ), patch("src.services.courses.cache.logger.debug") as mock_debug:
             assert get_cached_course_meta("course-1", slim=True) == {"id": 1}
+            assert redis_client.get.call_args_list[0].args[0] == "courses_cache:v2:meta:course-1:slim"
 
             redis_client.get.return_value = None
             assert get_cached_course_meta("course-1", slim=False) is None
@@ -118,7 +119,7 @@ class TestCourseMetaCache:
             set_cached_course_meta("course-1", slim=False, data={"id": 2})
 
         assert redis_client.setex.call_count == 2
-        assert redis_client.setex.call_args_list[0].args[0] == "courses_cache:meta:course-1:slim"
+        assert redis_client.setex.call_args_list[0].args[0] == "courses_cache:v2:meta:course-1:slim"
         assert redis_client.setex.call_args_list[0].args[1] == CACHE_TTL_COURSE_META
         mock_debug.assert_called_once()
 
@@ -140,8 +141,8 @@ class TestCourseMetaCache:
 
         assert redis_client.delete.call_count == 2
         assert redis_client.delete.call_args_list[0].args == (
-            "courses_cache:meta:course-1:slim",
-            "courses_cache:meta:course-1:full",
+            "courses_cache:v2:meta:course-1:slim",
+            "courses_cache:v2:meta:course-1:full",
         )
         mock_debug.assert_called_once()
 

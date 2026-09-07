@@ -18,9 +18,11 @@ logger = logging.getLogger(__name__)
 CACHE_TTL_COURSES_LIST = 60  # 1 min — public course list
 
 # v2 invalidates pre-variant anonymous snapshots, which contained only public
-# courses and would otherwise survive a deploy in Redis for their TTL.
-_KEY_PREFIX = "courses_cache"
+# courses and would otherwise survive a deploy in Redis for their TTL. Keep the
+# course-meta namespace versioned independently from list caches: old meta
+# snapshots may contain unlocked activity content.
 _LIST_KEY_PREFIX = "courses_cache:v2"
+_META_KEY_PREFIX = "courses_cache:v2"
 
 
 def get_cached_courses_list(org_slug: str, page: int, limit: int) -> Optional[list]:
@@ -76,7 +78,7 @@ def get_cached_course_meta(course_uuid: str, slim: bool) -> Optional[dict]:
         return None
     try:
         suffix = ":slim" if slim else ":full"
-        raw = r.get(f"{_KEY_PREFIX}:meta:{course_uuid}{suffix}")
+        raw = r.get(f"{_META_KEY_PREFIX}:meta:{course_uuid}{suffix}")
         if raw:
             return json.loads(raw)
     except Exception:
@@ -92,7 +94,7 @@ def set_cached_course_meta(course_uuid: str, slim: bool, data: dict) -> None:
     try:
         suffix = ":slim" if slim else ":full"
         r.setex(
-            f"{_KEY_PREFIX}:meta:{course_uuid}{suffix}",
+            f"{_META_KEY_PREFIX}:meta:{course_uuid}{suffix}",
             CACHE_TTL_COURSE_META,
             json.dumps(data, default=str),
         )
@@ -107,8 +109,8 @@ def invalidate_course_meta_cache(course_uuid: str) -> None:
         return
     try:
         r.delete(
-            f"{_KEY_PREFIX}:meta:{course_uuid}:slim",
-            f"{_KEY_PREFIX}:meta:{course_uuid}:full",
+            f"{_META_KEY_PREFIX}:meta:{course_uuid}:slim",
+            f"{_META_KEY_PREFIX}:meta:{course_uuid}:full",
         )
     except Exception:
         logger.debug("Course meta cache invalidate failed for %s", course_uuid, exc_info=True)

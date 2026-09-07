@@ -367,7 +367,7 @@ class TestGetCoursesOrgslug:
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_get_courses_orgslug_anonymous_only_public_published(
+    async def test_get_courses_orgslug_anonymous_includes_all_published(
         self, db, org, course, anonymous_user, mock_request, bypass_rbac
     ):
         # Add a private course that anonymous users should NOT see
@@ -385,10 +385,10 @@ class TestGetCoursesOrgslug:
                 mock_request, anonymous_user, "test-org", db
             )
 
-        # Only the original public+published course should appear
+        # Published private courses are discovery-visible; content remains gated.
         uuids = [c.course_uuid for c in result]
         assert "course_test" in uuids
-        assert "course_private" not in uuids
+        assert "course_private" in uuids
         assert "course_unpub" not in uuids
 
     @pytest.mark.asyncio
@@ -515,7 +515,7 @@ class TestGetCoursesCountOrgslug:
         assert count == 1
 
     @pytest.mark.asyncio
-    async def test_get_courses_count_orgslug_excludes_private_for_anon(
+    async def test_get_courses_count_orgslug_includes_published_private_for_anon(
         self, db, org, course, anonymous_user, mock_request
     ):
         await _make_course(db, org, id=20, name="Private", course_uuid="course_priv",
@@ -525,8 +525,8 @@ class TestGetCoursesCountOrgslug:
             mock_request, anonymous_user, "test-org", db
         )
 
-        # Only the public+published fixture course counts
-        assert count == 1
+        # Published private courses are discovery-visible.
+        assert count == 2
 
     @pytest.mark.asyncio
     async def test_get_courses_count_orgslug_superadmin_counts_all(
@@ -1388,7 +1388,7 @@ class TestSearchCourses:
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_search_courses_anonymous_excludes_private(
+    async def test_search_courses_anonymous_includes_published_private(
         self, db, org, course, anonymous_user, mock_request
     ):
         await _make_course(db, org, id=30, name="Secret Stuff",
@@ -1399,7 +1399,7 @@ class TestSearchCourses:
         )
 
         uuids = [c.course_uuid for c in result]
-        assert "course_secret" not in uuids
+        assert "course_secret" in uuids
 
     @pytest.mark.asyncio
     async def test_search_courses_authenticated_author_sees_unpublished(

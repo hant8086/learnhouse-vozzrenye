@@ -139,6 +139,11 @@ class FullCourseRead(CourseBase):
     # Chapters, Activities
     chapters: List[ChapterRead]
     authors: List[AuthorWithRole]
+    # Request-specific access projection.  These fields are intentionally
+    # separate from the generic CourseRead resource response: the overview is
+    # also available as a safe outline preview for published gated courses.
+    is_paid: bool = False
+    has_access: bool = False
     pass
 
 
