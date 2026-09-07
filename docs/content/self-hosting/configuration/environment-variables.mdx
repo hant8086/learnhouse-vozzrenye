@@ -136,9 +136,11 @@ optional: the feature stays disabled or uses a runtime fallback when the variabl
 | `LEARNHOUSE_JUDGE0_API_URL` | Judge0 API URL. Setting it enables code execution routes. | URL | unset | API |
 | `LEARNHOUSE_JUDGE0_CLIENT_ID` | Optional Judge0 client ID. | string | unset | API |
 | `LEARNHOUSE_JUDGE0_CLIENT_SECRET` | Optional Judge0 client secret. | secret string | unset | API |
-| `LEARNHOUSE_TINYBIRD_API_URL` | Tinybird regional API URL. Setting it enables analytics config. | URL | unset | API |
-| `LEARNHOUSE_TINYBIRD_INGEST_TOKEN` | Tinybird token with ingest/write permissions. | secret string | unset; required for event ingestion | API |
-| `LEARNHOUSE_TINYBIRD_READ_TOKEN` | Tinybird token with read/query permissions. | secret string | unset; required for analytics reads | API |
+| `LEARNHOUSE_TINYBIRD_API_URL` | Tinybird regional API URL. Required together with both runtime tokens; alone it leaves analytics unconfigured. | URL | unset | API |
+| `LEARNHOUSE_TINYBIRD_INGEST_TOKEN` | Runtime token restricted to append access on the `events` datasource. | secret string | unset; required for analytics configuration | API |
+| `LEARNHOUSE_TINYBIRD_READ_TOKEN` | Runtime token restricted to SQL/query read access. | secret string | unset; required for analytics configuration | API |
+
+Tinybird analytics is fail-safe: all three variables must be non-empty. Resource creation/deployment uses a separate admin credential and is not an application runtime permission.
 
 ## Observability
 

@@ -15,8 +15,37 @@ class SentryConfig(BaseModel):
 
 class TinybirdConfig(BaseModel):
     api_url: str        # e.g., "https://api.europe-west2.gcp.tinybird.co"
-    ingest_token: str   # Token with DATASOURCE:APPEND scope
-    read_token: str     # Token with PIPE:READ or SQL:READ scope
+    ingest_token: str   # Runtime token with append access on the events datasource
+    read_token: str     # Runtime token with SQL/query read access
+
+
+def _normalise_tinybird_value(value: object) -> str:
+    """Return a non-secret, whitespace-trimmed configuration value."""
+    return value.strip() if isinstance(value, str) else ""
+
+
+def build_tinybird_config(
+    api_url: object,
+    ingest_token: object,
+    read_token: object,
+) -> TinybirdConfig | None:
+    """Build Tinybird configuration only when all runtime credentials are ready.
+
+    Tinybird is intentionally fail-safe: a URL without both tokens must not
+    create a partially configured client that sends empty Bearer credentials.
+    """
+    values = tuple(
+        _normalise_tinybird_value(value)
+        for value in (api_url, ingest_token, read_token)
+    )
+    if not all(values):
+        return None
+
+    return TinybirdConfig(
+        api_url=values[0].rstrip("/"),
+        ingest_token=values[1],
+        read_token=values[2],
+    )
 
 
 class Judge0Config(BaseModel):
@@ -458,7 +487,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
         else yaml_config.get("mailing_config", {}).get("smtp_use_tls", True)
     )
 
-    # Tinybird config — auto-enabled when API URL is set
+    # Tinybird config — enabled only when URL and both runtime tokens are set
     env_tinybird_api_url = os.environ.get("LEARNHOUSE_TINYBIRD_API_URL")
     env_tinybird_ingest_token = os.environ.get("LEARNHOUSE_TINYBIRD_INGEST_TOKEN")
     env_tinybird_read_token = os.environ.get("LEARNHOUSE_TINYBIRD_READ_TOKEN")
@@ -467,13 +496,11 @@ def get_learnhouse_config() -> LearnHouseConfig:
     tinybird_ingest_token = env_tinybird_ingest_token or yaml_config.get("tinybird_config", {}).get("ingest_token", "")
     tinybird_read_token = env_tinybird_read_token or yaml_config.get("tinybird_config", {}).get("read_token", "")
 
-    tinybird_config = None
-    if tinybird_api_url:
-        tinybird_config = TinybirdConfig(
-            api_url=tinybird_api_url.rstrip("/"),
-            ingest_token=tinybird_ingest_token,
-            read_token=tinybird_read_token,
-        )
+    tinybird_config = build_tinybird_config(
+        tinybird_api_url,
+        tinybird_ingest_token,
+        tinybird_read_token,
+    )
 
     # Judge0 config — auto-enabled when API URL is set
     env_judge0_api_url = os.environ.get("LEARNHOUSE_JUDGE0_API_URL")

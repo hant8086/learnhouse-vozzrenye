@@ -1,3 +1,6 @@
+TOKEN learnhouse_events_ingest APPEND
+TOKEN learnhouse_events_read READ
+
 DESCRIPTION >
     Unified analytics events table for LearnHouse
 
