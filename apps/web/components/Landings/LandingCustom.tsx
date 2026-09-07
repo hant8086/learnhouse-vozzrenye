@@ -4,13 +4,19 @@ import React, { type ReactNode } from 'react'
 import type { LandingCourse, LandingSection } from '@components/Dashboard/Pages/Org/OrgEditLanding/landing_types'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
-import { getOrgCourses } from '@services/courses/courses'
+import { getAllOrgCourses } from '@services/courses/courses'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import CourseThumbnailLanding from '@components/Objects/Thumbnails/CourseThumbnailLanding'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useTranslation } from 'react-i18next'
 import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
 import LandingShowcase from '@components/Landings/Showcase/LandingShowcase'
+import {
+  getAudienceLandingSections,
+  getFeaturedCourseRefs,
+  getPublishedCatalogTail,
+  orderPublishedFeaturedCourses,
+} from '@/lib/landing/audienceProjection'
 
 interface LandingCustomProps {
   landing: {
@@ -30,20 +36,20 @@ function LandingSectionHeading({ eyebrow, title }: { eyebrow: string; title: Rea
   )
 }
 
-function normalizeCourseRef(ref: LandingCourse | string | null | undefined): string | null {
-  const courseUuid = typeof ref === 'string' ? ref : ref?.course_uuid
-  return courseUuid?.trim() || null
-}
-
 function LandingCustom({ landing, orgslug }: LandingCustomProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
+  const isAuthenticated = session?.status === 'authenticated'
+  const identity = isAuthenticated
+    ? String(session?.data?.user?.user_uuid ?? session?.data?.user?.id ?? 'authenticated')
+    : 'anonymous'
+  const visibleSections = getAudienceLandingSections(landing.sections, isAuthenticated)
 
   // Fetch all courses for the organization
   const { data: allCourses } = useQuery({
-    queryKey: queryKeys.courses.list(orgslug),
-    queryFn: () => getOrgCourses(orgslug, null, access_token),
+    queryKey: queryKeys.courses.list(orgslug, identity),
+    queryFn: () => getAllOrgCourses(orgslug, null, access_token),
     enabled: !!orgslug,
     staleTime: 60_000,
   })
@@ -52,14 +58,14 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
   // tail renders every remaining published course and excludes courses already
   // shown by either a featured-courses or showcase section.
   const editorialCourseIds = new Set(
-    landing.sections
+    visibleSections
       .flatMap((section) => {
         if (section.type === 'featured-courses') {
-          return (section.courses as Array<LandingCourse | string>).map(normalizeCourseRef)
+          return getFeaturedCourseRefs(section)
         }
         if (section.type === 'showcase') {
           const persisted = section as typeof section & { courses?: Array<LandingCourse | string> }
-          return (persisted.courseIds ?? persisted.courses ?? []).map(normalizeCourseRef)
+          return getFeaturedCourseRefs(persisted)
         }
         return []
       })
@@ -106,7 +112,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
                 'justify-center text-center'
                 } p-6`}>
                 <div className="max-w-2xl">
-                  <span className="mono-label">ORG / HERO</span>
+                  <span className="mono-label">ОРГАНИЗАЦИЯ / ГЛАВНАЯ</span>
                   <h1 
                     className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-4"
                     style={{ color: section.heading.color }}
@@ -154,7 +160,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
               section.flow === 'right' ? 'md:flex-row-reverse' : ''
             }`}>
               <div className="flex-1 w-full max-w-2xl">
-                <LandingSectionHeading eyebrow="ORG / ABOUT" title={section.title} />
+                <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / О НАС" title={section.title} />
                 <div className="prose prose-lg prose-gray max-w-none">
                   <p className="text-base md:text-lg leading-relaxed text-gray-600 whitespace-pre-line">
                     {section.text}
@@ -197,7 +203,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
           >
             {section.title && (
-              <LandingSectionHeading eyebrow="ORG / NETWORK" title={section.title} />
+              <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / СЕТЬ" title={section.title} />
             )}
             <div className="flex justify-center w-full">
               <div className="flex flex-wrap justify-center gap-16 max-w-7xl">
@@ -220,7 +226,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             key={`people-${section.title}`}
             className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
           >
-            <LandingSectionHeading eyebrow="ORG / PEOPLE" title={section.title} />
+          <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / КОМАНДА" title={section.title} />
             <div className="flex flex-wrap justify-center gap-x-20 gap-y-8">
               {section.people.map((person, index) => (
                 <div key={index} className="w-[140px] flex flex-col items-center">
@@ -255,25 +261,23 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
               key={`featured-courses-${section.title}`}
               className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
             >
-              <LandingSectionHeading eyebrow="ORG / FEATURED COURSES" title={section.title} />
+              <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / ИЗБРАННЫЕ КУРСЫ" title={section.title} />
               <div className="text-center py-6 text-gray-500">{t('courses.loading_courses')}</div>
             </div>
           )
         }
 
-        const sectionCourseIds = new Set(
-          (section.courses as Array<LandingCourse | string>)
-            .map(normalizeCourseRef)
-            .filter((courseUuid): courseUuid is string => Boolean(courseUuid))
+        const featuredCourses = orderPublishedFeaturedCourses(
+          allCourses as Array<{ course_uuid?: string; published?: boolean }>,
+          getFeaturedCourseRefs(section),
         )
-        const featuredCourses = allCourses.filter((course: any) => sectionCourseIds.has(course.course_uuid))
 
         return (
           <div 
             key={`featured-courses-${section.title}`}
             className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
           >
-            <LandingSectionHeading eyebrow="ORG / FEATURED COURSES" title={section.title} />
+            <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / ИЗБРАННЫЕ КУРСЫ" title={section.title} />
             <RevealGroup className="grid grid-cols-1 gap-6 w-full sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {featuredCourses.map((course: any) => (
                 <RevealItem key={course.course_uuid} className="flex w-full justify-center">
@@ -297,13 +301,12 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
 
   return (
     <div className="flex flex-col items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-16 h-full">
-      {landing.sections.map((section) => renderSection(section))}
-      {allCourses && allCourses.some((course: any) => !editorialCourseIds.has(course.course_uuid)) && (
+      {visibleSections.map((section) => renderSection(section))}
+      {allCourses && getPublishedCatalogTail(allCourses, editorialCourseIds).length > 0 && (
         <section className="w-full py-16">
-          <LandingSectionHeading eyebrow="ORG / COURSE CATALOG" title={t('courses.courses')} />
+          <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / КАТАЛОГ КУРСОВ" title={t('courses.courses')} />
           <RevealGroup className="grid grid-cols-1 gap-6 w-full sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {allCourses
-              .filter((course: any) => !editorialCourseIds.has(course.course_uuid))
+            {getPublishedCatalogTail(allCourses, editorialCourseIds)
               .map((course: any) => (
                 <RevealItem key={`catalog-${course.course_uuid}`} className="flex w-full justify-center">
                   <CourseThumbnailLanding course={course} orgslug={orgslug} />

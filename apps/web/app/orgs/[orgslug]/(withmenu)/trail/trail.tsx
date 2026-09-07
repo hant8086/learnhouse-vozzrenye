@@ -2,7 +2,6 @@
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import TrailCourseCard from '@components/Pages/Trail/TrailCourseCard'
-import UserCertificates from '@components/Pages/Trail/UserCertificates'
 import TypeOfContentTitle from '@components/Objects/StyledElements/Titles/TypeOfContentTitle'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import { useTrail } from '@/hooks/queries/useTrail'
@@ -140,7 +139,6 @@ function Trail(params: any) {
         )}
       </div>
 
-      <UserCertificates orgslug={orgslug} />
     </GeneralWrapperStyled>
     </FeatureGate>
   )

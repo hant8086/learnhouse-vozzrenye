@@ -53,6 +53,9 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
+    // Learner surfaces start in Russian deterministically. Dedicated
+    // authoring controls may still switch operational copy explicitly.
+    lng: 'ru',
     fallbackLng: 'ru',
     ns: ['common'],
     defaultNS: 'common',
@@ -60,23 +63,23 @@ i18n
       escapeValue: false, // react already safes from xss
     },
     detection: {
-      order: ['localStorage', 'cookie', 'querystring', 'path', 'subdomain'],
-      caches: ['localStorage', 'cookie'],
-      lookupLocalStorage: 'i18nextLng',
-      lookupCookie: 'i18next',
+      // Do not restore a legacy browser-selected locale on boot. Learner
+      // surfaces are Russian-only; dashboard menus may still switch locale
+      // explicitly for an authoring session.
+      order: [],
+      caches: [],
     },
     react: {
       useSuspense: false,
     }
   });
 
-// Load the detected language if it's not Russian — export the promise
-// so I18nProvider can wait for resources before rendering
-export const initialLocaleReady = loadLocale(i18n.language.split('-')[0]);
+// Resolve the initial Russian bundle before the provider renders.
+export const initialLocaleReady = loadLocale('ru');
 
 /**
- * Switch language safely — preloads the bundle before switching
- * so the UI never flashes English as a fallback.
+ * Switch language safely for dedicated authoring controls — preload the bundle
+ * before switching so the UI never flashes English as a fallback.
  */
 export async function changeLanguage(lng: string) {
   await loadLocale(lng)

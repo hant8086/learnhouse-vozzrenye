@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@components/ui/dropdown-menu"
 import { useTranslation } from 'react-i18next'
+import { getTagColorStyle, normalizeTagColors, parseCourseTags } from '@/lib/courses/tagColors'
 
 type Course = {
   course_uuid: string
@@ -31,6 +32,7 @@ type Course = {
   org_id: string | number
   update_date: string
   tags?: string | null
+  extra_metadata?: Record<string, unknown> | null
   is_paid?: boolean
   authors?: Array<{
     user: {
@@ -109,7 +111,7 @@ const AdminEditOptions: React.FC<AdminEditOptionsProps> = ({ course, orgslug, de
 }
 
 const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLink }) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const router = useRouter()
   const org = useOrg() as any
   const session = useLHSession() as any
@@ -138,10 +140,8 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
   const thumbnailImage = course.thumbnail_image
     ? getCourseThumbnailMediaDirectory(org?.org_uuid, course.course_uuid, course.thumbnail_image)
     : '/empty_thumbnail.png'
-  const courseTags = (course.tags || '')
-    .split(/[,;|]/)
-    .map((tag) => tag.trim())
-    .filter(Boolean)
+  const courseTags = parseCourseTags(course.tags)
+  const tagColors = normalizeTagColors(course.extra_metadata?.tag_colors)
 
   return (
     <div className="relative m-2 flex w-full max-w-sm shrink-0 flex-col overflow-hidden bg-white vz-frame vz-frame-interactive sm:min-w-[280px]">
@@ -151,10 +151,9 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
         deleteCourse={deleteCourse}
       />
       <Link prefetch={false} href={customLink ? customLink : getUriWithOrg(orgslug, `/course/${removeCoursePrefix(course.course_uuid)}`)}>
-        <div
-          className="inset-0 ring-1 ring-inset ring-black/10 rounded-t-xl w-full aspect-video bg-cover bg-center"
-          style={{ backgroundImage: `url(${thumbnailImage})` }}
-        />
+        <div className="inset-0 ring-1 ring-inset ring-black/10 rounded-t-xl w-full aspect-[3/2] overflow-hidden bg-gray-50">
+          <img src={thumbnailImage} alt={course.name} className="h-full w-full object-contain" />
+        </div>
       </Link>
       <div className='flex flex-col w-full p-4 space-y-3'>
         <div className="space-y-2">
@@ -168,7 +167,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
           {courseTags.length > 0 && (
             <div className="flex flex-wrap gap-1" aria-label={t('courses.tags')}>
               {courseTags.map((tag) => (
-                <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-[9px] font-medium text-gray-600">
+                <span key={tag} style={getTagColorStyle(tag, tagColors)} className="rounded-full border px-2 py-0.5 text-[9px] font-medium">
                   {tag}
                 </span>
               ))}
@@ -180,7 +179,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
           {course.update_date && (
             <div className="inline-flex h-5 min-w-[140px] items-center justify-center px-2 rounded-md bg-gray-100/80 border border-gray-200">
               <span className="text-[10px] font-medium text-gray-600 truncate">
-                {t('common.updated')} {new Date(course.update_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {t('common.updated')} {new Date(course.update_date).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
           )}

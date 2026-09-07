@@ -2020,6 +2020,31 @@
   flex: 1;
   padding: 1rem;
   caret-color: transparent;
+  color: #1a1f1b;
+}
+
+/* Reader prose uses explicit night ink because the product dark theme remaps
+   neutral utility tokens for legacy surfaces. */
+html.dark .canva-content-wrapper .ProseMirror {
+  color: #f4f7f8;
+}
+
+html.dark .canva-content-wrapper .ProseMirror h1,
+html.dark .canva-content-wrapper .ProseMirror h2,
+html.dark .canva-content-wrapper .ProseMirror h3,
+html.dark .canva-content-wrapper .ProseMirror h4,
+html.dark .canva-content-wrapper .ProseMirror h5,
+html.dark .canva-content-wrapper .ProseMirror li,
+html.dark .canva-content-wrapper .ProseMirror strong {
+  color: #f4f7f8;
+}
+
+html.dark .canva-content-wrapper .ProseMirror a {
+  color: #67e8f9;
+}
+
+html.dark .canva-content-wrapper .ProseMirror a:hover {
+  color: #a5f3fc;
 }
 
 .canva-content-wrapper .ProseMirror h1 {

@@ -6,10 +6,11 @@ import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
 import CourseThumbnailLanding from '@components/Objects/Thumbnails/CourseThumbnailLanding'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
-import { getOrgCourses } from '@services/courses/courses'
+import { getAllOrgCourses } from '@services/courses/courses'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getUriWithOrg } from '@services/config/config'
 import { normalizeShowcase } from './model'
+import { orderPublishedFeaturedCourses } from '@/lib/landing/audienceProjection'
 
 interface LandingShowcaseProps {
   section: unknown
@@ -37,17 +38,18 @@ function LandingShowcase({ section, orgslug }: LandingShowcaseProps) {
   const showcase = normalizeShowcase(section)
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token
+  const identity = session?.status === 'authenticated'
+    ? String(session?.data?.user?.user_uuid ?? session?.data?.user?.id ?? 'authenticated')
+    : 'anonymous'
 
   const { data: allCourses } = useQuery({
-    queryKey: queryKeys.courses.list(orgslug),
-    queryFn: () => getOrgCourses(orgslug, null, accessToken),
+    queryKey: [...queryKeys.courses.list(orgslug, identity), 'showcase'],
+    queryFn: () => getAllOrgCourses(orgslug, null, accessToken),
     enabled: showcase.courseIds.length > 0,
     staleTime: 60_000,
   })
 
-  const selectedCourses = (allCourses ?? []).filter((course: any) =>
-    showcase.courseIds.includes(course.course_uuid),
-  )
+  const selectedCourses = orderPublishedFeaturedCourses(allCourses ?? [], showcase.courseIds)
   const isExternalHref = /^https?:\/\//i.test(showcase.offer.ctaHref)
   const isRelativeHref = /^\/(?!\/)/.test(showcase.offer.ctaHref)
   const offerHref = isExternalHref
@@ -106,7 +108,7 @@ function LandingShowcase({ section, orgslug }: LandingShowcaseProps) {
 
         {showcase.steps.length > 0 && (
           <div className="mt-20">
-            <ShowcaseHeading eyebrow="LEARNING PATH" title="How it works" />
+            <ShowcaseHeading eyebrow="ПУТЬ ОБУЧЕНИЯ" title="Как это работает" />
             <ol className="mt-8 grid gap-8 md:grid-cols-3">
               {showcase.steps.slice(0, 3).map((step) => (
                 <li key={step.number} className="border-l border-[var(--color-line-strong)] pl-6">
@@ -121,7 +123,7 @@ function LandingShowcase({ section, orgslug }: LandingShowcaseProps) {
 
         {(showcase.coursesTitle || selectedCourses.length > 0) && (
           <div className="mt-20">
-            <ShowcaseHeading eyebrow="SELECTED COURSES" title={showcase.coursesTitle} />
+            <ShowcaseHeading eyebrow="ИЗБРАННЫЕ КУРСЫ" title={showcase.coursesTitle} />
             {showcase.coursesDescription && (
               <p className="mt-5 max-w-2xl text-lg leading-relaxed text-gray-600">{showcase.coursesDescription}</p>
             )}

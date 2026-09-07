@@ -11,9 +11,15 @@ export const queryKeys = {
     apiTokens: (orgId: number) => ['org', orgId, 'apiTokens'] as const,
   },
   courses: {
-    list: (orgSlug: string) => ['courses', orgSlug] as const,
+    // Learner course projections include per-user entitlement state. Keeping
+    // identity in the key prevents an anonymous preview from surviving login.
+    list: (orgSlug: string, identity?: string) => identity
+      ? ['courses', orgSlug, identity] as const
+      : ['courses', orgSlug] as const,
     detail: (uuid: string) => ['course', uuid] as const,
-    meta: (uuid: string) => ['course', uuid, 'meta'] as const,
+    meta: (uuid: string, identity?: string) => identity
+      ? ['course', uuid, 'meta', identity] as const
+      : ['course', uuid, 'meta'] as const,
     contributors: (uuid: string) => ['course', uuid, 'contributors'] as const,
     updates: (uuid: string) => ['course', uuid, 'updates'] as const,
     rights: (uuid: string) => ['course', uuid, 'rights'] as const,

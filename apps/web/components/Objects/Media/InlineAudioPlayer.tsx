@@ -45,11 +45,17 @@ function InlineAudioPlayer({ src, title }: { src: string; title?: string }) {
     const onLoadedMetadata = () => setDuration(audio.duration)
     const onEnded = () => setIsPlaying(false)
 
+    const onPlay = () => setIsPlaying(true)
+    const onPause = () => setIsPlaying(false)
     audio.addEventListener('timeupdate', onTimeUpdate)
+    audio.addEventListener('play', onPlay)
+    audio.addEventListener('pause', onPause)
     audio.addEventListener('loadedmetadata', onLoadedMetadata)
     audio.addEventListener('ended', onEnded)
     return () => {
       audio.removeEventListener('timeupdate', onTimeUpdate)
+      audio.removeEventListener('play', onPlay)
+      audio.removeEventListener('pause', onPause)
       audio.removeEventListener('loadedmetadata', onLoadedMetadata)
       audio.removeEventListener('ended', onEnded)
     }
@@ -58,8 +64,8 @@ function InlineAudioPlayer({ src, title }: { src: string; title?: string }) {
   const togglePlay = () => {
     const audio = audioRef.current
     if (!audio) return
-    if (isPlaying) { audio.pause() } else { safePlay(audio) }
-    setIsPlaying(!isPlaying)
+    if (isPlaying) audio.pause()
+    else safePlay(audio)
   }
 
   const skip = (delta: number) => {
@@ -101,39 +107,41 @@ function InlineAudioPlayer({ src, title }: { src: string; title?: string }) {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-[#0b1116] border border-gray-200 dark:border-cyan-900/70 rounded-xl shadow-sm dark:shadow-black/30 overflow-hidden">
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* Title bar */}
       {title && (
         <div className="px-4 pt-3 pb-1 flex items-center gap-2">
-          <Headphones size={14} className="text-gray-400 flex-shrink-0" />
-          <span className="text-sm font-semibold text-gray-900 truncate">{title}</span>
+          <Headphones size={14} className="text-gray-400 dark:text-cyan-300 flex-shrink-0" />
+          <span className="text-sm font-semibold text-gray-900 dark:text-[#f4f7f8] truncate">{title}</span>
         </div>
       )}
 
       {/* Player controls */}
-      <div className="px-4 py-3 flex items-center gap-3">
+      <div className="px-4 py-3 flex flex-wrap items-center gap-3">
         {/* Skip back */}
         <button
           type="button"
           onClick={() => skip(-15)}
-          className="p-1.5 rounded-full hover:bg-gray-100 transition-colors outline-none"
-          title="Skip back 15s"
+          aria-label="Назад на 15 секунд"
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
+          title="Назад на 15 секунд"
         >
-          <SkipBack size={16} className="text-gray-600" />
+          <SkipBack size={16} className="text-gray-600 dark:text-[#d4dce3]" />
         </button>
 
         {/* Play/Pause */}
         <button
           type="button"
           onClick={togglePlay}
-          className="rounded-full bg-gray-900 hover:bg-gray-800 p-2.5 transition-colors outline-none"
+          aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
+          className="rounded-full bg-cyan-400 text-neutral-950 hover:bg-cyan-300 p-2.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
         >
           {isPlaying ? (
-            <Pause size={16} className="text-white" fill="white" />
+            <Pause size={16} className="text-neutral-950" fill="currentColor" />
           ) : (
-            <Play size={16} className="text-white" fill="white" />
+            <Play size={16} className="text-neutral-950" fill="currentColor" />
           )}
         </button>
 
@@ -141,33 +149,35 @@ function InlineAudioPlayer({ src, title }: { src: string; title?: string }) {
         <button
           type="button"
           onClick={() => skip(15)}
-          className="p-1.5 rounded-full hover:bg-gray-100 transition-colors outline-none"
-          title="Skip forward 15s"
+          aria-label="Вперёд на 15 секунд"
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
+          title="Вперёд на 15 секунд"
         >
-          <SkipForward size={16} className="text-gray-600" />
+          <SkipForward size={16} className="text-gray-600 dark:text-[#d4dce3]" />
         </button>
 
         {/* Time + Progress */}
-        <span className="text-xs text-gray-500 w-10 text-right tabular-nums flex-shrink-0">
+        <span className="text-xs text-gray-500 dark:text-[#a0aec0] w-10 text-right tabular-nums flex-shrink-0">
           {formatTime(currentTime)}
         </span>
 
         <div
           ref={progressRef}
           onClick={seekTo}
-          className="flex-1 h-1.5 bg-gray-200 rounded-full cursor-pointer relative group"
+          aria-label="Позиция воспроизведения"
+          className="min-w-[7rem] basis-[35%] sm:basis-0 flex-1 h-1.5 bg-gray-200 dark:bg-neutral-700 rounded-full cursor-pointer relative group"
         >
           <div
-            className="h-full bg-gray-900 rounded-full transition-all duration-100"
+            className="h-full bg-gray-900 dark:bg-cyan-300 rounded-full transition-all duration-100"
             style={{ width: `${progress}%` }}
           />
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-gray-900 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-gray-900 dark:bg-cyan-300 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ left: `calc(${progress}% - 6px)` }}
           />
         </div>
 
-        <span className="text-xs text-gray-500 w-10 tabular-nums flex-shrink-0">
+        <span className="text-xs text-gray-500 dark:text-[#a0aec0] w-10 tabular-nums flex-shrink-0">
           {formatTime(duration)}
         </span>
 
@@ -175,12 +185,13 @@ function InlineAudioPlayer({ src, title }: { src: string; title?: string }) {
         <button
           type="button"
           onClick={toggleMute}
-          className="p-1.5 rounded-full hover:bg-gray-100 transition-colors outline-none"
+          aria-label={isMuted || volume === 0 ? 'Включить звук' : 'Выключить звук'}
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
         >
           {isMuted || volume === 0 ? (
-            <VolumeX size={16} className="text-gray-600" />
+            <VolumeX size={16} className="text-gray-600 dark:text-[#d4dce3]" />
           ) : (
-            <Volume2 size={16} className="text-gray-600" />
+            <Volume2 size={16} className="text-gray-600 dark:text-[#d4dce3]" />
           )}
         </button>
         <input
@@ -190,7 +201,8 @@ function InlineAudioPlayer({ src, title }: { src: string; title?: string }) {
           step="0.01"
           value={volume}
           onChange={handleVolumeChange}
-          className="w-16 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900"
+          aria-label="Громкость"
+          className="hidden sm:block w-16 h-1 bg-gray-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-gray-900 dark:accent-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-400"
         />
       </div>
     </div>

@@ -10,7 +10,6 @@ import { applyForContributor } from '@services/courses/courses'
 import toast from 'react-hot-toast'
 import { useContributorStatus } from '../../../../hooks/useContributorStatus'
 import CourseProgress from '../CourseProgress/CourseProgress'
-import UserAvatar from '@components/Objects/UserAvatar'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
@@ -190,25 +189,8 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
   }
 
   const renderActionButton = (action: 'start' | 'leave') => {
-    if (!session.data?.user) {
-      return (
-        <>
-          <UserAvatar width={24} predefined_avatar="empty" rounded="rounded-full" border="border-2" borderColor="border-white" />
-          <span>{action === 'start' ? t('courses.start_course') : t('courses.leave_course')}</span>
-          <ArrowRight className="w-5 h-5" />
-        </>
-      );
-    }
-
     return (
       <>
-        <UserAvatar
-          width={24}
-          use_with_session={true}
-          rounded="rounded-full"
-          border="border-2"
-          borderColor="border-white"
-        />
         <span>{action === 'start' ? t('courses.start_course') : t('courses.leave_course')}</span>
         <ArrowRight className="w-5 h-5" />
       </>

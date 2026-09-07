@@ -8,13 +8,17 @@ import { JsonLd } from '@components/SEO/JsonLd'
 import { getUriWithOrg } from '@services/config/config'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
 
 export default function HomeClient({ orgslug }: { orgslug: string }) {
   const org = useOrg() as any
+  const session = useLHSession() as any
+  const isAuthenticated = session?.status === 'authenticated'
   const { data: courses, isLoading: coursesLoading } = useCourses(orgslug)
 
   const landingConfig = org?.config?.config?.customization?.landing || org?.config?.config?.landing
   const hasCustomLanding = landingConfig?.enabled
+  const hasFeaturedCourses = landingConfig?.sections?.some((section: any) => section.type === 'featured-courses')
 
   const orgJsonLd = org
     ? {
@@ -53,7 +57,7 @@ export default function HomeClient({ orgslug }: { orgslug: string }) {
   return (
     <div className="w-full">
       {orgJsonLd && <JsonLd data={orgJsonLd} />}
-      {hasCustomLanding ? (
+      {hasCustomLanding && (!isAuthenticated || hasFeaturedCourses) ? (
         <LandingCustom landing={landingConfig} orgslug={orgslug} />
       ) : (
         <LandingClassic

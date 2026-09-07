@@ -77,7 +77,7 @@ export default function AuthBrandingPanel({ org, welcomeText, title, subtitle }:
   // No-org platform copy (defaults mirror the platform login illustration).
   const noOrgTitle = title || 'С возвращением в Хранитель Воззрения'
   const noOrgSubtitle =
-    subtitle || 'Pick up where you left off — your courses, students, and tools are waiting.'
+    subtitle || 'Продолжите обучение — ваши курсы, ученики и инструменты уже ждут вас.'
   // Treat the no-org illustration like a photo background: dark scrim, no
   // blueprint-grid overlay.
   const hasCustomBackground = noOrg || (background_type !== 'gradient' && background_image)
@@ -229,7 +229,7 @@ export default function AuthBrandingPanel({ org, welcomeText, title, subtitle }:
               "absolute bottom-3 left-4 right-4 z-10 text-[11px] leading-tight",
               text_color === 'light' ? "text-white/70" : "text-gray-700"
             )}>
-              Photo by{' '}
+              Фото: {' '}
               <a
                 href={withUtm(unsplash_photographer_url) || withUtm(unsplash_photo_url)}
                 target="_blank"
@@ -238,7 +238,7 @@ export default function AuthBrandingPanel({ org, welcomeText, title, subtitle }:
               >
                 {unsplash_photographer_name}
               </a>
-              {' '}on{' '}
+              {' '}на сайте{' '}
               <a
                 href={`https://unsplash.com/${UNSPLASH_UTM}`}
                 target="_blank"

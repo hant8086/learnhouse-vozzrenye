@@ -26,6 +26,7 @@ import {
 } from "@components/ui/dropdown-menu"
 import { useTranslation } from 'react-i18next'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
+import { getTagColorStyle, normalizeTagColors, parseCourseTags } from '@/lib/courses/tagColors'
 
 type Course = {
   course_uuid: string
@@ -42,6 +43,7 @@ type Course = {
   is_paid?: boolean
   has_access?: boolean
   tags?: string | null
+  extra_metadata?: Record<string, unknown> | null
   authors?: Array<{
     user: {
       id: string
@@ -69,13 +71,16 @@ type PropsType = {
 export const removeCoursePrefix = (course_uuid: string) => course_uuid.replace('course_', '')
 
 function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isSelected = false, onToggleSelect, isPriority = false }: PropsType) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const org = useOrg() as any
   const session = useLHSession() as any
   const queryClient = useQueryClient()
   const { track } = useLHAnalytics('learner')
 
   const cleanUuid = removeCoursePrefix(course.course_uuid)
+  const sessionIdentity = session?.status === 'authenticated'
+    ? String(session?.data?.user?.user_uuid ?? session?.data?.user?.id ?? 'authenticated')
+    : 'anonymous'
 
   const handleCardOpen = () => {
     track(AnalyticsEvent.CourseCardOpened, {
@@ -87,7 +92,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
   // Prefetch course meta on hover so the course page feels instant
   const handleMouseEnter = () => {
     queryClient.prefetchQuery({
-      queryKey: queryKeys.courses.meta(cleanUuid),
+      queryKey: queryKeys.courses.meta(cleanUuid, sessionIdentity),
       queryFn: () => getCourseMetadata(cleanUuid, {}, session?.data?.tokens?.access_token, { slim: true }),
       staleTime: 60_000,
     })
@@ -163,10 +168,8 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
   // gated (paid/membership). When the user is not a member yet, the card
   // renders a "locked / paid" CTA instead of the usual start-learning action.
   const isGated = course.is_paid === true && course.has_access !== true
-  const courseTags = (course.tags || '')
-    .split(/[,;|]/)
-    .map((tag) => tag.trim())
-    .filter(Boolean)
+  const courseTags = parseCourseTags(course.tags)
+  const tagColors = normalizeTagColors(course.extra_metadata?.tag_colors)
 
   return (
     <div
@@ -204,21 +207,12 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
         isDashboard={isDashboard}
       />
 
-      <Link prefetch={false} href={courseLink} onClick={handleCardOpen} className="block relative aspect-video overflow-hidden bg-gray-50">
-        {/* Hidden img gives the browser a real resource hint so it can fetch the background-image early as an LCP candidate */}
-        {isPriority && (
-           
-          <img
-            src={thumbnailImage}
-            alt=""
-            aria-hidden="true"
-            fetchPriority="high"
-            className="absolute w-0 h-0 opacity-0 pointer-events-none"
-          />
-        )}
-        <div
-          className="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-          style={{ backgroundImage: `url(${thumbnailImage})` }}
+      <Link prefetch={false} href={courseLink} onClick={handleCardOpen} className="block relative aspect-[3/2] overflow-hidden bg-gray-50">
+        <img
+          src={thumbnailImage}
+          alt={course.name}
+          fetchPriority={isPriority ? 'high' : undefined}
+          className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
         {isDashboard && (
@@ -262,7 +256,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
         {courseTags.length > 0 && (
           <div className="flex flex-wrap gap-1" aria-label={t('courses.tags')}>
             {courseTags.map((tag) => (
-              <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-[9px] font-medium text-gray-600">
+                <span key={tag} style={getTagColorStyle(tag, tagColors)} className="rounded-full border px-2 py-0.5 text-[9px] font-medium">
                 {tag}
               </span>
             ))}
@@ -302,7 +296,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
             
             {course.update_date && (
               <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                {new Date(course.update_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
+                {new Date(course.update_date).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })}
               </span>
             )}
           </div>

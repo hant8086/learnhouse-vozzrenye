@@ -27,7 +27,7 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
 
   // The home landing is the public catalog. The API already returns the full
   // published projection (including gated courses), so never truncate it here.
-  const displayedCourses = courses
+  const displayedCourses = courses.filter((course: any) => course.published !== false)
 
   return (
     <div className="w-full">
@@ -36,7 +36,7 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
         <div className="flex flex-col space-y-2">
           <Reveal className="flex items-center justify-between" direction="none">
             <div>
-              <span className="mono-label">ORG / COURSE CATALOG</span>
+              <span className="mono-label">ОРГАНИЗАЦИЯ / КАТАЛОГ КУРСОВ</span>
               <TypeOfContentTitle title={t('courses.courses')} type="cou" />
               <div className="vz-hairline" />
             </div>
@@ -57,7 +57,7 @@ function LandingClassic({ courses, orgslug, org_id }: LandingClassicProps) {
                 <CourseThumbnail course={course} orgslug={orgslug} />
               </RevealItem>
             ))}
-            {courses.length === 0 && (
+            {displayedCourses.length === 0 && (
               <div className="col-span-full flex flex-col justify-center items-center py-12 px-4 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
                 <div className="p-4 bg-white rounded-full nice-shadow mb-4">
                   <BookCopy className="w-8 h-8 text-gray-300" strokeWidth={1.5} />

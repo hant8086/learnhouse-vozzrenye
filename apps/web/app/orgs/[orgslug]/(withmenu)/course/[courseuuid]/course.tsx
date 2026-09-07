@@ -44,6 +44,9 @@ const CourseClient = (props: any) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const session = useLHSession() as any;
   const access_token = session?.data?.tokens?.access_token;
+  const sessionIdentity = session?.status === 'authenticated'
+    ? String(session?.data?.user?.user_uuid ?? session?.data?.user?.id ?? 'authenticated')
+    : 'anonymous'
   const queryClient = useQueryClient()
 
   // FORK CHANGE (SEO): `page.tsx` now server-fetches the course and passes it in,
@@ -52,7 +55,7 @@ const CourseClient = (props: any) => {
   // cache — the activity page reads the same key — and still lets the client
   // revalidate once the data goes stale.
   const { data: course, error: courseError, isLoading: courseLoading } = useQuery({
-    queryKey: queryKeys.courses.meta(courseuuid),
+    queryKey: queryKeys.courses.meta(courseuuid, sessionIdentity),
     queryFn: () => getCourseMetadata(courseuuid, {}, access_token, { slim: true }),
     // Deliberately NOT gated on `serverError`: a signed-in visitor whose access
     // token cookie has expired renders server-side as anonymous, so a private
@@ -62,6 +65,7 @@ const CourseClient = (props: any) => {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
     initialData: initialCourse ?? undefined,
+    initialDataUpdatedAt: initialCourse ? 0 : undefined,
   });
 
   const { track } = useLHAnalytics('learner')
@@ -330,7 +334,7 @@ const CourseClient = (props: any) => {
             </div>
             <div className="flex flex-col items-start justify-between gap-3 pb-4 md:flex-row md:items-center">
               <div>
-                <span className="mono-label">COURSE / OVERVIEW</span>
+                <span className="mono-label">КУРС / ОБЗОР</span>
                 <h1 className="mt-3 text-3xl font-bold text-gray-900 md:text-3xl">{course.name}</h1>
                 <div className="vz-hairline mt-4" />
               </div>
@@ -343,13 +347,15 @@ const CourseClient = (props: any) => {
             <div className="flex flex-col md:flex-row gap-8 pt-2">
               <div className="w-full md:w-3/4 space-y-4">
                 {(() => {
-                  const showVideo = course.thumbnail_type === 'video' || (course.thumbnail_type === 'both' && activeThumbnailType === 'video');
-                  const showImage = course.thumbnail_type === 'image' || (course.thumbnail_type === 'both' && activeThumbnailType === 'image') || !course.thumbnail_type;
+                  const hasVideo = Boolean(course.thumbnail_video);
+                  const hasImage = Boolean(course.thumbnail_image);
+                  const showVideo = hasVideo && (course.thumbnail_type === 'video' || (course.thumbnail_type === 'both' && activeThumbnailType === 'video'));
+                  const showImage = hasImage && (course.thumbnail_type === 'image' || (course.thumbnail_type === 'both' && activeThumbnailType === 'image') || !course.thumbnail_type || !hasVideo);
 
                   if (showVideo && course.thumbnail_video) {
                     return (
-                      <div className="vz-frame vz-frame-interactive relative inset-0 h-[200px] w-full overflow-hidden md:h-[400px]">
-                        {course.thumbnail_type === 'both' && (
+                      <div className="vz-frame vz-frame-interactive relative aspect-[3/2] w-full overflow-hidden">
+                        {course.thumbnail_type === 'both' && hasVideo && hasImage && (
                           <div className="absolute top-3 right-3 z-10">
                             <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1 flex space-x-1">
                               <button
@@ -384,7 +390,7 @@ const CourseClient = (props: any) => {
                               course?.course_uuid,
                               course?.thumbnail_video
                             )}
-                            className="w-full h-full bg-black rounded-lg"
+                            className="h-full w-full rounded-lg bg-black object-contain"
                             controls
                             autoPlay
                             muted
@@ -396,25 +402,14 @@ const CourseClient = (props: any) => {
                     );
                   } else if (showImage && course.thumbnail_image) {
                     return (
-                      <div className="vz-frame vz-frame-interactive relative inset-0 h-[200px] w-full overflow-hidden bg-cover bg-center md:h-[400px]"
-                        style={{
-                          backgroundImage: `url(${getCourseThumbnailMediaDirectory(
-                            org?.org_uuid,
-                            course?.course_uuid,
-                            course?.thumbnail_image
-                          )})`,
-                        }}
-                      >
-                        {/* Hidden img with fetchpriority="high" so the browser fetches this LCP image immediately */}
-                        { }
+                      <div className="vz-frame vz-frame-interactive relative aspect-[3/2] w-full overflow-hidden bg-gray-50">
                         <img
                           src={getCourseThumbnailMediaDirectory(org?.org_uuid, course?.course_uuid, course?.thumbnail_image)}
-                          alt=""
-                          aria-hidden="true"
+                          alt={course.name}
                           fetchPriority="high"
-                          className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                          className="h-full w-full object-contain"
                         />
-                        {course.thumbnail_type === 'both' && (
+                        {course.thumbnail_type === 'both' && hasVideo && hasImage && (
                           <div className="absolute top-3 right-3 z-10">
                             <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1 flex space-x-1">
                               <button
@@ -447,12 +442,10 @@ const CourseClient = (props: any) => {
                   } else {
                     return (
                       <div
-                        className="vz-frame relative h-[400px] w-full bg-cover bg-center"
-                        style={{
-                          backgroundImage: `url('/empty_thumbnail.png')`,
-                          backgroundSize: 'auto',
-                        }}
-                      ></div>
+                        className="vz-frame relative aspect-[3/2] w-full overflow-hidden bg-gray-50"
+                      >
+                        <img src="/empty_thumbnail.png" alt={course.name} className="h-full w-full object-contain" />
+                      </div>
                     );
                   }
                 })()}
@@ -509,7 +502,7 @@ const CourseClient = (props: any) => {
               return (
                 <div className="w-full">
                   <div className="mb-2 pt-5">
-                    <span className="mono-label">COURSE / OUTCOMES</span>
+                    <span className="mono-label">КУРС / РЕЗУЛЬТАТЫ</span>
                     <h2 className="mt-3 text-xl font-bold text-gray-900 md:text-2xl">{t('courses.what_you_will_learn')}</h2>
                     <div className="vz-hairline mt-4" />
                   </div>
@@ -552,7 +545,7 @@ const CourseClient = (props: any) => {
 
             <div className="w-full my-5 mb-10">
               <div className="mb-3 pt-5">
-                <span className="mono-label">COURSE / CURRICULUM</span>
+                <span className="mono-label">КУРС / ПРОГРАММА</span>
                 <h2 className="mt-3 text-xl font-bold text-gray-900 md:text-2xl">{t('courses.course_lessons')}</h2>
                 <div className="vz-hairline mt-4" />
               </div>
@@ -590,7 +583,7 @@ const CourseClient = (props: any) => {
                             {chapter.is_locked && (
                               <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-semibold">
                                 <Lock size={10} />
-                                {t('course.locked', 'Locked')}
+                                {t('course.locked', 'Заблокировано')}
                               </span>
                             )}
                           </div>
@@ -628,7 +621,7 @@ const CourseClient = (props: any) => {
                                     {locked && (
                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-semibold">
                                         <Lock size={10} />
-                                        {t('course.locked', 'Locked')}
+                                        {t('course.locked', 'Заблокировано')}
                                       </span>
                                     )}
                                     {!locked && isActivityCurrent(activity) && (
@@ -653,7 +646,7 @@ const CourseClient = (props: any) => {
                                 <div
                                   key={activity.activity_uuid}
                                   className="block activity-container px-4 py-4 cursor-not-allowed select-none"
-                                  title={t('course.activity_locked_hint', 'Sign in or join the right user group to unlock this.')}
+                                  title={t('course.activity_locked_hint', 'Войдите или получите доступ в нужной группе, чтобы открыть этот материал.')}
                                 >
                                   {RowInner}
                                 </div>

@@ -453,15 +453,15 @@ function ActivityClient(props: ActivityClientProps) {
   useEffect(() => {
     if (!activity) return;
     if (activity.activity_type == 'TYPE_DYNAMIC' || activity.activity_type == 'TYPE_SCORM') {
-      setBgColor(isFocusMode ? 'bg-white' : 'bg-white nice-shadow');
+      setBgColor(isFocusMode ? 'bg-[#101820]' : 'bg-white dark:bg-[#101820] nice-shadow');
     }
     else if (activity.activity_type == 'TYPE_ASSIGNMENT') {
       setMarkStatusButtonActive(false);
-      setBgColor(isFocusMode ? 'bg-white' : 'bg-white nice-shadow');
+      setBgColor(isFocusMode ? 'bg-[#101820]' : 'bg-white dark:bg-[#101820] nice-shadow');
       getAssignmentUI();
     }
     else {
-      setBgColor(isFocusMode ? 'bg-zinc-950' : 'bg-zinc-950 nice-shadow');
+      setBgColor(isFocusMode ? 'bg-[#080d12]' : 'bg-[#080d12] nice-shadow');
     }
   }
     , [activity, pathname, isFocusMode])
@@ -591,7 +591,7 @@ function ActivityClient(props: ActivityClientProps) {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="fixed inset-0 bg-white"
+                  className="fixed inset-0 bg-[#080d12] text-[#f4f7f8]"
                   style={{ zIndex: 'var(--z-overlay)' }}
                 >
                   {/* Focus Mode Top Bar */}
@@ -600,7 +600,7 @@ function ActivityClient(props: ActivityClientProps) {
                     animate={{ y: 0 }}
                     exit={{ y: -100 }}
                     transition={{ duration: 0.3 }}
-                    className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-b border-gray-100"
+                    className="fixed top-0 left-0 right-0 bg-[#080d12]/95 backdrop-blur-xl border-b border-[#24313d]"
                     style={{ zIndex: 'var(--z-modal-content)' }}
                   >
                     <div className="container mx-auto px-4 py-2">
@@ -635,12 +635,12 @@ function ActivityClient(props: ActivityClientProps) {
                               />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-xs font-bold text-gray-800">
+                              <span className="text-xs font-bold text-[#f4f7f8]">
                                 {Math.round(((trailData?.runs?.find((run: any) => run.course_uuid === course.course_uuid)?.steps?.filter((step: any) => step.complete)?.length || 0) / (course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 1)) * 100)}%
                               </span>
                             </div>
                           </div>
-                          <div className="text-xs text-gray-600">
+                          <div className="text-xs text-[#b9c4ce]">
                             {trailData?.runs?.find((run: any) => run.course_uuid === course.course_uuid)?.steps?.filter((step: any) => step.complete)?.length || 0} {t('common.of')} {course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0}
                           </div>
                         </motion.div>
@@ -671,8 +671,8 @@ function ActivityClient(props: ActivityClientProps) {
                             </Link>
                           </div>
                           <div className="flex flex-col -space-y-1">
-                            <p className="font-bold text-gray-700 text-sm">{t('search.course')} </p>
-                            <h1 className="font-bold text-gray-950 text-lg first-letter:uppercase">
+                            <p className="font-bold text-[#d4dce3] text-sm">{t('search.course')} </p>
+                            <h1 className="font-bold text-[#f4f7f8] text-lg first-letter:uppercase">
                               {course.name}
                             </h1>
                           </div>
@@ -707,10 +707,10 @@ function ActivityClient(props: ActivityClientProps) {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setIsFocusMode(false)}
-                            className="bg-white nice-shadow p-2 rounded-full cursor-pointer hover:bg-gray-50"
+                            className="bg-[#17212b] nice-shadow p-2 rounded-full cursor-pointer hover:bg-[#24313d]"
                             title={t('activities.exit_focus_mode')}
                           >
-                            <Minimize2 size={16} className="text-gray-700" />
+                            <Minimize2 size={16} className="text-[#d4dce3]" />
                           </motion.button>
                         </motion.div>
                       </div>
@@ -749,7 +749,7 @@ function ActivityClient(props: ActivityClientProps) {
                       animate={{ y: 0 }}
                       exit={{ y: 100 }}
                       transition={{ duration: 0.3 }}
-                      className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-100"
+                      className="fixed bottom-0 left-0 right-0 bg-[#080d12]/95 backdrop-blur-xl border-t border-[#24313d]"
                       style={{ zIndex: 'var(--z-modal-content)' }}
                     >
                       <div className="container mx-auto px-4">
@@ -759,15 +759,15 @@ function ActivityClient(props: ActivityClientProps) {
                               onClick={() => navigateToActivity(prevActivity)}
                               className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
                                 prevActivity
-                                  ? 'text-gray-700'
-                                  : 'opacity-50 text-gray-400 cursor-not-allowed'
+                                  ? 'text-[#d4dce3]'
+                                  : 'opacity-50 text-[#738394] cursor-not-allowed'
                               }`}
                               disabled={!prevActivity}
                               title={prevActivity ? `${t('common.previous')}: ${prevActivity.name}` : t('activities.no_previous_activity')}
                             >
                               <ChevronLeft size={20} className="text-gray-800 shrink-0" />
                               <div className="flex flex-col items-start">
-                                <span className="text-xs text-gray-500">{t('common.previous')}</span>
+                                <span className="text-xs text-[#a0aec0]">{t('common.previous')}</span>
                                 <span className="text-sm capitalize font-semibold text-left">
                                   {prevActivity ? prevActivity.name : t('activities.no_previous_activity')}
                                 </span>
@@ -788,8 +788,8 @@ function ActivityClient(props: ActivityClientProps) {
                               onClick={() => navigateToActivity(nextActivity)}
                               className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
                                 nextActivity || isLastActivity
-                                  ? 'text-gray-700'
-                                  : 'opacity-50 text-gray-400 cursor-not-allowed'
+                                  ? 'text-[#d4dce3]'
+                                  : 'opacity-50 text-[#738394] cursor-not-allowed'
                               }`}
                               disabled={!nextActivity && !isLastActivity}
                               title={
@@ -801,7 +801,7 @@ function ActivityClient(props: ActivityClientProps) {
                               }
                             >
                               <div className="flex flex-col items-end">
-                                <span className="text-xs text-gray-500">{t('common.next')}</span>
+                                <span className="text-xs text-[#a0aec0]">{t('common.next')}</span>
                                 <span className="text-sm capitalize font-semibold text-right">
                                   {nextActivity
                                     ? nextActivity.name

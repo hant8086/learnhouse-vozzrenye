@@ -22,6 +22,7 @@ import {
   CustomSelectValue,
 } from "./CustomSelect";
 import { useTranslation } from 'react-i18next';
+import { getTagColor, mergeTagColorMetadata, normalizeTagColors, parseCourseTags } from '@/lib/courses/tagColors';
 
 type EditCourseStructureProps = {
   orgslug: string
@@ -121,6 +122,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
       about: courseStructure?.about || '',
       learnings: initializeLearnings(courseStructure?.learnings || ''),
       tags: courseStructure?.tags || '',
+      tag_colors: normalizeTagColors(courseStructure?.extra_metadata?.tag_colors),
       catalog_section_key: typeof courseStructure?.extra_metadata?.catalog_section_key === 'string'
         ? courseStructure.extra_metadata.catalog_section_key
         : '',
@@ -129,6 +131,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
     };
   }, [courseStructure?.name, courseStructure?.description, courseStructure?.about,
       courseStructure?.learnings, courseStructure?.tags, courseStructure?.public,
+      courseStructure?.extra_metadata?.tag_colors,
       courseStructure?.extra_metadata?.catalog_section_key,
       courseStructure?.thumbnail_type, initializeLearnings]);
 
@@ -160,12 +163,22 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
 
     // Only sync when there are actual user changes AND values changed since last sync
     if (hasChanges) {
-      if (Object.prototype.hasOwnProperty.call(changes, 'catalog_section_key')) {
-        const metadata = { ...(courseStructure?.extra_metadata || {}) };
-        if (changes.catalog_section_key) metadata.catalog_section_key = changes.catalog_section_key;
-        else delete metadata.catalog_section_key;
+      if (Object.prototype.hasOwnProperty.call(changes, 'catalog_section_key') ||
+          Object.prototype.hasOwnProperty.call(changes, 'tag_colors')) {
+        const rawMetadata = courseStructure?.extra_metadata;
+        let metadata: Record<string, unknown> = rawMetadata && typeof rawMetadata === 'object' && !Array.isArray(rawMetadata)
+          ? { ...(rawMetadata as Record<string, unknown>) }
+          : {};
+        if (Object.prototype.hasOwnProperty.call(changes, 'catalog_section_key')) {
+          if (changes.catalog_section_key) metadata.catalog_section_key = changes.catalog_section_key;
+          else delete metadata.catalog_section_key;
+          delete changes.catalog_section_key;
+        }
+        if (Object.prototype.hasOwnProperty.call(changes, 'tag_colors')) {
+          metadata = mergeTagColorMetadata(metadata, changes.tag_colors);
+          delete changes.tag_colors;
+        }
         changes.extra_metadata = metadata;
-        delete changes.catalog_section_key;
       }
       const changesStr = JSON.stringify(changes);
       const prevStr = JSON.stringify(previousValuesRef.current);
@@ -313,6 +326,58 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                   />
                 </Form.Control>
               </FormField>
+
+              {parseCourseTags(formik.values.tags).length > 0 && (
+                <div className="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50/60 p-4">
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-800">
+                      {t('dashboard.courses.general.form.tag_colors_label', { defaultValue: 'Цвета тегов' })}
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      {t('dashboard.courses.general.form.tag_colors_help', { defaultValue: 'Настройте цвет каждого тега для learner-карточек.' })}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {parseCourseTags(formik.values.tags).map((tag) => {
+                      const color = getTagColor(tag, formik.values.tag_colors) || '#F3F4F6';
+                      return (
+                        <div key={tag} className="flex items-center gap-3 rounded-md border border-neutral-200 bg-white px-3 py-2">
+                          <input
+                            type="color"
+                            aria-label={`${t('dashboard.courses.general.form.tag_color', { defaultValue: 'Цвет тега' })}: ${tag}`}
+                            value={color}
+                            disabled={isSaving}
+                            onChange={(event) => {
+                              const next = Object.fromEntries(
+                                Object.entries(normalizeTagColors(formik.values.tag_colors))
+                                  .filter(([name]) => name.toLocaleLowerCase() !== tag.toLocaleLowerCase())
+                              )
+                              formik.setFieldValue('tag_colors', { ...next, [tag]: event.target.value.toUpperCase() })
+                            }}
+                            className="h-8 w-10 cursor-pointer rounded border border-neutral-200 bg-white p-0.5"
+                          />
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-800">{tag}</span>
+                          {getTagColor(tag, formik.values.tag_colors) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = Object.fromEntries(
+                                  Object.entries(normalizeTagColors(formik.values.tag_colors))
+                                    .filter(([name]) => name.toLocaleLowerCase() !== tag.toLocaleLowerCase())
+                                )
+                                formik.setFieldValue('tag_colors', next);
+                              }}
+                              className="text-xs font-medium text-neutral-400 hover:text-neutral-700"
+                            >
+                              {t('common.reset', { defaultValue: 'Сбросить' })}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <CatalogSectionSelect
                 value={formik.values.catalog_section_key}

@@ -336,7 +336,7 @@ const LoginClient = (props: LoginClientProps) => {
         botOk = false
       }
       if (!botOk) {
-        setError(t('auth.turnstile_failed', { defaultValue: 'Verification failed. Please try again.' }))
+        setError(t('auth.turnstile_failed', { defaultValue: 'Проверка не пройдена. Попробуйте ещё раз.' }))
         setSubmitting(false)
         setIsSubmitting(false)
         turnstileRef.current?.reset()
@@ -440,9 +440,9 @@ const LoginClient = (props: LoginClientProps) => {
     <AuthLayout
       org={props.org}
       welcomeText={t('auth.login_to')}
-      title={t('auth.image_title_login', { defaultValue: 'Welcome back to LearnHouse.' })}
+      title={t('auth.image_title_login', { defaultValue: 'С возвращением в LearnHouse.' })}
       subtitle={t('auth.image_subtitle_login', {
-        defaultValue: 'Pick up where you left off — your courses, students, and tools are waiting.',
+        defaultValue: 'Продолжите обучение — ваши курсы, ученики и инструменты уже ждут вас.',
       })}
     >
         {/* Error Top Bar */}
@@ -515,18 +515,18 @@ const LoginClient = (props: LoginClientProps) => {
               <>
                 {/* Second-factor challenge */}
                 <AuthSurfaceHeading
-                  eyebrow="AUTH / MFA"
-                  title={t('auth.mfa_title', { defaultValue: 'Two-step verification' })}
+                  eyebrow="ВХОД / ДВУХЭТАПНАЯ ПРОВЕРКА"
+                  title={t('auth.mfa_title', { defaultValue: 'Двухэтапная проверка' })}
                   description={useBackupCode
-                    ? t('auth.mfa_subtitle_backup', { defaultValue: 'Enter one of the backup codes you saved.' })
-                    : t('auth.mfa_subtitle', { defaultValue: 'Enter the 6-digit code from your authenticator app.' })}
+                    ? t('auth.mfa_subtitle_backup', { defaultValue: 'Введите один из сохранённых резервных кодов.' })
+                    : t('auth.mfa_subtitle', { defaultValue: 'Введите 6-значный код из приложения-аутентификатора.' })}
                 />
 
                 <form onSubmit={handleMfaSubmit} className="mt-8">
                   <label className="block text-[13px] font-semibold text-black/70 mb-1.5">
                     {useBackupCode
-                      ? t('auth.mfa_backup_code', { defaultValue: 'Backup code' })
-                      : t('auth.mfa_code', { defaultValue: 'Verification code' })}
+                      ? t('auth.mfa_backup_code', { defaultValue: 'Резервный код' })
+                      : t('auth.mfa_code', { defaultValue: 'Код подтверждения' })}
                   </label>
                   <input
                     type="text"
@@ -569,7 +569,7 @@ const LoginClient = (props: LoginClientProps) => {
                         <span>{t('common.loading')}</span>
                       </span>
                     ) : (
-                      t('auth.mfa_verify', { defaultValue: 'Verify' })
+                      t('auth.mfa_verify', { defaultValue: 'Подтвердить' })
                     )}
                   </button>
                 </form>
@@ -586,8 +586,8 @@ const LoginClient = (props: LoginClientProps) => {
                     className="text-sm text-black font-semibold hover:underline disabled:opacity-50"
                   >
                     {useBackupCode
-                      ? t('auth.mfa_use_authenticator', { defaultValue: 'Use your authenticator app instead' })
-                      : t('auth.mfa_use_backup', { defaultValue: 'Use a backup code instead' })}
+                      ? t('auth.mfa_use_authenticator', { defaultValue: 'Использовать приложение-аутентификатор' })
+                      : t('auth.mfa_use_backup', { defaultValue: 'Использовать резервный код' })}
                   </button>
                   <p>
                     <button
@@ -602,7 +602,7 @@ const LoginClient = (props: LoginClientProps) => {
                       disabled={mfaSubmitting}
                       className="text-sm text-black/35 hover:text-black/60 disabled:opacity-50"
                     >
-                      {t('auth.mfa_back_to_login', { defaultValue: 'Back to sign in' })}
+                      {t('auth.mfa_back_to_login', { defaultValue: 'Вернуться ко входу' })}
                     </button>
                   </p>
                 </div>
@@ -611,8 +611,8 @@ const LoginClient = (props: LoginClientProps) => {
               <>
                 {/* Passwordless "email me a link" step */}
                 <AuthSurfaceHeading
-                  eyebrow="AUTH / MAGIC LINK"
-                  title={t('auth.magic_title', { defaultValue: 'Sign in with a link' })}
+                  eyebrow="ВХОД / ССЫЛКА"
+                  title={t('auth.magic_title', { defaultValue: 'Войти по ссылке' })}
                 />
                 {magicSent ? (
                   <>
@@ -621,7 +621,7 @@ const LoginClient = (props: LoginClientProps) => {
                         <CheckCircle2 size={28} />
                       </div>
                       <h2 className="mt-4 text-lg font-bold text-black">
-                        {t('auth.magic_sent_title', { defaultValue: 'Check your email' })}
+                        {t('auth.magic_sent_title', { defaultValue: 'Проверьте почту' })}
                       </h2>
                       <p className="mt-2 text-black/45 text-[15px] font-medium max-w-sm">
                         {t('auth.magic_sent_body', {
@@ -641,7 +641,7 @@ const LoginClient = (props: LoginClientProps) => {
                         }}
                         className="text-sm text-black/35 hover:text-black/60"
                       >
-                        {t('auth.magic_back_to_login', { defaultValue: 'Back to sign in' })}
+                        {t('auth.magic_back_to_login', { defaultValue: 'Вернуться ко входу' })}
                       </button>
                     </div>
                   </>
@@ -695,7 +695,7 @@ const LoginClient = (props: LoginClientProps) => {
                         ) : (
                           <span className="flex items-center gap-2">
                             <Send size={15} />
-                            {t('auth.magic_send', { defaultValue: 'Email me a login link' })}
+                            {t('auth.magic_send', { defaultValue: 'Отправить ссылку для входа' })}
                           </span>
                         )}
                       </button>
@@ -712,7 +712,7 @@ const LoginClient = (props: LoginClientProps) => {
                         className="text-sm text-black/35 hover:text-black/60 disabled:opacity-50"
                       >
                         {t('auth.magic_use_password', {
-                          defaultValue: 'Sign in with a password instead',
+                          defaultValue: 'Войти с паролем',
                         })}
                       </button>
                     </div>
@@ -723,12 +723,12 @@ const LoginClient = (props: LoginClientProps) => {
               <>
             {/* Header */}
             <AuthSurfaceHeading
-              eyebrow="AUTH / SIGN IN"
+              eyebrow="ВХОД / АВТОРИЗАЦИЯ"
               title={t('auth.welcome_back')}
               description={passwordAllowed
                 ? t('auth.enter_credentials')
                 : t('auth.choose_sign_in_method', {
-                    defaultValue: 'Choose how you’d like to sign in.',
+                    defaultValue: 'Выберите способ входа.',
                   })}
             />
 
@@ -855,7 +855,7 @@ const LoginClient = (props: LoginClientProps) => {
                   className="flex justify-center items-center w-full bg-white hover:bg-neutral-50 text-black space-x-3 font-medium p-3 rounded-lg border border-neutral-200 transition-all text-sm disabled:opacity-50"
                 >
                   <Mail size={16} />
-                  <span>{t('auth.magic_send', { defaultValue: 'Email me a login link' })}</span>
+                  <span>{t('auth.magic_send', { defaultValue: 'Отправить ссылку для входа' })}</span>
                 </button>
                 )}
               </div>

@@ -8,9 +8,12 @@ import { getAllOrgCourses, getCourseMetadata } from '@services/courses/courses'
 export function useCourses(orgSlug: string) {
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token as string | undefined
+  const identity = session?.status === 'authenticated'
+    ? String(session?.data?.user?.user_uuid ?? session?.data?.user?.id ?? 'authenticated')
+    : 'anonymous'
 
   return useQuery({
-    queryKey: queryKeys.courses.list(orgSlug),
+    queryKey: queryKeys.courses.list(orgSlug, identity),
     queryFn: () => getAllOrgCourses(orgSlug, {}, accessToken),
     enabled: !!orgSlug,
     staleTime: 60_000,
@@ -23,9 +26,12 @@ export function useCourses(orgSlug: string) {
 export function useCourseMeta(courseUuid: string, initialData?: any) {
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token as string | undefined
+  const identity = session?.status === 'authenticated'
+    ? String(session?.data?.user?.user_uuid ?? session?.data?.user?.id ?? 'authenticated')
+    : 'anonymous'
 
   return useQuery({
-    queryKey: queryKeys.courses.meta(courseUuid),
+    queryKey: queryKeys.courses.meta(courseUuid, identity),
     queryFn: () => getCourseMetadata(courseUuid, {}, accessToken, { slim: true }),
     enabled: !!courseUuid,
     staleTime: 60_000,
