@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 // Keep the policy module dependency-free so this focused test can run in the
 // repository's lightweight Bun test environment.
-import { getCourseStartAction, selectFirstPublicOffer } from '../lib/courses/startGate.ts'
+import { getCourseResumeActivity, getCourseStartAction, selectFirstPublicOffer } from '../lib/courses/startGate.ts'
 
 describe('course start gate', () => {
   const base = {
@@ -31,7 +31,7 @@ describe('course start gate', () => {
   })
 
   test('entitled paid users continue normally', () => {
-    expect(getCourseStartAction({ ...base, course: { is_paid: true, has_access: true } })).toEqual({ kind: 'leave' })
+    expect(getCourseStartAction({ ...base, course: { is_paid: true, has_access: true } })).toEqual({ kind: 'continue' })
   })
 
   test('free authenticated users start normally regardless of org membership', () => {
@@ -46,5 +46,16 @@ describe('course start gate', () => {
       { offer_uuid: 'offer-archived', status: 'archived' },
     ])
     expect(selected?.offer_uuid).toBe('offer-a')
+  })
+
+  test('resumes at the first incomplete activity and falls back to the first activity', () => {
+    const course = {
+      chapters: [
+        { activities: [{ id: 11, activity_uuid: 'activity_one' }, { id: 12, activity_uuid: 'activity_two' }] },
+        { activities: [{ id: 13, activity_uuid: 'activity_three' }] },
+      ],
+    }
+    expect(getCourseResumeActivity(course, { steps: [{ activity_id: '11', complete: true }] })).toBe('two')
+    expect(getCourseResumeActivity(course, null)).toBe('one')
   })
 })

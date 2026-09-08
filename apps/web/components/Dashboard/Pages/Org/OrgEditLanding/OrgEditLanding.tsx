@@ -18,6 +18,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs"
 import { useTranslation } from 'react-i18next'
+import { DEFAULT_LANDING_FOOTER_LINKS, normalizeLandingFooterLinks, type LandingFooterLink } from '@/lib/landing/footer'
 
 // This will be created inside the component to access translations
 const getSectionTypes = (t: any) => ({
@@ -142,7 +143,8 @@ const OrgEditLanding = () => {
   const [isLandingEnabled, setIsLandingEnabled] = React.useState(false)
   const [landingData, setLandingData] = React.useState<LandingObject>({
     sections: [],
-    enabled: false
+    enabled: false,
+    footer_links: DEFAULT_LANDING_FOOTER_LINKS,
   })
   const [selectedSection, setSelectedSection] = React.useState<number | null>(null)
   const [isSaving, setIsSaving] = React.useState(false)
@@ -153,8 +155,10 @@ const OrgEditLanding = () => {
     if (rawLanding) {
       const landingConfig = rawLanding
       setLandingData({
+        ...landingConfig,
         sections: landingConfig.sections || [],
-        enabled: landingConfig.enabled || false
+        enabled: landingConfig.enabled || false,
+        footer_links: normalizeLandingFooterLinks(landingConfig.footer_links),
       })
       setIsLandingEnabled(landingConfig.enabled || false)
     }
@@ -269,6 +273,7 @@ const OrgEditLanding = () => {
     setIsSaving(true)
     try {
       const res = await updateOrgLanding(org.id, {
+        ...landingData,
         sections: landingData.sections,
         enabled: isLandingEnabled
       }, access_token)
@@ -285,6 +290,15 @@ const OrgEditLanding = () => {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const updateFooterLink = (index: number, patch: Partial<LandingFooterLink>) => {
+    setLandingData((prev) => ({
+      ...prev,
+      footer_links: (prev.footer_links || DEFAULT_LANDING_FOOTER_LINKS).map((link, linkIndex) =>
+        linkIndex === index ? { ...link, ...patch } : link
+      ),
+    }))
   }
 
   return (
@@ -317,6 +331,32 @@ const OrgEditLanding = () => {
             </Button>
           </div>
         </div>
+
+        <section className="rounded-lg border border-neutral-200 bg-neutral-50/60 p-4">
+          <div className="mb-3">
+            <h3 className="font-medium">Меню футера</h3>
+            <p className="text-sm text-neutral-500">Пустые или небезопасные адреса останутся отключёнными.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {(landingData.footer_links || DEFAULT_LANDING_FOOTER_LINKS).map((link, index) => (
+              <div key={`footer-link-${index}`} className="space-y-2">
+                <Label htmlFor={`landing-footer-label-${index}`}>Подпись</Label>
+                <Input
+                  id={`landing-footer-label-${index}`}
+                  value={link.label}
+                  onChange={(event) => updateFooterLink(index, { label: event.target.value })}
+                />
+                <Label htmlFor={`landing-footer-href-${index}`}>Ссылка</Label>
+                <Input
+                  id={`landing-footer-href-${index}`}
+                  placeholder="/mission или https://…"
+                  value={link.href || ''}
+                  onChange={(event) => updateFooterLink(index, { href: event.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
 
         {isLandingEnabled && (
           <>

@@ -29,6 +29,7 @@ import CourseShare from '@components/Objects/Courses/CourseShare/CourseShare'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 import { RevealGroup, RevealItem } from '@components/Objects/Motion/Reveal'
 import { ScrollPath } from '@components/Objects/Motion/ScrollPath'
+import { getTagColorStyle, normalizeTagColors, parseCourseTags } from '@/lib/courses/tagColors'
 
 const CourseClient = (props: any) => {
   const { t } = useTranslation()
@@ -334,8 +335,16 @@ const CourseClient = (props: any) => {
             </div>
             <div className="flex flex-col items-start justify-between gap-3 pb-4 md:flex-row md:items-center">
               <div>
-                <span className="mono-label">КУРС / ОБЗОР</span>
-                <h1 className="mt-3 text-3xl font-bold text-gray-900 md:text-3xl">{course.name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 md:text-3xl">{course.name}</h1>
+                {parseCourseTags(course.tags).length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5" aria-label={t('courses.tags', 'Теги')}>
+                    {parseCourseTags(course.tags).map((tag: string) => (
+                      <span key={tag} className="rounded-full border px-2.5 py-1 text-xs font-semibold" style={getTagColorStyle(tag, normalizeTagColors(course.extra_metadata?.tag_colors))}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="vz-hairline mt-4" />
               </div>
               <CourseShare

@@ -82,7 +82,7 @@ export default function SSOCallbackPage() {
         if (signInResult?.error) {
           console.error('Sign-in failed:', signInResult.error)
           setError({
-            message: 'Failed to complete sign-in after SSO authentication',
+            message: 'Не удалось завершить вход после аутентификации SSO',
             errorCode: 'signin_failed',
             errorDescription: signInResult.error,
             technicalDetails: `Sign-in error: ${signInResult.error}`,
@@ -223,7 +223,7 @@ export default function SSOCallbackPage() {
           {error?.errorCode === 'access_denied' && (
             <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-md text-left">
               <p className="text-sm text-amber-800">
-                <strong>Tip:</strong> If you declined the login request by mistake, try again and accept the permissions.
+                <strong>Подсказка:</strong> Если вы случайно отклонили запрос на вход, попробуйте ещё раз и подтвердите разрешения.
               </p>
             </div>
           )}
@@ -231,7 +231,7 @@ export default function SSOCallbackPage() {
           {error?.errorCode === 'invalid_state' && (
             <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-md text-left">
               <p className="text-sm text-amber-800">
-                <strong>Tip:</strong> Your session may have expired. Please try logging in again.
+                <strong>Подсказка:</strong> Возможно, срок действия сессии истёк. Попробуйте войти ещё раз.
               </p>
             </div>
           )}
@@ -239,7 +239,7 @@ export default function SSOCallbackPage() {
           {error?.errorCode === 'domain_not_allowed' && (
             <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-md text-left">
               <p className="text-sm text-amber-800">
-                <strong>Tip:</strong> Contact your organization administrator to verify your email domain is allowed.
+                <strong>Подсказка:</strong> Обратитесь к администратору организации, чтобы проверить разрешённый домен электронной почты.
               </p>
             </div>
           )}
@@ -247,7 +247,7 @@ export default function SSOCallbackPage() {
           {(error?.errorCode === 'auto_provision_disabled' || error?.errorCode === 'user_not_found') && (
             <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-md text-left">
               <p className="text-sm text-amber-800">
-                <strong>Tip:</strong> Your organization requires an administrator to create your account first. Contact your organization admin to request access.
+                <strong>Подсказка:</strong> В этой организации администратор должен сначала создать ваш аккаунт. Обратитесь к администратору с запросом на доступ.
               </p>
             </div>
           )}
@@ -255,7 +255,7 @@ export default function SSOCallbackPage() {
           {error?.errorCode === 'sso_misconfigured' && (
             <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-md text-left">
               <p className="text-sm text-amber-800">
-                <strong>Tip:</strong> There may be a configuration issue with SSO. Please contact your IT administrator.
+                <strong>Подсказка:</strong> Возможно, проблема связана с настройками SSO. Обратитесь к ИТ-администратору.
               </p>
             </div>
           )}

@@ -8,9 +8,10 @@ import { getUriWithOrg } from '@services/config/config'
 
 interface AuthMobileHeaderProps {
   org: any
+  compact?: boolean
 }
 
-export default function AuthMobileHeader({ org }: AuthMobileHeaderProps) {
+export default function AuthMobileHeader({ org, compact = false }: AuthMobileHeaderProps) {
   const authBranding = org?.config?.config?.customization?.auth_branding || org?.config?.config?.general?.auth_branding || {}
   const {
     background_type = 'gradient',
@@ -48,6 +49,24 @@ export default function AuthMobileHeader({ org }: AuthMobileHeaderProps) {
   }
 
   const hasCustomBackground = background_type !== 'gradient' && background_image
+
+  if (compact) {
+    return (
+      <Link prefetch href={getUriWithOrg(org?.slug, '/')} aria-label={org?.name || 'LearnHouse'} className="block rounded-2xl bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.12)] ring-1 ring-black/5">
+        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white">
+          {org?.logo_image ? (
+            <img
+              src={getOrgLogoMediaDirectory(org.org_uuid, org.logo_image)}
+              alt={org.name}
+              className="h-full w-full object-contain p-2"
+            />
+          ) : (
+            <Image quality={100} width={56} height={56} src={learnhouseIcon} alt="LearnHouse" className="object-contain p-2" />
+          )}
+        </div>
+      </Link>
+    )
+  }
 
   return (
     <div

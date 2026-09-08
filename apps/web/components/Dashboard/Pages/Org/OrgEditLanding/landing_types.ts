@@ -130,4 +130,6 @@ export type LandingSection = LandingTextAndImageSection | LandingHeroSection | L
 export interface LandingObject {
   sections: LandingSection[];
   enabled?: boolean;
+  footer_links?: Array<{ label: string; href?: string | null }>;
+  [key: string]: unknown;
 }

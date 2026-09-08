@@ -1,6 +1,7 @@
 'use client'
 import React from 'react'
 import AuthBrandingPanel from '@components/Auth/AuthBrandingPanel'
+import AuthMobileHeader from '@components/Auth/AuthMobileHeader'
 import { AuthFooter } from '@components/Footers/LegalFooters'
 
 interface AuthLayoutProps {
@@ -32,9 +33,13 @@ export default function AuthLayout({ org, welcomeText, title, subtitle, children
 
       {/* Left Panel - Content / form */}
       <div className="relative z-10 flex min-h-screen flex-col flex-1 lg:h-full overflow-auto bg-transparent">
-        <div className="flex-1 flex flex-col">{children}</div>
+        <div className="pointer-events-none absolute inset-x-6 top-10 z-10 h-px bg-neutral-200 lg:hidden" />
+        <div className="absolute left-1/2 top-2 z-20 -translate-x-1/2 lg:hidden">
+          <AuthMobileHeader org={org} compact />
+        </div>
+        <div className="flex-1 flex flex-col pt-20 lg:pt-0">{children}</div>
         {/* Terms footer (platform-style) */}
-        <AuthFooter className="hidden shrink-0 lg:block" />
+        <AuthFooter className="shrink-0" />
       </div>
 
       {/* Right Panel - Branding (hidden on mobile) */}

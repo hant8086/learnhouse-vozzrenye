@@ -43,7 +43,7 @@ export default function MagicLinkConsumePage() {
       const token = params.get('token')
 
       if (!token) {
-        setError('This link is missing its token. Request a new one to sign in.')
+        setError('В этой ссылке нет токена. Запросите новую ссылку для входа.')
         setStatus('error')
         return
       }
@@ -68,7 +68,7 @@ export default function MagicLinkConsumePage() {
         return
       }
 
-      let message = 'This link has expired or was already used. Request a new one to sign in.'
+      let message = 'Ссылка истекла или уже использована. Запросите новую ссылку для входа.'
       try {
         const parsed = JSON.parse(res.error || '{}')
         if (parsed.message) message = parsed.message
@@ -92,7 +92,7 @@ export default function MagicLinkConsumePage() {
             </div>
           </div>
           <h1 className="text-xl font-semibold text-gray-800 mb-2">
-            This link isn’t valid anymore
+            Эта ссылка больше недействительна
           </h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-y-3">
@@ -100,13 +100,13 @@ export default function MagicLinkConsumePage() {
               href="/login"
               className="block w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
             >
-              Request a new link
+              Запросить новую ссылку
             </Link>
             <Link
               href="/"
               className="block w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
             >
-              Go Home
+              На главную
             </Link>
           </div>
         </div>
@@ -121,8 +121,8 @@ export default function MagicLinkConsumePage() {
           <div className="flex justify-center mb-4">
             <Loader2 className="w-12 h-12 text-green-600 animate-spin" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-800 mb-2">Success!</h1>
-          <p className="text-gray-500">Redirecting you now...</p>
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">Успешно!</h1>
+          <p className="text-gray-500">Перенаправляем вас…</p>
         </div>
       </div>
     )
@@ -134,8 +134,8 @@ export default function MagicLinkConsumePage() {
         <div className="flex justify-center mb-4">
           <Loader2 className="w-12 h-12 text-gray-600 animate-spin" />
         </div>
-        <h1 className="text-xl font-semibold text-gray-800 mb-2">Signing you in...</h1>
-        <p className="text-gray-500">Please wait while we verify your link.</p>
+        <h1 className="text-xl font-semibold text-gray-800 mb-2">Завершаем вход…</h1>
+        <p className="text-gray-500">Пожалуйста, подождите — мы проверяем ссылку.</p>
       </div>
     </div>
   )

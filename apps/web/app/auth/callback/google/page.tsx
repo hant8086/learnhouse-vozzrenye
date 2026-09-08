@@ -23,19 +23,19 @@ export default function GoogleCallbackPage() {
 
       // Handle OAuth errors from Google
       if (errorParam) {
-        setError(`Google authentication failed: ${errorParam}`)
+        setError(`Не удалось выполнить вход через Google: ${errorParam}`)
         setStatus('error')
         return
       }
 
       if (!code) {
-        setError('No authorization code received from Google')
+        setError('От Google не получен код авторизации')
         setStatus('error')
         return
       }
 
       if (!state) {
-        setError('Missing state parameter - potential security issue')
+        setError('Отсутствует параметр state — возможно, запрос небезопасен')
         setStatus('csrf_error')
         return
       }
@@ -102,7 +102,7 @@ export default function GoogleCallbackPage() {
 
       const stateValidation = validateOAuthState(state)
       if (!stateValidation.valid) {
-        setError('Invalid or expired authentication request. Please try again.')
+        setError('Запрос авторизации недействителен или истёк. Попробуйте ещё раз.')
         setStatus('csrf_error')
         return
       }
@@ -165,14 +165,14 @@ export default function GoogleCallbackPage() {
           // /api/auth/oauth/google/callback route — the old fallback here just
           // 404'd and masked the actual error with a misleading one.)
           const err = await tokenResponse.json().catch(() => ({}))
-          throw new Error(typeof err.error === 'string' && err.error ? err.error : getErrorMessage(err.detail, 'Failed to exchange the Google authorization code.'))
+          throw new Error(typeof err.error === 'string' && err.error ? err.error : getErrorMessage(err.detail, 'Не удалось обменять код авторизации Google.'))
         }
 
         const tokenData = await tokenResponse.json()
 
         // Validate token response
         if (!tokenData.access_token) {
-          throw new Error('Invalid token response from Google')
+          throw new Error('Google вернул недействительный ответ с токеном')
         }
 
         // Get user info from Google
@@ -186,14 +186,14 @@ export default function GoogleCallbackPage() {
         )
 
         if (!userInfoResponse.ok) {
-          throw new Error('Failed to get user info from Google')
+          throw new Error('Не удалось получить данные пользователя от Google')
         }
 
         const userInfo = await userInfoResponse.json()
 
         // Validate user info
         if (!userInfo.email) {
-          throw new Error('Could not retrieve email from Google')
+          throw new Error('Не удалось получить адрес электронной почты от Google')
         }
 
         // Call Next.js API route to ensure cookies are set properly
@@ -219,14 +219,14 @@ export default function GoogleCallbackPage() {
 
         if (!oauthResponse.ok) {
           const errorData = await oauthResponse.json().catch(() => ({}))
-          throw new Error(getErrorMessage(errorData.detail, 'Failed to authenticate'))
+          throw new Error(getErrorMessage(errorData.detail, 'Не удалось выполнить аутентификацию'))
         }
 
         const data = await oauthResponse.json()
 
         // Validate response structure
         if (!data.tokens?.access_token) {
-          throw new Error('Invalid response from server')
+          throw new Error('Сервер вернул недействительный ответ')
         }
 
         // Sign in with the obtained tokens
@@ -241,14 +241,14 @@ export default function GoogleCallbackPage() {
         })
 
         if (result && !result.ok) {
-          throw new Error(result.error || 'Failed to complete sign in')
+          throw new Error(result.error || 'Не удалось завершить вход')
         }
 
         setStatus('success')
         router.push(callbackUrl)
       } catch (err: any) {
         console.error('Google OAuth callback error:', err)
-        setError(err.message || 'Authentication failed')
+        setError(err.message || 'Не удалось выполнить вход')
         setStatus('error')
       }
     }
@@ -264,9 +264,9 @@ export default function GoogleCallbackPage() {
             <Loader2 className="w-12 h-12 text-gray-600 animate-spin" />
           </div>
           <h1 className="text-xl font-semibold text-gray-800 mb-2">
-            Completing sign in...
+            Завершаем вход…
           </h1>
-          <p className="text-gray-500">Please wait while we authenticate you.</p>
+          <p className="text-gray-500">Пожалуйста, подождите — мы подтверждаем вашу учётную запись.</p>
         </div>
       </div>
     )
@@ -282,25 +282,25 @@ export default function GoogleCallbackPage() {
             </div>
           </div>
           <h1 className="text-xl font-semibold text-gray-800 mb-2">
-            Security Check Failed
+            Проверка безопасности не пройдена
           </h1>
           <p className="text-gray-600 mb-2">{error}</p>
           <p className="text-gray-500 text-sm mb-6">
-            This can happen if the login session expired or if you followed an old link.
-            Please start the login process again.
+            Сеанс входа мог истечь, либо вы открыли устаревшую ссылку.
+            Начните вход ещё раз.
           </p>
           <div className="space-y-3">
             <Link
               href="/login"
               className="block w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
             >
-              Go to Login
+              Вернуться ко входу
             </Link>
             <Link
               href="/"
               className="block w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
             >
-              Go Home
+              На главную
             </Link>
           </div>
         </div>
@@ -318,7 +318,7 @@ export default function GoogleCallbackPage() {
             </div>
           </div>
           <h1 className="text-xl font-semibold text-gray-800 mb-2">
-            Authentication Failed
+            Не удалось выполнить вход
           </h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-y-3">
@@ -326,13 +326,13 @@ export default function GoogleCallbackPage() {
               href="/login"
               className="block w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
             >
-              Try Again
+              Попробовать снова
             </Link>
             <Link
               href="/"
               className="block w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
             >
-              Go Home
+              На главную
             </Link>
           </div>
         </div>
@@ -348,9 +348,9 @@ export default function GoogleCallbackPage() {
           <Loader2 className="w-12 h-12 text-green-600 animate-spin" />
         </div>
         <h1 className="text-xl font-semibold text-gray-800 mb-2">
-          Success!
+          Успешно!
         </h1>
-        <p className="text-gray-500">Redirecting you now...</p>
+        <p className="text-gray-500">Перенаправляем вас…</p>
       </div>
     </div>
   )

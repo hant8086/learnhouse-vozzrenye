@@ -4,7 +4,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getUriWithOrg } from '@services/config/config'
 import { getOffersByResource } from '@services/payments/offers'
-import { LogIn, LogOut } from 'lucide-react'
+import { ArrowRight, LogIn } from 'lucide-react'
 import { removeCourse, startCourse } from '@services/courses/activity'
 import { revalidateTags, asArray } from '@services/utils/ts/requests'
 import UserAvatar from '../../UserAvatar'
@@ -13,7 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 import { useTranslation } from 'react-i18next'
-import { getCourseStartAction, selectFirstPublicOffer } from '@/lib/courses/startGate'
+import { getCourseResumeActivity, getCourseStartAction, selectFirstPublicOffer } from '@/lib/courses/startGate'
 
 interface Author {
   user: {
@@ -106,10 +106,10 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
           </div>
         )}
       </div>
-      
+
       <div className="flex flex-col">
         <span className="text-xs text-neutral-400 font-medium">
-          {authors.length > 1 ? 'Authors' : 'Author'}
+          {authors.length > 1 ? 'Авторы' : 'Автор'}
         </span>
         {authors.length === 1 ? (
           <span className="text-sm font-semibold text-neutral-800">
@@ -140,7 +140,7 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
   // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = course.course_uuid?.replace('course_', '');
   const resourceUuid = cleanCourseUuid ? `course_${cleanCourseUuid}` : null;
-    const { t } = useTranslation()
+  const { t } = useTranslation()
 
   const hasCourseAccess = course.is_paid === true ? course.has_access === true : true
   const isStarted = hasCourseAccess
@@ -169,6 +169,12 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
     offer: selectedOffer,
   });
 
+  const resumeActivity = getCourseResumeActivity(course, isStarted || null)
+  const continueCourse = () => {
+    if (!resumeActivity) return router.push(getUriWithOrg(orgslug, `/course/${cleanCourseUuid}`))
+    router.push(getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}/activity/${resumeActivity}`)
+  }
+
   const handleCourseAction = async () => {
     if (courseAction.kind === 'login') {
       track(AnalyticsEvent.CourseSignupPrompted, {
@@ -187,41 +193,54 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
 
     if (courseAction.kind === 'unavailable') return
 
+    if (courseAction.kind === 'continue') {
+      continueCourse()
+      return
+    }
+
     setIsActionLoading(true)
     try {
-      if (courseAction.kind === 'leave') {
-        await removeCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
-        await revalidateTags(['courses'], orgslug)
-        queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
-        track(AnalyticsEvent.CourseLeft, { course_uuid: cleanCourseUuid })
-        router.refresh()
-      } else {
-        await startCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
-        await revalidateTags(['courses'], orgslug)
-        queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
-        track(AnalyticsEvent.CourseStarted, {
-          course_uuid: cleanCourseUuid,
-          total_activities: course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0,
-          has_offers: linkedOffers.length > 0,
-        })
+      await startCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
+      await revalidateTags(['courses'], orgslug)
+      queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
+      track(AnalyticsEvent.CourseStarted, {
+        course_uuid: cleanCourseUuid,
+        total_activities: course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0,
+        has_offers: linkedOffers.length > 0,
+      })
 
-        // Get the first activity from the first chapter
-        const firstChapter = course.chapters?.[0]
-        const firstActivity = firstChapter?.activities?.[0]
-        
-        if (firstActivity) {
-          // Redirect to the first activity
-          await revalidateTags(['activities'], orgslug)
-          router.push(
-            getUriWithOrg(orgslug, '') +
-            `/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`
-          )
-        } else {
-          router.refresh()
-        }
+      // Get the first activity from the first chapter
+      const firstChapter = course.chapters?.[0]
+      const firstActivity = firstChapter?.activities?.[0]
+
+      if (firstActivity) {
+        // Redirect to the first activity
+        await revalidateTags(['activities'], orgslug)
+        router.push(
+          getUriWithOrg(orgslug, '') +
+          `/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`
+        )
+      } else {
+        router.refresh()
       }
     } catch (error) {
       console.error('Failed to perform course action:', error)
+    } finally {
+      setIsActionLoading(false)
+      await revalidateTags(['courses'], orgslug)
+    }
+  }
+
+  const handleLeaveCourse = async () => {
+    setIsActionLoading(true)
+    try {
+      await removeCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
+      await revalidateTags(['courses'], orgslug)
+      queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
+      track(AnalyticsEvent.CourseLeft, { course_uuid: cleanCourseUuid })
+      router.refresh()
+    } catch (error) {
+      console.error('Failed to leave course:', error)
     } finally {
       setIsActionLoading(false)
       await revalidateTags(['courses'], orgslug)
@@ -261,23 +280,15 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
         <button
             onClick={handleCourseAction}
             disabled={isActionLoading}
-            className={`w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
-              isStarted
-                ? 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400'
-                : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
-            }`}
+            aria-label={courseAction.kind === 'continue' ? t('courses.continue_course', 'Продолжить курс') : t('courses.start_course')}
+            className="w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700"
           >
             {isActionLoading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : !session.data?.user ? (
+            ) : courseAction.kind === 'continue' ? (
               <>
-                <LogIn className="w-4 h-4" />
-                {t('courses.start_course')}
-              </>
-            ) : isStarted ? (
-              <>
-                <LogOut className="w-4 h-4" />
-                {t('courses.leave_course')}
+                <ArrowRight className="w-4 h-4" />
+                {t('courses.continue_course', 'Продолжить курс')}
               </>
             ) : (
               <>
@@ -286,6 +297,16 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
               </>
             )}
           </button>
+          {isStarted && (
+            <button
+              type="button"
+              onClick={handleLeaveCourse}
+              disabled={isActionLoading}
+              className="w-full border-t border-neutral-200 pt-3 text-sm font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
+            >
+              {t('courses.leave_course')}
+            </button>
+          )}
       </div>
     </div>
   )

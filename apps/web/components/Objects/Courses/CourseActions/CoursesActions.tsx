@@ -15,7 +15,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import { useTranslation } from 'react-i18next'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
-import { getCourseStartAction, selectFirstPublicOffer } from '@/lib/courses/startGate'
+import { getCourseResumeActivity, getCourseStartAction, selectFirstPublicOffer } from '@/lib/courses/startGate'
 
 interface CourseRun {
   status: string
@@ -97,6 +97,12 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
     offer: selectedOffer,
   });
 
+  const resumeActivity = getCourseResumeActivity(course, isStarted || null)
+  const continueCourse = () => {
+    if (!resumeActivity) return router.push(getUriWithOrg(orgslug, `/course/${cleanCourseUuid}`))
+    router.push(getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}/activity/${resumeActivity}`)
+  }
+
   const handleCourseAction = async () => {
     if (courseAction.kind === 'login') {
       track(AnalyticsEvent.CourseSignupPrompted, {
@@ -115,38 +121,36 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
 
     if (courseAction.kind === 'unavailable') return
 
+    if (courseAction.kind === 'continue') {
+      continueCourse()
+      return
+    }
+
     setIsActionLoading(true)
     const loadingToast = toast.loading(
-      isStarted ? t('courses.leave_course') + '...' : t('courses.start_course') + '...'
+      t('courses.start_course') + '...'
     )
 
     try {
-      if (courseAction.kind === 'leave') {
-        await removeCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
-        if (org?.id) queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
-        track(AnalyticsEvent.CourseLeft, { course_uuid: cleanCourseUuid })
-        toast.success(t('courses.leave_course_success'), { id: loadingToast })
-      } else {
-        await startCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
-        if (org?.id) queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
-        track(AnalyticsEvent.CourseStarted, {
-          course_uuid: cleanCourseUuid,
-          total_activities: course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0,
-          has_offers: linkedOffers.length > 0,
-        })
-        toast.success(t('courses.start_course_success'), { id: loadingToast })
+      await startCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
+      if (org?.id) queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
+      track(AnalyticsEvent.CourseStarted, {
+        course_uuid: cleanCourseUuid,
+        total_activities: course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0,
+        has_offers: linkedOffers.length > 0,
+      })
+      toast.success(t('courses.start_course_success'), { id: loadingToast })
 
-        // Get the first activity from the first chapter
-        const firstChapter = course.chapters?.[0]
-        const firstActivity = firstChapter?.activities?.[0]
+      // Get the first activity from the first chapter
+      const firstChapter = course.chapters?.[0]
+      const firstActivity = firstChapter?.activities?.[0]
 
-        if (firstActivity) {
-          // Redirect to the first activity
-          router.push(
-            getUriWithOrg(orgslug, '') +
-            `/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`
-          )
-        }
+      if (firstActivity) {
+        // Redirect to the first activity
+        router.push(
+          getUriWithOrg(orgslug, '') +
+          `/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`
+        )
       }
     } catch (error) {
       console.error('Failed to perform course action:', error)
@@ -188,10 +192,26 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
     }
   }
 
-  const renderActionButton = (action: 'start' | 'leave') => {
+  const handleLeaveCourse = async () => {
+    setIsActionLoading(true)
+    const loadingToast = toast.loading(t('courses.leave_course') + '...')
+    try {
+      await removeCourse('course_' + courseuuid, orgslug, session.data?.tokens?.access_token)
+      if (org?.id) queryClient.invalidateQueries({ queryKey: queryKeys.trail.org(org.id) })
+      track(AnalyticsEvent.CourseLeft, { course_uuid: cleanCourseUuid })
+      toast.success(t('courses.leave_course_success'), { id: loadingToast })
+    } catch (error) {
+      console.error('Failed to leave course:', error)
+      toast.error(t('courses.leave_course_error'), { id: loadingToast })
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  const renderActionButton = (action: 'start' | 'continue') => {
     return (
       <>
-        <span>{action === 'start' ? t('courses.start_course') : t('courses.leave_course')}</span>
+        <span>{action === 'start' ? t('courses.start_course') : t('courses.continue_course', 'Продолжить курс')}</span>
         <ArrowRight className="w-5 h-5" />
       </>
     );
@@ -399,22 +419,29 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
         <button
           onClick={handleCourseAction}
           disabled={isActionLoading}
-          aria-label={isStarted ? t('courses.leave_course') : t('courses.start_course')}
-          className={`w-full py-3 rounded-lg nice-shadow font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
-            isStarted
-              ? 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400'
-              : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
-          }`}
+          aria-label={isStarted ? t('courses.continue_course', 'Продолжить курс') : t('courses.start_course')}
+          className="w-full py-3 rounded-lg nice-shadow font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700"
         >
           {isActionLoading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            renderActionButton(isStarted ? 'leave' : 'start')
+            renderActionButton(isStarted ? 'continue' : 'start')
           )}
         </button>
 
         {/* Contributor Button */}
         {renderContributorButton()}
+
+        {isStarted && (
+          <button
+            type="button"
+            onClick={handleLeaveCourse}
+            disabled={isActionLoading}
+            className="w-full border-t border-neutral-200 pt-4 text-sm font-medium text-red-600 transition-colors hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t('courses.leave_course')}
+          </button>
+        )}
 
         {/* Course Progress Modal */}
         <CourseProgress

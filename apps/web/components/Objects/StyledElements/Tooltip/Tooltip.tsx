@@ -20,10 +20,12 @@ const ToolTip = (props: TooltipProps) => {
           <Tooltip.Content
             side={props.side ? props.side : 'top'}
             sideOffset={props.sideOffset ?? 6}
+            collisionPadding={12}
             className={
               props.unstyled
-                ? 'z-[var(--z-tooltip)] data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-200'
+                ? 'z-[var(--z-tooltip)] max-w-[calc(100vw-1.5rem)] whitespace-normal break-words data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-200'
                 : `z-[var(--z-tooltip)] select-none will-change-[transform,opacity]
+                  max-w-[calc(100vw-1.5rem)] whitespace-normal break-words
                   data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 duration-200
                   data-[side=top]:data-[state=delayed-open]:slide-in-from-bottom-0.5
                   data-[side=right]:data-[state=delayed-open]:slide-in-from-left-0.5

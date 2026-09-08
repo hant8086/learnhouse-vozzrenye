@@ -5,19 +5,19 @@ import { useSearchParams } from 'next/navigation'
 import { Loader2, AlertTriangle } from 'lucide-react'
 
 const ERROR_MESSAGES: Record<string, string> = {
-  missing_code: 'No sign-in code was provided.',
-  code_expired: 'This sign-in link has expired or already been used. Please return to the dashboard and click "Visit Site" again.',
-  platform_unreachable: 'We could not reach the main platform. Please try again in a moment.',
-  platform_bad_response: 'The platform returned an unexpected response. Please try again.',
-  no_tokens: 'The sign-in link did not contain any credentials.',
-  no_refresh_token: 'The sign-in link is missing a refresh token. Please return to the dashboard and click "Visit Site" again.',
-  no_access_token: 'Could not obtain a valid session token.',
-  session_invalid: 'Your account is not recognized on this organization. Please sign in directly.',
-  user_not_in_tenant: 'Your account is not a member of this organization. Please sign in directly.',
-  backend_unreachable: 'We could not reach the backend. Please try again.',
-  bad_origin: 'This request was rejected by the server.',
-  bad_content_type: 'This request was rejected by the server.',
-  unexpected: 'Something unexpected went wrong. Please try again.',
+  missing_code: 'Код для входа не указан.',
+  code_expired: 'Ссылка для входа истекла или уже использована. Вернитесь в панель управления и снова нажмите «Открыть сайт».',
+  platform_unreachable: 'Не удалось связаться с основной платформой. Попробуйте ещё раз через некоторое время.',
+  platform_bad_response: 'Платформа вернула неожиданный ответ. Попробуйте ещё раз.',
+  no_tokens: 'В ссылке для входа нет данных для авторизации.',
+  no_refresh_token: 'В ссылке для входа отсутствует refresh-токен. Вернитесь в панель управления и снова нажмите «Открыть сайт».',
+  no_access_token: 'Не удалось получить действительный токен сессии.',
+  session_invalid: 'Ваш аккаунт не найден в этой организации. Выполните вход напрямую.',
+  user_not_in_tenant: 'Ваш аккаунт не состоит в этой организации. Выполните вход напрямую.',
+  backend_unreachable: 'Не удалось связаться с сервером. Попробуйте ещё раз.',
+  bad_origin: 'Сервер отклонил этот запрос.',
+  bad_content_type: 'Сервер отклонил этот запрос.',
+  unexpected: 'Произошла непредвиденная ошибка. Попробуйте ещё раз.',
 }
 
 // Only allow same-origin relative paths. Rejects `//evil.com`, `https://evil.com`,
@@ -42,7 +42,7 @@ function TokenExchangeInner() {
       const redirect = sanitizeRedirect(searchParams.get('redirect'))
 
       if (!code) {
-        setError('Missing authentication code')
+        setError('Код авторизации не указан')
         return
       }
 
@@ -61,7 +61,7 @@ function TokenExchangeInner() {
           setError(
             (errCode && ERROR_MESSAGES[errCode]) ||
               body?.error ||
-              'Authentication failed. Please try logging in again.'
+              'Не удалось выполнить вход. Попробуйте войти ещё раз.'
           )
           return
         }
@@ -69,7 +69,7 @@ function TokenExchangeInner() {
         // Full page reload so AuthContext initializes fresh with the new cookies
         window.location.href = redirect
       } catch {
-        setError('Something went wrong. Please try again.')
+        setError('Что-то пошло не так. Попробуйте ещё раз.')
       }
     }
 
@@ -85,13 +85,13 @@ function TokenExchangeInner() {
               <AlertTriangle className="w-10 h-10 text-red-600" />
             </div>
           </div>
-          <h1 className="text-xl font-semibold text-gray-800 mb-2">Authentication Failed</h1>
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">Не удалось выполнить вход</h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <a
             href="/login"
             className="inline-block px-6 py-2.5 bg-black text-white rounded-lg hover:bg-black/90 transition-colors text-sm font-semibold"
           >
-            Go to Login
+            Вернуться ко входу
           </a>
         </div>
       </div>
@@ -104,8 +104,8 @@ function TokenExchangeInner() {
         <div className="flex justify-center mb-4">
           <Loader2 className="w-10 h-10 text-gray-600 animate-spin" />
         </div>
-        <h1 className="text-lg font-semibold text-gray-800 mb-1">Signing you in...</h1>
-        <p className="text-gray-500 text-sm">Please wait while we set up your session.</p>
+        <h1 className="text-lg font-semibold text-gray-800 mb-1">Выполняем вход…</h1>
+        <p className="text-gray-500 text-sm">Пожалуйста, подождите — мы подготавливаем вашу сессию.</p>
       </div>
     </div>
   )
