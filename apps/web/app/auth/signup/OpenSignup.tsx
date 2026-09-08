@@ -216,12 +216,12 @@ function OpenSignUpComponent({ org: propOrg }: OpenSignUpComponentProps = {}) {
                 className="text-xs font-semibold text-green-800 hover:underline disabled:opacity-50 text-left w-fit"
               >
                 {resendState === 'sending'
-                  ? t('common.loading', { defaultValue: 'Sending…' })
-                  : t('auth.resend_verification', { defaultValue: "Didn't get it? Resend email" })}
+                  ? t('common.loading', { defaultValue: 'Отправляем…' })
+                  : t('auth.resend_verification', { defaultValue: 'Не получили письмо? Отправить ещё раз' })}
               </button>
             )}
             {resendState === 'error' && (
-              <p className="text-xs text-red-500">{t('auth.resend_verification_failed', { defaultValue: 'Could not resend. Please try again shortly.' })}</p>
+              <p className="text-xs text-red-500">{t('auth.resend_verification_failed', { defaultValue: 'Не удалось отправить письмо. Попробуйте ещё раз через некоторое время.' })}</p>
             )}
             <hr className="border-green-100" />
             <Link className="flex items-center gap-2 text-sm font-medium hover:underline" href="/login">

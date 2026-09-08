@@ -55,7 +55,7 @@ function ForgotPasswordClient({ org }: ForgotPasswordClientProps) {
             try {
                 // Bot check before we ask the backend to email a reset link.
                 if (!(await verifyTurnstileToken(turnstileToken))) {
-                    setError(t('auth.turnstile_failed', { defaultValue: 'Verification failed. Please try again.' }))
+                    setError(t('auth.turnstile_failed', { defaultValue: 'Проверка не пройдена. Попробуйте ещё раз.' }))
                     setShowMessage(true)
                     turnstileRef.current?.reset()
                     return

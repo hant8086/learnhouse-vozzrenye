@@ -25,19 +25,19 @@ export function AuthFooter({ className = '' }: { className?: string }) {
   return (
     <div className={`pb-8 pt-6 text-center px-6 ${className}`}>
       <p className="text-[13px] text-black/30 font-medium">
-        {t('auth.terms_text', { defaultValue: "By continuing, you agree to Vozzrenye's" })}{' '}
+        {t('auth.terms_text', { defaultValue: 'Продолжая, вы соглашаетесь с условиями Vozzrenye' })}{' '}
         <Link
           href={TERMS_URL}
           className="text-black/50 hover:text-black/70 transition-colors"
         >
-          {t('auth.terms_of_service', { defaultValue: 'Terms of Service' })}
+          {t('auth.terms_of_service', { defaultValue: 'Условиями использования' })}
         </Link>{' '}
-        {t('auth.and', { defaultValue: 'and' })}{' '}
+        {t('auth.and', { defaultValue: 'и' })}{' '}
         <Link
           href={PRIVACY_URL}
           className="text-black/50 hover:text-black/70 transition-colors"
         >
-          {t('auth.privacy_policy', { defaultValue: 'Privacy Policy' })}
+          {t('auth.privacy_policy', { defaultValue: 'Политикой конфиденциальности' })}
         </Link>
         .
       </p>

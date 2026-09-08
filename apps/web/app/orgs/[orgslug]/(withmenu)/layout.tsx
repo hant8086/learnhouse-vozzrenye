@@ -17,6 +17,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { usePlan } from '@components/Hooks/usePlan'
 import { getGoogleFontUrl, DEFAULT_FONT } from '@/lib/fonts'
 import StaticLegalFooter from '@components/Footers/StaticLegalFooter'
+import { getLandingFooterLinks, normalizeLandingUrl } from '@/lib/landing/footer'
 
 // Helper to convert hex to rgba
 const hexToRgba = (hex: string, alpha: number): string => {
@@ -34,23 +35,30 @@ function OrgFooter() {
   const watermarkConfig = org?.config?.config?.customization?.general?.watermark ?? org?.config?.config?.general?.watermark
   const isFree = plan === 'free'
   const showWatermark = isFree || watermarkConfig !== false
+  const landing = org?.config?.config?.customization?.landing || org?.config?.config?.landing
+  const footerLinks = getLandingFooterLinks(landing)
 
   return (
-    <footer className="w-full py-8 mt-12">
-      <div className="flex flex-col items-center justify-center space-y-4">
-        {footerText && <p className="text-sm text-gray-500">{footerText}</p>}
-        {showWatermark && (
-          <Link href="https://vozzrenye.pro" target="_blank" rel="noopener noreferrer">
-            <Image
-              src="/lrn.svg"
-              alt="Воззрение"
-              width={24}
-              height={24}
-              style={{ height: 'auto' }}
-              className="opacity-15 hover:opacity-40 transition-opacity duration-300 cursor-pointer"
-            />
-          </Link>
-        )}
+    <footer className="mt-12 w-full border-t border-neutral-200/70 py-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          {footerText && <p className="text-sm text-gray-500">{footerText}</p>}
+          {showWatermark && (
+            <Link href="https://vozzrenye.pro" target="_blank" rel="noopener noreferrer" aria-label="Воззрение">
+              <Image src="/lrn.svg" alt="Воззрение" width={24} height={24} style={{ height: 'auto' }} className="opacity-15 hover:opacity-40 transition-opacity duration-300 cursor-pointer" />
+            </Link>
+          )}
+        </div>
+        <nav aria-label="Меню футера" className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium text-neutral-600">
+          {footerLinks.map((link, index) => {
+            const href = normalizeLandingUrl(link.href)
+            return href ? (
+              <a key={`${link.label}-${index}`} href={href} className="transition-colors hover:text-neutral-950">{link.label}</a>
+            ) : (
+              <span key={`${link.label}-${index}`} aria-disabled="true" className="cursor-default text-neutral-400">{link.label}</span>
+            )
+          })}
+        </nav>
       </div>
     </footer>
   )

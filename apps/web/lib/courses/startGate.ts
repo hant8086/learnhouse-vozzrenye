@@ -22,7 +22,7 @@ export type CourseStartAction =
   | { kind: 'login'; returnPath: string }
   | { kind: 'offer'; offer: PublicOffer }
   | { kind: 'unavailable' }
-  | { kind: 'leave' }
+  | { kind: 'continue' }
   | { kind: 'start' }
 
 /**
@@ -66,5 +66,25 @@ export function getCourseStartAction(input: {
     return input.offer ? { kind: 'offer', offer: input.offer } : { kind: 'unavailable' }
   }
 
-  return input.isStarted ? { kind: 'leave' } : { kind: 'start' }
+  return input.isStarted ? { kind: 'continue' } : { kind: 'start' }
+}
+
+/** Return the next incomplete activity in the same order shown by the course. */
+export function getCourseResumeActivity(course: {
+  chapters?: Array<{ activities?: Array<{ activity_uuid?: string; id?: string | number }> }>
+}, run?: { steps?: Array<{ activity_id?: string | number; complete?: boolean }> | null } | null): string | null {
+  const activities = (course.chapters || []).flatMap((chapter) => chapter.activities || [])
+  if (!activities.length) return null
+  const completed = new Set(
+    (run?.steps || [])
+      .filter((step) => step.complete)
+      .map((step) => String(step.activity_id).replace(/^activity_/, '')),
+  )
+  const next = activities.find((activity) => {
+    const ids = [activity.activity_uuid, activity.id]
+      .filter((id): id is string | number => id !== undefined && id !== null)
+      .map((id) => String(id).replace(/^activity_/, ''))
+    return ids.length > 0 && ids.every((id) => !completed.has(id))
+  }) || activities[0]
+  return next.activity_uuid?.replace(/^activity_/, '') || null
 }

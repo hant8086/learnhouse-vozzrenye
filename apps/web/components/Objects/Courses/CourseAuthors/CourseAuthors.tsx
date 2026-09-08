@@ -52,16 +52,15 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
   const displayedNames = authors.slice(0, 2)
   const remainingCount = Math.max(0, authors.length - 3)
   
-  // Consistent sizes for both avatars and badge
-  const avatarSize = isMobile ? 72 : 86
-  const borderSize = "border-4"
+  // Keep the identity row useful without letting it consume the whole mobile card.
+  const avatarSize = isMobile ? 36 : 86
+  const borderSize = isMobile ? "border-2" : "border-4"
 
   return (
-    <div className="flex flex-col items-center space-y-4 px-2 py-2">
-      <div className="text-[12px] text-neutral-400 font-semibold self-start">{t('courses.authors_and_updates')} </div>
+    <div className={`flex ${isMobile ? 'items-start gap-3 px-0 py-0' : 'flex-col items-center space-y-4 px-2 py-2'}`}>
+      <div className={`text-[12px] text-neutral-400 font-semibold ${isMobile ? 'sr-only' : 'self-start'}`}>{t('courses.authors_and_updates')}</div>
       
-      {/* Avatars row */}
-      <div className="flex justify-center -space-x-6 relative">
+      <div className={`flex ${isMobile ? 'shrink-0 -space-x-2' : 'justify-center -space-x-6'} relative`}>
         {displayedAvatars.map((author, index) => (
           <div
             key={author.user.user_uuid}
@@ -87,7 +86,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
             style={{ zIndex: 0 }}
           >
             <div 
-              className="flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full border-4 border-white shadow-sm"
+              className={`flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full ${isMobile ? 'border-2' : 'border-4'} border-white shadow-sm`}
               style={{ 
                 width: `${avatarSize}px`, 
                 height: `${avatarSize}px`,
@@ -100,9 +99,8 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
         )}
       </div>
 
-      {/* Names row - improved display logic */}
-      <div className="text-center mt-2">
-        <div className="text-sm font-medium text-neutral-800">
+      <div className={`${isMobile ? 'min-w-0 flex-1 text-left' : 'mt-2 text-center'}`}>
+        <div className={`${isMobile ? 'truncate text-sm' : 'text-sm'} font-medium text-neutral-800`}>
           {authors.length === 1 ? (
             <span>
               {authors[0].user.first_name && authors[0].user.last_name
@@ -127,7 +125,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
             </>
           )}
         </div>
-        <div className="text-xs text-neutral-500 mt-0.5">
+        <div className={`text-xs text-neutral-500 mt-0.5 ${isMobile ? 'hidden' : ''}`}>
           {authors.length === 1 ? (
             <span>@{authors[0].user.username}</span>
           ) : (
@@ -162,8 +160,8 @@ const UpdatesSection = () => {
   })
 
   return (
-    <div className="mt-2 pt-2">
-      <div className="flex justify-between items-center mb-4">
+    <div className="mt-1 pt-1 sm:mt-2 sm:pt-2">
+      <div className="flex justify-between items-center mb-2 sm:mb-4">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             <Rss size={14} className="text-neutral-400" />
@@ -424,4 +422,4 @@ const CourseAuthors = ({ authors }: CourseAuthorsProps) => {
   )
 }
 
-export default CourseAuthors 
+export default CourseAuthors
