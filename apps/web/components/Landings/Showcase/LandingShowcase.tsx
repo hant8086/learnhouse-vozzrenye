@@ -57,7 +57,7 @@ function LandingShowcase({ section, orgslug }: LandingShowcaseProps) {
     : getUriWithOrg(orgslug, isRelativeHref ? showcase.offer.ctaHref : '/courses')
 
   return (
-    <section className="relative mx-auto w-full max-w-(--breakpoint-2xl) overflow-hidden px-4 py-10 sm:px-6 md:py-16 lg:px-16">
+    <section className="vz-home-section relative overflow-hidden">
       <div aria-hidden className="pointer-events-none absolute -right-32 -top-40 h-[26rem] w-[26rem] rounded-full bg-[var(--color-signal)] opacity-[.07] blur-3xl" />
 
       <RevealGroup className="relative">
@@ -128,7 +128,7 @@ function LandingShowcase({ section, orgslug }: LandingShowcaseProps) {
               <p className="mt-5 max-w-2xl text-lg leading-relaxed text-gray-600">{showcase.coursesDescription}</p>
             )}
 
-            <RevealGroup className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <RevealGroup className="vz-course-grid mt-8">
               {selectedCourses.map((course: any) => (
                 <RevealItem key={course.course_uuid} className="flex w-full justify-center">
                   <CourseThumbnailLanding course={course} orgslug={orgslug} />
@@ -140,17 +140,17 @@ function LandingShowcase({ section, orgslug }: LandingShowcaseProps) {
 
         {(showcase.offer.heading || showcase.offer.description) && (
           <RevealItem className="mt-20">
-            <div className="relative overflow-hidden bg-[#111410] p-8 text-white sm:p-12">
-              <div aria-hidden className="absolute inset-y-0 right-0 hidden w-1/2 bg-[radial-gradient(circle_at_75%_50%,rgba(238,162,47,.22),transparent_60%)] lg:block" />
+            <div className="vz-showcase-offer relative overflow-hidden">
+              <div aria-hidden className="vz-offer-grid absolute inset-y-0 right-0 hidden w-1/2 lg:block" />
 
               <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                 <div>
-                  <p className="mono-label !text-white/55">{showcase.offer.eyebrow}</p>
+                  <p className="mono-label">{showcase.offer.eyebrow}</p>
                   <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">{showcase.offer.heading}</h2>
-                  <p className="mt-4 max-w-2xl text-white/70">{showcase.offer.description}</p>
+                  <p className="mt-4 max-w-2xl text-muted-foreground">{showcase.offer.description}</p>
 
                   {showcase.offer.highlights.length > 0 && (
-                    <ul className="mt-7 flex flex-wrap gap-x-7 gap-y-3 text-sm text-white/80">
+                    <ul className="mt-7 flex flex-wrap gap-x-7 gap-y-3 text-sm text-muted-foreground">
                       {showcase.offer.highlights.map((highlight) => (
                         <li key={highlight} className="flex items-center gap-3">
                           <span className="h-px w-6 bg-[var(--color-signal)]" />
@@ -164,7 +164,7 @@ function LandingShowcase({ section, orgslug }: LandingShowcaseProps) {
                 {showcase.offer.ctaLabel && (
                   <a
                     href={offerHref}
-                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--color-signal)] px-6 font-semibold text-[#111410] transition hover:brightness-110"
+                    className="vz-primary"
                   >
                     {showcase.offer.ctaLabel}
                   </a>

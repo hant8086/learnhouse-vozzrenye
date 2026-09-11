@@ -40,6 +40,7 @@ import {
   TooltipTrigger,
 } from '@components/ui/tooltip'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
+import { Menu, X } from 'lucide-react'
 import ThemeToggle from '@components/Objects/Theme/ThemeToggle'
 
 export const OrgMenu = (props: any) => {
@@ -47,9 +48,13 @@ export const OrgMenu = (props: any) => {
   const session = useLHSession() as any;
   const _access_token = session?.data?.tokens?.access_token;
   const org = useOrg() as any;
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false)
+  const [openMenuPath, setOpenMenuPath] = React.useState<string | null>(null)
+  const menuToggleRef = React.useRef<HTMLButtonElement>(null)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const pathname = usePathname()
+  const isMenuOpen = openMenuPath !== null && openMenuPath === pathname
+  // A route change closes the disclosure, including browser back/forward.
+  if (openMenuPath !== null && openMenuPath !== pathname) setOpenMenuPath(null)
   const { t } = useTranslation()
   const { rights } = useAdminStatus()
   const { isVisible: isJoinBannerVisible } = useJoinBannerVisible()
@@ -122,8 +127,15 @@ export const OrgMenu = (props: any) => {
     };
   }, [pathname]);
 
+  useEffect(() => {
+    if (!isMenuOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setOpenMenuPath(null); menuToggleRef.current?.focus() } }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [isMenuOpen])
+
   function toggleMenu() {
-    setIsMenuOpen(!isMenuOpen)
+    setOpenMenuPath(isMenuOpen ? null : pathname)
   }
 
   // Only hide menu if we're in an activity page and focus mode is enabled
@@ -140,15 +152,15 @@ export const OrgMenu = (props: any) => {
           directly here left the bar permanently light regardless of theme. */}
       <nav
         aria-label="Top navigation"
-        className="backdrop-blur-lg fixed left-0 right-0 h-[60px] bg-white/90 nice-shadow"
+        className="vz-nav backdrop-blur-lg fixed left-0 right-0 h-[60px] bg-white/90 nice-shadow"
         style={{
           zIndex: 'var(--z-nav)',
           top: topOffset
         }}
       >
         <div className="flex items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-8 h-full">
-          <div className="flex items-center space-x-5 md:w-auto w-full">
-            <div className="logo flex md:w-auto w-full justify-start">
+          <div className="flex items-center space-x-5 lg:w-auto w-full">
+            <div className="logo flex lg:w-auto w-full justify-start">
               <Link href={getUriWithOrg(orgslug, '/')} aria-label={org?.name || 'Хранитель Воззрения'}>
                 <div className="flex w-auto h-9 items-center gap-2.5 m-auto py-1 justify-center">
                   {/* Theme-paired mark: `lrn.svg` on light backgrounds,
@@ -180,12 +192,12 @@ export const OrgMenu = (props: any) => {
                   {org?.name && (
                     <span className="flex items-center">
                       <span
-                        className={`text-[13px] sm:text-[15px] font-semibold tracking-tight whitespace-nowrap vz-brand-text`}
+                        className={`vz-wordmark text-[13px] sm:text-[15px] font-semibold tracking-tight whitespace-nowrap vz-brand-text`}
                       >
                         {org.name}
                       </span>
                       <span
-                        className="mx-3 h-5 w-px shrink-0"
+                        className="mx-3 hidden lg:block h-5 w-px shrink-0"
                         style={{ backgroundColor: 'var(--color-line-strong)' }}
                         aria-hidden="true"
                       />
@@ -194,20 +206,20 @@ export const OrgMenu = (props: any) => {
                 </div>
               </Link>
             </div>
-            <div className="hidden md:flex">
+            <div className="hidden lg:flex">
               <MenuLinks orgslug={orgslug} primaryColor={primaryColor} />
             </div>
           </div>
 
           {/* Search Section */}
-          <div className="hidden md:flex flex-1 justify-center max-w-xs px-4">
+          <div className="hidden lg:flex flex-1 min-w-0 justify-center max-w-xs px-4">
             <SearchBar orgslug={orgslug} className="w-full" primaryColor={primaryColor} />
           </div>
 
           <div className="flex items-center space-x-2">
             {/* Progress / Trail */}
             <AuthenticatedClientElement checkMethod="authentication">
-              <div className="hidden md:flex">
+              <div className="hidden lg:flex">
                 <TooltipProvider delayDuration={0}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -229,7 +241,7 @@ export const OrgMenu = (props: any) => {
             {/* AI Copilot */}
             {rf?.ai?.enabled && config?.admin_toggles?.ai?.copilot_enabled !== false && (
               <AuthenticatedClientElement checkMethod="authentication">
-                <div className="hidden md:flex">
+                <div className="hidden lg:flex">
                   <CopilotMenuButton
                     orgslug={orgslug}
                     iconBtnClass={colors.iconBtn}
@@ -243,7 +255,7 @@ export const OrgMenu = (props: any) => {
             )}
             {/* Dashboard Dropdown - Only visible to admins */}
             {session?.status === 'authenticated' && rights?.dashboard?.action_access && (
-              <div className="hidden md:flex">
+              <div className="hidden lg:flex">
                 <DropdownMenu>
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
@@ -288,37 +300,36 @@ export const OrgMenu = (props: any) => {
               </div>
             )}
 
-            <div className="hidden md:flex">
+            <div className="hidden lg:flex">
               <HeaderProfileBox primaryColor={primaryColor} />
             </div>
-            <div className="md:hidden">
+            <div className="lg:hidden">
               <ThemeToggle />
             </div>
             <button
-              className={`md:hidden focus:outline-hidden ${colors.text}`}
+              className={`vz-nav-toggle lg:hidden ${colors.text}`}
+              ref={menuToggleRef}
+              aria-label={t('design.menu')}
+              aria-expanded={isMenuOpen}
+              aria-controls="learner-mobile-menu"
               onClick={toggleMenu}
             >
-              {isMenuOpen ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
+              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
           <div className="absolute inset-x-0 bottom-0 vz-hairline vz-hairline-signal" aria-hidden="true" />
         </div>
       </nav>
       <div
-        className={`fixed inset-x-0 bg-white/80 backdrop-blur-lg md:hidden shadow-lg transition-all duration-300 ease-in-out ${
+        id="learner-mobile-menu"
+        inert={!isMenuOpen}
+        className={`vz-nav-mobile fixed inset-x-0 bg-white/80 backdrop-blur-lg lg:hidden shadow-lg transition-all duration-300 ease-in-out ${
           isMenuOpen ? 'opacity-100' : '-top-full opacity-0'
         }`}
         style={{
           zIndex: 'var(--z-nav-menu)',
-          top: isMenuOpen ? topOffset + 60 : undefined
+          top: isMenuOpen ? topOffset + 60 : undefined,
+          maxHeight: `calc(100dvh - ${topOffset + 60}px)`
         }}
       >
         <div className="flex flex-col px-4 py-3 space-y-4 justify-center items-center">

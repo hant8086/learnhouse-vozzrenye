@@ -177,7 +177,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
       className={`group relative flex w-full flex-col overflow-hidden ${
         isDashboard
           ? 'bg-white rounded-xl nice-shadow transition-all duration-300 hover:scale-[1.01]'
-          : 'bg-white vz-frame vz-frame-interactive'
+          : 'vz-course-card bg-card'
       } ${isSelected ? 'ring-2 ring-black ring-offset-2' : ''}`}
     >
       {/* Selection checkbox - visible on hover or when selected (dashboard only) */}
@@ -207,7 +207,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
         isDashboard={isDashboard}
       />
 
-      <Link prefetch={false} href={courseLink} onClick={handleCardOpen} className="block relative aspect-[3/2] overflow-hidden bg-gray-50">
+      <Link prefetch={false} href={courseLink} onClick={handleCardOpen} className={`vz-course-cover block relative ${isDashboard ? 'aspect-[3/2]' : 'aspect-[16/9]'} overflow-hidden bg-gray-50`}>
         <img
           src={thumbnailImage}
           alt={course.name}
@@ -230,13 +230,13 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
         )}
       </Link>
 
-      <div className="p-3 flex flex-col space-y-1.5">
+      <div className="vz-course-body p-3 flex flex-col space-y-1.5">
         <div className="flex items-start justify-between">
           <Link
             prefetch={false}
             href={courseLink}
             onClick={handleCardOpen}
-            className="text-base font-bold text-gray-900 leading-tight hover:text-black transition-colors line-clamp-1"
+            className="vz-course-title text-base font-bold text-gray-900 leading-tight hover:text-black transition-colors line-clamp-2"
           >
             {course.name}
           </Link>
@@ -248,13 +248,13 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
         </div>
         
         {course.description && (
-          <p className="text-[11px] text-gray-500 line-clamp-2 min-h-[1.5rem]">
+          <p className="vz-course-description text-sm text-gray-500 line-clamp-2">
             {course.description}
           </p>
         )}
 
         {courseTags.length > 0 && (
-          <div className="flex flex-wrap gap-1" aria-label={t('courses.tags')}>
+          <div className="vz-course-tags flex flex-wrap gap-1" aria-label={t('courses.tags')}>
             {courseTags.map((tag) => (
                 <span key={tag} style={getTagColorStyle(tag, tagColors)} className="rounded-full border px-2 py-0.5 text-[9px] font-medium">
                 {tag}
@@ -263,7 +263,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
           </div>
         )}
 
-        <div className="pt-1.5 flex items-center justify-between border-t border-gray-100">
+        <div className="vz-course-meta pt-1.5 flex items-center justify-between border-t border-gray-100">
           <div className="flex items-center gap-2">
             {displayedAuthors.length > 0 && (
               <div className="flex -space-x-2 items-center">
@@ -295,7 +295,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
             )}
             
             {course.update_date && (
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+              <span className="vz-course-date">
                 {new Date(course.update_date).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })}
               </span>
             )}
@@ -306,7 +306,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
               prefetch={false}
               href={courseLink}
               onClick={handleCardOpen}
-              className="inline-flex items-center gap-1 text-[10px] font-bold bg-gray-900 hover:bg-gray-800 text-white px-2.5 py-1.5 rounded-lg transition-colors uppercase tracking-wider"
+              className="vz-course-cta"
             >
               <Lock className="w-3 h-3" />
               {t('courses.pro', 'Pro')}
@@ -316,7 +316,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
               prefetch={false}
               href={courseLink}
               onClick={handleCardOpen}
-              className="text-[10px] font-bold text-gray-400 hover:text-gray-900 transition-colors uppercase tracking-wider"
+              className="vz-course-cta"
             >
               {t('courses.start_learning')}
             </Link>

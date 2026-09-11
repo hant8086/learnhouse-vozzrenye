@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getUriWithOrg } from '@services/config/config'
 import { getOffersByResource } from '@services/payments/offers'
-import { UserPen, ClockIcon, ArrowRight, BookOpen } from 'lucide-react'
+import { UserPen, ClockIcon, ArrowRight } from 'lucide-react'
 import { applyForContributor } from '@services/courses/courses'
 import toast from 'react-hot-toast'
 import { useContributorStatus } from '../../../../hooks/useContributorStatus'
@@ -273,129 +273,43 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
   };
 
   const renderProgressSection = () => {
-    const totalActivities = course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0;
-
-    // Find the correct run using the cleaned UUID
-    const run = trailData?.runs?.find(
-      (run: any) => {
-        const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
-        return cleanRunCourseUuid === cleanCourseUuid;
-      }
-    );
-
-    const completedActivities = run?.steps?.filter((step: any) => step.complete)?.length || 0;
-    const progressPercentage = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
-
-    if (!isStarted) {
-      return (
-        <div className="relative bg-white nice-shadow rounded-lg overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.05]"
-            style={{
-              backgroundImage: 'radial-gradient(circle at center, #101010 1px, transparent 1px)',
-              backgroundSize: '12px 12px'
-            }}
-          />
-          <div className="relative p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-16 h-16">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle
-                        cx="32"
-                        cy="32"
-                        r="28"
-                        stroke="#e5e7eb"
-                        strokeWidth="6"
-                        fill="none"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <BookOpen className="w-6 h-6 text-neutral-400" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900">{t('courses.ready_to_begin')}</div>
-                    <div className="text-sm text-gray-500">
-                      {t('courses.start_learning_journey', { count: totalActivities })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
+    const totalActivities = course.chapters?.reduce((sum, chapter) => sum + chapter.activities.length, 0) || 0
+    // Existing trail contract: only completed steps contribute to this display.
+    const run = trailData?.runs?.find((item: { course?: { course_uuid?: string } }) =>
+      item.course?.course_uuid?.replace('course_', '') === cleanCourseUuid)
+    const completedActivities = run?.steps?.filter((step: { complete: boolean }) => step.complete)?.length || 0
+    const progressPercentage = totalActivities > 0 ? Math.min(100, Math.round(completedActivities / totalActivities * 100)) : 0
 
     return (
-        <div className="relative bg-white nice-shadow rounded-lg overflow-hidden">
-          <div
-          className="absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at center, #000 1px, transparent 1px)',
-            backgroundSize: '24px 24px'
-          }}
-        />
-        <div className="relative p-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="32"
-                      cy="32"
-                      r="28"
-                      stroke="#e5e7eb"
-                      strokeWidth="6"
-                      fill="none"
-                    />
-                    <circle
-                      cx="32"
-                      cy="32"
-                      r="28"
-                      stroke="#10b981"
-                      strokeWidth="6"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeDasharray={2 * Math.PI * 28}
-                      strokeDashoffset={2 * Math.PI * 28 * (1 - (totalActivities > 0 ? completedActivities / totalActivities : 0))}
-                      className="transition-all duration-500 ease-out"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-bold text-gray-800">
-                      {progressPercentage}%
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    track(AnalyticsEvent.CourseProgressViewed, {
-                      course_uuid: cleanCourseUuid,
-                      completed_activities: completedActivities,
-                      total_activities: totalActivities,
-                      progress_percentage: progressPercentage,
-                    })
-                    setIsProgressOpen(true)
-                  }}
-                  aria-label={t('courses.view_course_progress', { completed: completedActivities, total: totalActivities })}
-                  className="flex-1 text-left hover:bg-neutral-50/50 p-2 rounded-lg transition-colors"
-                >
-                  <div className="text-sm font-medium text-gray-900">{t('courses.course_progress')}</div>
-                  <div className="text-sm text-gray-500">
-                    {t('courses.completed_of', { completed: completedActivities, total: totalActivities })}
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
+      <div className="vz-access-progress">
+        <div className="flex items-center justify-between gap-3">
+          <strong>{isStarted ? t('courses.course_progress') : t('courses.ready_to_begin')}</strong>
+          {isStarted && <span className="font-mono text-sm text-muted-foreground">{progressPercentage}%</span>}
         </div>
+        {isStarted ? (
+          <>
+            <div className="vz-progress-track" role="progressbar" aria-label={t('courses.course_progress')} aria-valuenow={progressPercentage} aria-valuemin={0} aria-valuemax={100}>
+              <span style={{ width: `${progressPercentage}%` }} />
+            </div>
+            <button
+              type="button"
+              className="text-left text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                track(AnalyticsEvent.CourseProgressViewed, {
+                  course_uuid: cleanCourseUuid, completed_activities: completedActivities,
+                  total_activities: totalActivities, progress_percentage: progressPercentage,
+                })
+                setIsProgressOpen(true)
+              }}
+              aria-label={t('courses.view_course_progress', { completed: completedActivities, total: totalActivities })}
+            >{t('courses.completed_of', { completed: completedActivities, total: totalActivities })}</button>
+          </>
+        ) : (
+          <p className="text-sm leading-relaxed text-muted-foreground">{t('courses.start_learning_journey', { count: totalActivities })}</p>
+        )}
       </div>
-    );
-  };
+    )
+  }
 
   if (isLoading) {
     return <div className="animate-pulse h-20 bg-gray-100 rounded-lg nice-shadow" />
@@ -403,14 +317,14 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
 
   if (courseAction.kind === 'unavailable') {
     return (
-      <div className="bg-white shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4">
+      <div className="vz-access-panel">
         <p className="text-sm text-neutral-600">{t('courses.access_unavailable', 'Access unavailable')}</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4">
+    <div className="vz-access-panel">
       <div className="space-y-4">
         {/* Progress Section */}
         {renderProgressSection()}
@@ -420,7 +334,7 @@ function CoursesActions({ courseuuid, orgslug, course, trailData }: CourseAction
           onClick={handleCourseAction}
           disabled={isActionLoading}
           aria-label={isStarted ? t('courses.continue_course', 'Продолжить курс') : t('courses.start_course')}
-          className="w-full py-3 rounded-lg nice-shadow font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700"
+          className="vz-primary w-full"
         >
           {isActionLoading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

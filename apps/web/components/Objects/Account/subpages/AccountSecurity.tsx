@@ -594,7 +594,7 @@ function TwoFactorAuthSection() {
             type="button"
             onClick={finishCodes}
             disabled={!codesAcknowledged || busy}
-            className="bg-black text-white hover:bg-black/90"
+            className="vz-primary"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             {t('user.settings.security.mfa.done', { defaultValue: 'Done' })}
@@ -649,7 +649,7 @@ function TwoFactorAuthSection() {
             type="button"
             onClick={() => runSetup(password)}
             disabled={busy || !password}
-            className="bg-black text-white hover:bg-black/90"
+            className="vz-primary"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             {t('user.settings.security.mfa.continue', { defaultValue: 'Continue' })}
@@ -744,7 +744,7 @@ function TwoFactorAuthSection() {
               setStep('verify')
             }}
             disabled={busy || !secret}
-            className="bg-black text-white hover:bg-black/90"
+            className="vz-primary"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             {t('user.settings.security.mfa.continue', { defaultValue: 'Continue' })}
@@ -783,7 +783,7 @@ function TwoFactorAuthSection() {
             type="button"
             onClick={confirmEnrollment}
             disabled={busy || code.length !== 6 || retryAfter > 0}
-            className="bg-black text-white hover:bg-black/90"
+            className="vz-primary"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             {retryAfter > 0
@@ -918,7 +918,7 @@ function TwoFactorAuthSection() {
                 type="button"
                 onClick={regenerateCodes}
                 disabled={busy || code.length !== 6 || retryAfter > 0}
-                className="bg-black text-white hover:bg-black/90"
+                className="vz-primary"
               >
                 {busy && <Loader2 size={14} className="animate-spin" />}
                 {retryAfter > 0
@@ -1030,7 +1030,7 @@ function TwoFactorAuthSection() {
           type="button"
           onClick={startEnrollment}
           disabled={busy}
-          className="bg-black text-white hover:bg-black/90 shrink-0"
+          className="vz-primary shrink-0"
         >
           {busy && <Loader2 size={14} className="animate-spin" />}
           {t('user.settings.security.mfa.enable', { defaultValue: 'Enable' })}
@@ -1209,7 +1209,7 @@ function AccountSecurity() {
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="bg-black text-white hover:bg-black/90"
+                    className="vz-primary"
                   >
                     {isSubmitting ? t('user.settings.password.updating') : t('user.settings.password.update_password')}
                   </Button>

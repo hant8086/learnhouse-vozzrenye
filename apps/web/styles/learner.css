@@ -1,0 +1,345 @@
+/* Vozzrenye learner system. Semantic tokens also reach Radix portals.
+   Legacy palette aliases are scoped to learner/auth chrome, not authoring. */
+:root {
+  --vz-page: #f5f7f8;
+  --vz-surface: #ffffff;
+  --vz-raised: #edf1f3;
+  --vz-text: #17212a;
+  --vz-muted: #566673;
+  --vz-line: #dce3e8;
+  --vz-line-strong: #b7c5cf;
+  --vz-signal: #087f8c;
+  --vz-signal-soft: #e0f2f3;
+  --background: 200 18% 97%;
+  --foreground: 208 29% 13%;
+  --card: 0 0% 100%;
+  --card-foreground: 208 29% 13%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 208 29% 13%;
+  --primary: 185.91 89.19% 29.02%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 200 20% 94%;
+  --secondary-foreground: 208 29% 13%;
+  --muted: 200 20% 94%;
+  --muted-foreground: 205 15% 39%;
+  --accent: 184 44% 92%;
+  --accent-foreground: 186 89% 25%;
+  --border: 205 21% 89%;
+  --input: 205 20% 77%;
+  --ring: 185.91 89.19% 29.02%;
+  --radius: .625rem;
+}
+html.dark {
+  --vz-page: #101419;
+  --vz-surface: #171d24;
+  --vz-raised: #202932;
+  --vz-text: #e8eef3;
+  --vz-muted: #a8b7c5;
+  --vz-line: #303d49;
+  --vz-line-strong: #526777;
+  --vz-signal: #80d7df;
+  --vz-signal-soft: #18353b;
+  --background: 213 22% 8%;
+  --foreground: 207 31% 93%;
+  --card: 212 22% 12%;
+  --card-foreground: 207 31% 93%;
+  --popover: 212 22% 12%;
+  --popover-foreground: 207 31% 93%;
+  --primary: 185.05 59.75% 68.82%;
+  --primary-foreground: 204 36% 10%;
+  --secondary: 210 22% 16%;
+  --secondary-foreground: 207 31% 93%;
+  --muted: 210 22% 16%;
+  --muted-foreground: 207 20% 72%;
+  --accent: 190 42% 16%;
+  --accent-foreground: 185 60% 75%;
+  --border: 211 21% 24%;
+  --input: 205 18% 38%;
+  --ring: 185.05 59.75% 68.82%;
+}
+body { background: var(--vz-page); }
+:is(.vz-learner, .vz-auth) {
+  --color-paper: var(--vz-page);
+  --color-paper-bright: var(--vz-surface);
+  --color-paper-raised: var(--vz-surface);
+  --color-paper-deep: var(--vz-raised);
+  --color-ink: var(--vz-text);
+  --color-ink-soft: var(--vz-muted);
+  --color-ink-faint: var(--vz-muted);
+  --color-line: var(--vz-line);
+  --color-line-strong: var(--vz-line-strong);
+  --color-signal: var(--vz-signal);
+  --color-signal-dark: var(--vz-signal);
+  --color-signal-soft: var(--vz-signal-soft);
+  --radius-card: 1rem;
+  --radius-card-sm: .875rem;
+  --radius-control: .625rem;
+  --font-sans: var(--font-default), system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  min-height: 100dvh;
+  background: var(--vz-page);
+  color: var(--vz-text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.55;
+  letter-spacing: -.012em;
+}
+:is(.vz-learner, .vz-auth) :where(h1, h2, h3) { text-wrap: balance; letter-spacing: -.035em; }
+:is(.vz-learner, .vz-auth) :where(p) { text-wrap: pretty; }
+:is(.vz-learner, .vz-auth) :where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--vz-signal);
+  outline-offset: 4px;
+}
+html :is(.vz-learner, .vz-auth) .nice-shadow,
+html :is(.vz-learner, .vz-auth) .light-shadow { box-shadow: none; outline-color: var(--vz-line); }
+html :is(.vz-learner, .vz-auth) .vz-frame {
+  border: 1px solid var(--vz-line);
+  border-radius: .875rem;
+  background: var(--vz-surface);
+  box-shadow: none;
+  transform: none;
+}
+html :is(.vz-learner, .vz-auth) .vz-frame::before,
+html :is(.vz-learner, .vz-auth) .vz-frame::after { display: none; }
+html :is(.vz-learner, .vz-auth) .vz-frame-interactive:hover { transform: none; box-shadow: none; }
+html :is(.vz-learner, .vz-auth) .vz-brand-text { animation: none; background: none; color: var(--vz-text); filter: none; }
+html :is(.vz-learner, .vz-auth) .vz-hairline { background: var(--vz-line); }
+html :is(.vz-learner, .vz-auth) .mono-label { font-size: .75rem; letter-spacing: .065em; color: var(--vz-muted); }
+.vz-learner .vz-wrapper { max-width: 1280px; padding: 36px 40px 48px; letter-spacing: inherit; }
+.vz-page-heading { margin: 0; font-size: clamp(1.8rem, 3vw, 2.65rem); line-height: 1.15; font-weight: 600; }
+.vz-page-intro { max-width: 44rem; margin-top: 12px; color: var(--vz-muted); font-size: 1rem; }
+.vz-section-heading { font-size: clamp(1.3rem, 2vw, 1.65rem); font-weight: 600; line-height: 1.25; }
+.vz-section-title { display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px; }
+.vz-section-count { font-family: var(--font-mono); font-size: .8rem; color: var(--vz-muted); font-variant-numeric: tabular-nums; }
+.vz-primary, .vz-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 44px; border-radius: .625rem; padding: .65rem 1rem;
+  font-size: .875rem; font-weight: 600; line-height: 1.25; text-align: center;
+  text-decoration: none; transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+.vz-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border: 1px solid transparent; box-shadow: none; }
+.vz-primary:hover { background: color-mix(in srgb, hsl(var(--primary)), var(--vz-text) 10%); }
+.vz-primary:active, .vz-secondary:active { transform: translateY(1px); }
+.vz-primary:disabled { opacity: .55; cursor: not-allowed; }
+.vz-secondary { background: var(--vz-surface); color: var(--vz-text); border: 1px solid var(--vz-line); box-shadow: none; }
+.vz-secondary:hover { background: var(--vz-raised); border-color: var(--vz-line-strong); }
+.vz-field { border: 1px solid var(--vz-line-strong); border-radius: .625rem; background: var(--vz-surface); color: var(--vz-text); min-height: 44px; box-shadow: none; }
+.vz-field::placeholder { color: var(--vz-muted); }
+.vz-learner .vz-nav { background: color-mix(in srgb, var(--vz-surface) 94%, transparent); border-bottom: 1px solid var(--vz-line); box-shadow: none; }
+.vz-nav .vz-hairline-signal { display: none; }
+.vz-nav .vz-wordmark { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+.vz-nav-toggle { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: .625rem; }
+.vz-nav-mobile { background: var(--vz-surface); border-bottom: 1px solid var(--vz-line); max-height: calc(100dvh - 60px); overflow-y: auto; }
+.vz-skip { position: fixed; left: 16px; top: -100px; z-index: 400; padding: 12px 20px; background: var(--vz-surface); color: var(--vz-text); border-radius: 8px; }
+.vz-skip:focus { top: 12px; }
+.vz-catalog-header { display: flex; align-items: start; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+.vz-catalog-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 24px; margin-bottom: 28px; border-bottom: 1px solid var(--vz-line); }
+.vz-course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; }
+.vz-learner .vz-course-card {
+  position: relative; display: flex; width: 100%; height: 100%; min-width: 0; max-width: none;
+  margin: 0; overflow: hidden; flex-direction: column; border: 1px solid var(--vz-line);
+  border-radius: .875rem; background: var(--vz-surface); box-shadow: none; transform: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+.vz-learner .vz-course-card:hover, .vz-learner .vz-course-card:focus-within { border-color: var(--vz-line-strong); box-shadow: 0 6px 24px color-mix(in srgb, var(--vz-text) 5%, transparent); }
+.vz-course-card::before, .vz-course-card::after { display: none; }
+.vz-course-card .vz-course-cover { aspect-ratio: 16/9; overflow: hidden; background: var(--vz-raised); border-bottom: 1px solid var(--vz-line); border-radius: 0; }
+.vz-course-card .vz-course-cover img { width: 100%; height: 100%; object-fit: contain; transform: none; }
+.vz-course-card .vz-course-body { display: flex; flex-direction: column; flex: 1; padding: 22px; gap: 14px; }
+.vz-course-card .vz-course-body > * { margin-block: 0; }
+.vz-course-card .vz-course-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--vz-text); font-weight: 600; font-size: 1.125rem; line-height: 1.4; min-height: 3.15rem; letter-spacing: -.025em; }
+.vz-course-card .vz-course-description { font-size: .875rem; line-height: 1.6; color: var(--vz-muted); min-height: 2.8rem; -webkit-line-clamp: 2; }
+.vz-course-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.vz-course-tags > span { font-size: .75rem; line-height: 1.4; padding: 3px 8px; border-radius: 5px; font-weight: 500; }
+.vz-course-card .vz-course-meta { margin-top: auto; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border-top: 1px solid var(--vz-line); }
+.vz-course-date { font-size: .75rem; color: var(--vz-muted); font-weight: 400; letter-spacing: 0; text-transform: none; }
+.vz-course-card .vz-course-cta { font-size: .875rem; font-weight: 600; color: var(--vz-signal); text-transform: none; letter-spacing: 0; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; }
+.vz-course-cta:hover { text-decoration: underline; text-underline-offset: 4px; }
+.vz-course-hero { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; align-items: start; margin-top: 12px; }
+.vz-course-summary { min-width: 0; }
+.vz-course-hero .vz-course-media { aspect-ratio: 16/9; max-height: 410px; }
+.vz-course-hero .course_metadata_right { width: auto; min-width: 0; }
+.vz-course-about { font-size: 1.0625rem; line-height: 1.75; max-width: 68ch; color: var(--vz-muted); }
+.vz-course-section { margin-top: 40px; }
+.vz-course-section .vz-section-heading { margin-bottom: 20px; }
+.vz-curriculum { border: 1px solid var(--vz-line); border-radius: .875rem; overflow: hidden; background: var(--vz-surface); }
+.vz-chapter-toggle { width: 100%; display: flex; align-items: center; gap: 12px; padding: 20px; text-align: left; color: var(--vz-text); border-top: 1px solid var(--vz-line); background: transparent; }
+.vz-chapter-toggle:hover { background: var(--vz-raised); }
+.vz-curriculum > div:first-child .vz-chapter-toggle { border-top: 0; }
+.vz-curriculum .activity-container { border-top: 1px solid var(--vz-line); padding: 18px 22px; font-size: .9375rem; }
+.vz-curriculum a.activity-container:hover { background: var(--vz-signal-soft); }
+.vz-curriculum .activity-container p { overflow-wrap: anywhere; }
+.vz-access-panel { padding: 24px; border: 1px solid var(--vz-line); border-radius: .875rem; background: var(--vz-surface); }
+.vz-access-progress { display: grid; gap: 12px; margin-bottom: 20px; }
+.vz-access-progress strong { font-size: 1rem; font-weight: 600; }
+.vz-progress-track { height: 4px; border-radius: 2px; background: var(--vz-line); overflow: hidden; }
+.vz-progress-track > span { display: block; height: 100%; background: var(--vz-signal); border-radius: inherit; }
+.vz-learner .vz-reader { max-width: 1160px; margin-inline: auto; }
+.vz-reader .activity-info-section { padding: 20px 0 28px; }
+.vz-reader .vz-reader-course-name { font-size: 1rem; font-weight: 500; color: var(--vz-muted); }
+.vz-reader .vz-reader-title { font-size: clamp(1.6rem, 3vw, 2.35rem); font-weight: 600; line-height: 1.25; margin-block: 10px; }
+.vz-reader-page { padding: 0; border: 1px solid var(--vz-line); border-radius: .875rem; background: var(--vz-surface); }
+.vz-reader-page[data-reading="true"] { padding: clamp(24px, 4vw, 56px); }
+.vz-reader-page[data-reading="true"] :is(.ProseMirror, .tiptap, .markdown-body) { max-width: 70ch; margin-inline: auto; font-family: inherit; font-size: 1.0625rem; line-height: 1.8; color: var(--vz-text); }
+.vz-reader-page[data-reading="true"] :is(.ProseMirror, .tiptap, .markdown-body) p { line-height: inherit; }
+.vz-reader-actions { padding: 20px 0; border-top: 1px solid var(--vz-line); }
+.vz-focus { background: var(--vz-page) !important; color: var(--vz-text); }
+.vz-focus-bar { background: var(--vz-surface) !important; color: var(--vz-text); border-color: var(--vz-line) !important; }
+.vz-focus-bar :is(p, h1, span, svg) { color: inherit; }
+.vz-focus-content { max-width: 1040px; margin-inline: auto; }
+.vz-focus .vz-focus-button { background: var(--vz-raised); color: var(--vz-text); border-radius: .625rem; }
+.vz-focus .vz-focus-button svg { color: inherit; }
+.vz-focus-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.vz-focus-bottom button { min-width: 0; }
+.vz-focus-bottom .vz-focus-nav span { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vz-auth { min-height: 100dvh; height: auto; overflow: visible; }
+.vz-auth-content { min-height: 100dvh; overflow: visible; }
+.vz-auth-form-area { padding-top: 24px; padding-bottom: 24px; }
+.vz-auth .vz-frame { max-width: 460px; padding: 32px; }
+.vz-auth input { min-height: 46px; background: var(--vz-surface); color: var(--vz-text); border-color: var(--vz-line-strong); font-size: 1rem; }
+.vz-auth :is(button[type="submit"], .vz-auth-primary) { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 600; }
+.vz-auth :is(button[type="submit"], .vz-auth-primary):hover { background: color-mix(in srgb, hsl(var(--primary)), var(--vz-text) 10%); }
+.vz-auth-heading h1 { font-size: 2rem; font-weight: 600; line-height: 1.2; margin-top: 0; }
+.vz-auth-heading p { font-size: .9375rem; line-height: 1.65; color: var(--vz-muted); font-weight: 400; }
+.vz-auth-heading .mono-label { display: none; }
+.vz-auth-heading .vz-hairline { display: none; }
+.vz-auth-art { padding: 32px; }
+.vz-auth-art > * { border-radius: 20px; overflow: hidden; }
+.vz-home { max-width: 1280px; padding-inline: 40px; }
+.vz-home-section { width: 100%; max-width: 1200px; margin-inline: auto; padding: 48px 0; }
+.vz-home-section-heading { margin-bottom: 28px; }
+.vz-home-section-heading h2 { margin: 0; }
+.vz-home-section-heading .mono-label { display: none; }
+.vz-showcase-offer { background: var(--vz-signal-soft); color: var(--vz-text); padding: 40px; border-radius: 16px; border: 1px solid var(--vz-line); }
+.vz-showcase-offer :is(p, li) { color: var(--vz-muted); }
+.vz-showcase-offer h2 { color: var(--vz-text); }
+.vz-learner .vz-personal-card { border: 1px solid var(--vz-line); border-radius: .875rem; box-shadow: none; transform: none; }
+.vz-learner .vz-scroll-progress__vertical, .vz-learner .vz-scroll-progress__horizontal { background: var(--vz-signal); box-shadow: none; }
+@media (min-width: 1024px) { .vz-nav-toggle { display: none; } }
+@media (max-width: 1023px) {
+  .vz-course-hero { grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; }
+  .vz-auth-form-area { padding-top: 80px; }
+}
+@media (max-width: 767px) {
+  .vz-learner .vz-wrapper { padding: 28px 20px 40px; }
+  .vz-nav .vz-wordmark { max-width: 190px; font-size: .8125rem; }
+  .vz-course-grid { gap: 20px; }
+  .vz-course-hero { grid-template-columns: 1fr; gap: 24px; }
+  .vz-course-hero .course_metadata_right { display: contents; }
+  .vz-course-heading { gap: 16px; }
+  .vz-catalog-header { margin-bottom: 24px; }
+  .vz-course-card .vz-course-body { padding: 20px; }
+  .vz-course-section { margin-top: 32px; }
+  .vz-reader-page[data-reading="true"] { padding: 24px 16px; }
+  .vz-reader .activity-info-section { padding-top: 8px; }
+  .vz-reader-actions { gap: 12px; }
+  .vz-reader-actions > div:last-child { flex-wrap: wrap; gap: 10px; }
+  .vz-auth .vz-frame { padding: 24px; }
+  .vz-auth-art { display: none; }
+  .vz-home { padding-inline: 20px; }
+  .vz-home-section { padding: 28px 0; }
+  .vz-showcase-offer { padding: 24px; }
+  .vz-chapter-toggle { padding: 18px 16px; }
+  .vz-curriculum .activity-container { padding: 16px; }
+  .vz-focus-bottom .vz-focus-nav span { max-width: 88px; font-size: .75rem; }
+  .vz-focus-bottom > div > div { height: auto; min-height: 64px; gap: 8px; flex-wrap: wrap; padding-block: 8px; }
+}
+@media (max-width: 359px) {
+  .vz-nav .vz-wordmark { max-width: 150px; font-size: .75rem; }
+  .vz-learner .vz-wrapper { padding-inline: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.vz-learner, .vz-auth) *, :is(.vz-learner, .vz-auth) *::before, :is(.vz-learner, .vz-auth) *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important;
+  }
+}
+
+/* Bridge existing neutral utilities to the same learner palette. Explicit
+   semantic colors above remain the source of truth for new components. */
+:is(.vz-learner, .vz-auth) {
+  --color-gray-50: var(--vz-page);
+  --color-gray-100: var(--vz-raised);
+  --color-gray-200: var(--vz-line);
+  --color-gray-300: var(--vz-line-strong);
+  --color-gray-400: var(--vz-muted);
+  --color-gray-500: var(--vz-muted);
+  --color-gray-600: var(--vz-muted);
+  --color-gray-700: var(--vz-text);
+  --color-gray-800: var(--vz-text);
+  --color-gray-900: var(--vz-text);
+  --color-gray-950: var(--vz-text);
+  --color-white: var(--vz-surface);
+  --color-neutral-50: var(--color-gray-50);
+  --color-neutral-100: var(--color-gray-100);
+  --color-neutral-200: var(--color-gray-200);
+  --color-neutral-300: var(--color-gray-300);
+  --color-neutral-400: var(--color-gray-400);
+  --color-neutral-500: var(--color-gray-500);
+  --color-neutral-600: var(--color-gray-600);
+  --color-neutral-700: var(--color-gray-700);
+  --color-neutral-800: var(--color-gray-800);
+  --color-neutral-900: var(--color-gray-900);
+  --color-neutral-950: var(--color-gray-950);
+  --color-slate-50: var(--color-gray-50);
+  --color-slate-100: var(--color-gray-100);
+  --color-slate-200: var(--color-gray-200);
+  --color-slate-300: var(--color-gray-300);
+  --color-slate-400: var(--color-gray-400);
+  --color-slate-500: var(--color-gray-500);
+  --color-slate-600: var(--color-gray-600);
+  --color-slate-700: var(--color-gray-700);
+  --color-slate-800: var(--color-gray-800);
+  --color-slate-900: var(--color-gray-900);
+  --color-slate-950: var(--color-gray-950);
+  --color-zinc-50: var(--color-gray-50);
+  --color-zinc-100: var(--color-gray-100);
+  --color-zinc-200: var(--color-gray-200);
+  --color-zinc-300: var(--color-gray-300);
+  --color-zinc-400: var(--color-gray-400);
+  --color-zinc-500: var(--color-gray-500);
+  --color-zinc-600: var(--color-gray-600);
+  --color-zinc-700: var(--color-gray-700);
+  --color-zinc-800: var(--color-gray-800);
+  --color-zinc-900: var(--color-gray-900);
+  --color-zinc-950: var(--color-gray-950);
+}
+.vz-course-grid > :only-child { max-width: 600px; }
+.vz-chapter-title { white-space: normal; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.45; font-weight: 600; }
+.vz-offer-grid {
+  opacity: .3;
+  background-image: linear-gradient(var(--vz-line-strong) 1px, transparent 1px), linear-gradient(90deg, var(--vz-line-strong) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(90deg, transparent, #000);
+  pointer-events: none;
+}
+.vz-account :is(input:not([type="checkbox"]):not([type="file"]), select, textarea) { font-size: 1rem; }
+.vz-account :is(input:not([type="checkbox"]):not([type="file"]), select) { min-height: 44px; }
+.vz-account .nice-shadow { border: 1px solid var(--vz-line); background: var(--vz-surface); border-radius: .875rem; }
+.vz-account form h1 { font-size: 1.5rem; line-height: 1.3; font-weight: 600; }
+.vz-account-mobile { padding-bottom: env(safe-area-inset-bottom); }
+.vz-personal-card .vz-course-meta { align-items: start; }
+.vz-focus-bar button { color: var(--vz-text); }
+.vz-focus-bottom > div > div > div { min-width: 0; }
+@media (max-width: 767px) {
+  .vz-focus-bottom .vz-focus-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .vz-focus-bottom :is(.vz-focus-prev, .vz-focus-next-actions) { display: contents; }
+  .vz-focus-prev > button { grid-column: 1; grid-row: 1; justify-self: start; }
+  .vz-focus-next-actions > button { grid-column: 2; grid-row: 1; justify-self: end; }
+  .vz-focus-actions { grid-column: 1 / -1; grid-row: 2; justify-content: center; margin-inline: 0; }
+  .vz-focus-actions:empty { display: none; }
+  .vz-focus-bottom button { min-height: 44px; }
+}
+.vz-auth-art .vz-auth-artwork { inset: 0; }
+.vz-focus-bar .vz-primary { color: hsl(var(--primary-foreground)); }
+.vz-auth input::placeholder { color: var(--vz-muted); opacity: 1; }
+.vz-nav > div { max-width: 1280px; padding-inline: 40px; }
+@media (max-width: 1023px) {
+  .vz-nav > div { padding-inline: 20px; }
+  .vz-nav .vz-wordmark { max-width: min(240px, calc(100vw - 180px)); }
+}
+@media (max-width: 767px) {
+  .vz-focus-scroll { padding-bottom: calc(152px + env(safe-area-inset-bottom)); }
+}
+
+.vz-primary[aria-busy="true"] { cursor: wait; }
+.vz-page-heading { overflow-wrap: anywhere; }

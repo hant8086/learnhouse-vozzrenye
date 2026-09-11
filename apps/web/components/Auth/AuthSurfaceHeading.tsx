@@ -12,7 +12,7 @@ export default function AuthSurfaceHeading({
   description,
 }: AuthSurfaceHeadingProps) {
   return (
-    <header>
+    <header className="vz-auth-heading">
       {eyebrow && <span className="mono-label">{eyebrow}</span>}
       <h1 className="mt-3 text-[28px] font-black tracking-tight text-gray-900 leading-tight md:text-[32px]">
         {title}

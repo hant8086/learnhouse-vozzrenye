@@ -153,7 +153,7 @@ function VerifyEmailClient({ org }: VerifyEmailClientProps) {
                                 </p>
                                 <Link
                                     href="/login"
-                                    className="box-border w-full inline-flex h-[44px] rounded-lg items-center justify-center bg-black hover:bg-black/85 text-white px-[15px] font-bold text-[14px] leading-none transition-all"
+                                    className="box-border w-full inline-flex h-[44px] rounded-lg items-center justify-center vz-auth-primary bg-primary text-primary-foreground px-[15px] font-bold text-[14px] leading-none transition-all"
                                 >
                                     {t('auth.back_to_login')}
                                 </Link>
@@ -174,7 +174,7 @@ function VerifyEmailClient({ org }: VerifyEmailClientProps) {
                                 </div>
                                 <Link
                                     href="/home"
-                                    className="box-border w-full inline-flex h-[44px] rounded-lg items-center justify-center bg-black hover:bg-black/85 text-white px-[15px] font-bold text-[14px] leading-none transition-all"
+                                    className="box-border w-full inline-flex h-[44px] rounded-lg items-center justify-center vz-auth-primary bg-primary text-primary-foreground px-[15px] font-bold text-[14px] leading-none transition-all"
                                 >
                                     {t('auth.continue_to_dashboard', { defaultValue: 'Continue to your dashboard' })}
                                 </Link>

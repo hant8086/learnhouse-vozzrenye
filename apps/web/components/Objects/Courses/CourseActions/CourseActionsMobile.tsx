@@ -253,7 +253,7 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
 
   if (courseAction.kind === 'unavailable') {
     return (
-      <div className="bg-white/90 backdrop-blur-sm shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4 my-6 mx-2">
+      <div className="vz-access-panel my-6 mx-5">
         <p className="text-sm text-neutral-600">{t('courses.access_unavailable', 'Access unavailable')}</p>
       </div>
     )
@@ -273,7 +273,7 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
     });
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4 my-6 mx-2">
+    <div className="vz-access-panel my-6 mx-5">
       <div className="flex flex-col space-y-4">
         <MultipleAuthors authors={sortedAuthors} />
         
@@ -281,7 +281,7 @@ const CourseActionsMobile = ({ courseuuid, orgslug, course, trailData }: CourseA
             onClick={handleCourseAction}
             disabled={isActionLoading}
             aria-label={courseAction.kind === 'continue' ? t('courses.continue_course', 'Продолжить курс') : t('courses.start_course')}
-            className="w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700"
+            className="vz-primary w-full"
           >
             {isActionLoading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

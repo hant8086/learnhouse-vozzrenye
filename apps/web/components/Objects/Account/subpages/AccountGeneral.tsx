@@ -271,7 +271,7 @@ const UserEditForm = ({
           </h2>
         </div>
 
-        <div className="flex flex-col lg:flex-row mt-0 mx-5 my-5 gap-8">
+        <div className="flex flex-col xl:flex-row mt-0 mx-5 my-5 gap-8">
           {/* Profile Information Section */}
           <div className="flex-1 min-w-0 space-y-4">
             <div>
@@ -456,7 +456,7 @@ const UserEditForm = ({
           </div>
 
           {/* Profile Picture Section */}
-          <div className="lg:w-80 w-full">
+          <div className="xl:w-64 xl:shrink-0 w-full">
             <div className="bg-gray-50/50 p-6 rounded-lg nice-shadow h-full">
               <div className="flex flex-col items-center space-y-6">
                 <Label className="font-bold">{t('user.settings.general.profile_picture')}</Label>
@@ -526,7 +526,7 @@ const UserEditForm = ({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="bg-black text-white hover:bg-black/90"
+            className="vz-primary"
           >
             {isSubmitting ? t('user.settings.general.saving') : t('user.settings.general.save_changes')}
           </Button>

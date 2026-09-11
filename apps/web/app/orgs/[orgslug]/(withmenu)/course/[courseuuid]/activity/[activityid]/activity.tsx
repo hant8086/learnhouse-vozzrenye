@@ -181,7 +181,7 @@ function ActivityActions({ activity, activityid, course, orgslug, assignment, sh
 
 
   return (
-    <div className="flex space-x-2 items-center">
+    <div className={`flex space-x-2 items-center ${showNavigation ? '' : 'vz-focus-actions'}`}>
       {activity && activity.published == true && activity.content.paid_access != false && (
         <AuthenticatedClientElement checkMethod="authentication">
           {activity.activity_type != 'TYPE_ASSIGNMENT' && (
@@ -500,7 +500,7 @@ function ActivityClient(props: ActivityClientProps) {
           <button
             type="button"
             onClick={() => refetchCourse()}
-            className="inline-flex items-center justify-center px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
+            className="vz-primary"
           >
             {t('auth.try_again', 'Try again')}
           </button>
@@ -591,7 +591,7 @@ function ActivityClient(props: ActivityClientProps) {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="fixed inset-0 bg-[#080d12] text-[#f4f7f8]"
+                  className="vz-focus fixed inset-0"
                   style={{ zIndex: 'var(--z-overlay)' }}
                 >
                   {/* Focus Mode Top Bar */}
@@ -600,7 +600,7 @@ function ActivityClient(props: ActivityClientProps) {
                     animate={{ y: 0 }}
                     exit={{ y: -100 }}
                     transition={{ duration: 0.3 }}
-                    className="fixed top-0 left-0 right-0 bg-[#080d12]/95 backdrop-blur-xl border-b border-[#24313d]"
+                    className="vz-focus-bar fixed top-0 left-0 right-0 bg-[#080d12]/95 backdrop-blur-xl border-b border-[#24313d]"
                     style={{ zIndex: 'var(--z-modal-content)' }}
                   >
                     <div className="container mx-auto px-4 py-2">
@@ -644,7 +644,7 @@ function ActivityClient(props: ActivityClientProps) {
                             {trailData?.runs?.find((run: any) => run.course_uuid === course.course_uuid)?.steps?.filter((step: any) => step.complete)?.length || 0} {t('common.of')} {course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0}
                           </div>
                         </motion.div>
-                        
+
                         {/* Center Course Info */}
                         <motion.div 
                           initial={isInitialRender.current ? false : { opacity: 0, y: -20 }}
@@ -707,7 +707,7 @@ function ActivityClient(props: ActivityClientProps) {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setIsFocusMode(false)}
-                            className="bg-[#17212b] nice-shadow p-2 rounded-full cursor-pointer hover:bg-[#24313d]"
+                            className="vz-focus-button bg-[#17212b] nice-shadow p-2 rounded-full cursor-pointer hover:bg-[#24313d]"
                             title={t('activities.exit_focus_mode')}
                           >
                             <Minimize2 size={16} className="text-[#d4dce3]" />
@@ -718,8 +718,8 @@ function ActivityClient(props: ActivityClientProps) {
                   </motion.div>
 
                   {/* Focus Mode Content */}
-                  <div className="pt-16 pb-20 h-full overflow-auto">
-                    <div className="container mx-auto px-4">
+                  <div className="vz-focus-scroll pt-16 pb-20 h-full overflow-auto">
+                    <div className="vz-focus-content container mx-auto px-4">
                       {activity && activity.published == true && (
                         <>
                           {activity.content.paid_access == false ? (
@@ -729,7 +729,7 @@ function ActivityClient(props: ActivityClientProps) {
                               initial={isInitialRender.current ? false : { scale: 0.95, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               transition={{ delay: 0.3 }}
-                              className={`${activity.activity_type === 'TYPE_SCORM' ? 'rounded-xl overflow-hidden' : 'p-7 rounded-lg'} ${bgColor} mt-4`}
+                              data-reading={activity.activity_type === 'TYPE_DYNAMIC'} className={`vz-reader-page ${activity.activity_type === 'TYPE_SCORM' ? 'rounded-xl overflow-hidden' : ''} ${bgColor} mt-4`}
                             >
                               {/* Activity Types */}
                               <div className={activity.activity_type === 'TYPE_SCORM' ? 'overflow-hidden' : ''}>
@@ -749,15 +749,15 @@ function ActivityClient(props: ActivityClientProps) {
                       animate={{ y: 0 }}
                       exit={{ y: 100 }}
                       transition={{ duration: 0.3 }}
-                      className="fixed bottom-0 left-0 right-0 bg-[#080d12]/95 backdrop-blur-xl border-t border-[#24313d]"
+                      className="vz-focus-bar vz-focus-bottom fixed bottom-0 left-0 right-0 bg-[#080d12]/95 backdrop-blur-xl border-t border-[#24313d]"
                       style={{ zIndex: 'var(--z-modal-content)' }}
                     >
-                      <div className="container mx-auto px-4">
-                        <div className="flex items-center justify-between h-16">
-                          <div className="flex items-center space-x-2">
+                      <div className="vz-focus-content container mx-auto px-4">
+                        <div className="vz-focus-controls flex items-center justify-between h-16">
+                          <div className="vz-focus-prev flex items-center space-x-2">
                             <button
                               onClick={() => navigateToActivity(prevActivity)}
-                              className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
+                              className={`vz-focus-nav flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
                                 prevActivity
                                   ? 'text-[#d4dce3]'
                                   : 'opacity-50 text-[#738394] cursor-not-allowed'
@@ -774,7 +774,7 @@ function ActivityClient(props: ActivityClientProps) {
                               </div>
                             </button>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="vz-focus-next-actions flex items-center space-x-2">
                             <ActivityActions
                               activity={activity}
                               activityid={activityid}
@@ -786,7 +786,7 @@ function ActivityClient(props: ActivityClientProps) {
                             />
                             <button
                               onClick={() => navigateToActivity(nextActivity)}
-                              className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
+                              className={`vz-focus-nav flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
                                 nextActivity || isLastActivity
                                   ? 'text-[#d4dce3]'
                                   : 'opacity-50 text-[#738394] cursor-not-allowed'
@@ -832,7 +832,7 @@ function ActivityClient(props: ActivityClientProps) {
                     trailData={trailData}
                   />
                 ) : (
-                  <div className="space-y-4 pt-0 relative">
+                  <div className="vz-reader space-y-4 pt-0 relative">
                     <div className="pt-2 pb-3 sm:pb-6">
                       <Breadcrumbs items={[
                         { label: t('courses.courses'), href: getUriWithOrg(orgslug, '/courses'), icon: <BookCopy size={14} /> },
@@ -863,9 +863,9 @@ function ActivityClient(props: ActivityClientProps) {
                             </div>
                             <div className="flex flex-col -space-y-1">
                               <p className="font-bold text-gray-700 text-xs sm:text-md">{t('search.course')} </p>
-                              <h1 className="font-bold text-gray-950 text-lg sm:text-3xl first-letter:uppercase">
+                              <p className="vz-reader-course-name">
                                 {course.name}
-                              </h1>
+                              </p>
                             </div>
                           </div>
                           {activity && (
@@ -897,7 +897,7 @@ function ActivityClient(props: ActivityClientProps) {
                               <p className="font-bold text-gray-700 text-xs sm:text-md">
                                 {getChapterNameByActivityId(course, activity?.id) ?? chapterNameFromCourse}
                               </p>
-                              <h1 className="font-bold text-gray-950 text-base sm:text-2xl first-letter:uppercase">
+                              <h1 className="vz-reader-title">
                                 {displayName}
                               </h1>
                               {/* Authors and Dates Section */}
@@ -1016,7 +1016,7 @@ function ActivityClient(props: ActivityClientProps) {
                       {activityLoading || !activity ? (
                         <ActivityContentSkeleton activityType={displayActivityType} />
                       ) : activity.published == false ? (
-                        <div className="p-7 rounded-lg bg-gray-800">
+                        <div className="p-7 rounded-lg bg-muted">
                           <div className="text-white">
                             <h1 className="font-bold text-2xl">
                               {t('activities.not_published_yet')}
@@ -1029,16 +1029,16 @@ function ActivityClient(props: ActivityClientProps) {
                             <PaidCourseActivityDisclaimer course={course} />
                           ) : (
                             <div className="flex gap-6">
-                              <div className={`flex-1 min-w-0 ${activity.activity_type === 'TYPE_SCORM' ? 'rounded-xl overflow-hidden' : 'p-3 sm:p-7 rounded-lg'} ${bgColor} relative isolate`} style={{ zIndex: 'var(--z-base)' }}>
+                              <div data-reading={activity.activity_type === 'TYPE_DYNAMIC'} className={`vz-reader-page flex-1 min-w-0 ${activity.activity_type === 'TYPE_SCORM' ? 'rounded-xl overflow-hidden' : ''} ${bgColor} relative isolate`} style={{ zIndex: 'var(--z-base)' }}>
                                 <button
                                   onClick={() => setIsFocusMode(true)}
-                                  className={`absolute ${activity.activity_type === 'TYPE_SCORM' ? 'top-2 right-2' : 'top-4 right-4'} hidden sm:flex bg-white/80 hover:bg-white nice-shadow p-2 rounded-full cursor-pointer transition-all duration-200 group overflow-hidden pointer-events-auto`}
+                                  className={`absolute ${activity.activity_type === 'TYPE_SCORM' ? 'top-2 right-2' : 'top-4 right-4'} flex bg-card hover:bg-muted p-2 rounded-md border border-border cursor-pointer transition-all duration-200 group overflow-hidden pointer-events-auto`}
                                   style={{ zIndex: 'var(--z-interactive)' }}
                                   title={t('activities.focus_mode')}
                                 >
                                   <div className="flex items-center">
                                     <Maximize2 size={16} className="text-gray-700" />
-                                    <span className="text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 w-0 group-hover:w-auto group-hover:ml-2 whitespace-nowrap">
+                                    <span className="text-xs font-bold text-gray-700 hidden sm:inline ml-2 whitespace-nowrap">
                                       {t('activities.focus_mode')}
                                     </span>
                                   </div>
@@ -1055,7 +1055,7 @@ function ActivityClient(props: ActivityClientProps) {
 
                       {/* Activity Actions below the content box */}
                       {activity && activity.published == true && activity.content.paid_access != false && (
-                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 w-full gap-2 sm:gap-0">
+                        <div className="vz-reader-actions flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 w-full gap-2 sm:gap-0">
                           <div className="order-1 sm:order-none">
                             <PreviousActivityButton
                               course={course}
@@ -1091,7 +1091,7 @@ function ActivityClient(props: ActivityClientProps) {
                           activity={activity}
                         />
                       )}
-                      
+
                       <div style={{ height: '100px' }}></div>
                     </div>
                 )}
@@ -1131,7 +1131,7 @@ export function MarkStatus(props: {
     if (typeof window !== 'undefined') {
       const markedTooltipCount = localStorage.getItem('activity_marked_tooltip_count');
       const unmarkedTooltipCount = localStorage.getItem('activity_unmarked_tooltip_count');
-      
+
       if (!markedTooltipCount || parseInt(markedTooltipCount) < 3) {
         setShowMarkedTooltip(true);
       }
@@ -1256,7 +1256,7 @@ export function MarkStatus(props: {
   async function unmarkActivityAsCompleteFront() {
     try {
       setIsLoading(true);
-      
+
       await unmarkActivityAsComplete(
         props.orgslug,
         props.course.course_uuid,
@@ -1276,7 +1276,7 @@ export function MarkStatus(props: {
   const isActivityCompleted = () => {
     // Clean up course UUID by removing 'course_' prefix if it exists
     const cleanCourseUuid = props.course.course_uuid?.replace('course_', '');
-    
+
     let run = props.trailData?.runs?.find(
       (run: any) => {
         const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
@@ -1313,9 +1313,9 @@ export function MarkStatus(props: {
               confirmationMessage={t('activities.unmark_activity_confirm')}
               dialogTitle={t('activities.unmark_activity_title')}
               dialogTrigger={
-                <div className="bg-teal-600 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out">
-                  <span className="text-[10px] font-bold mb-1 uppercase">{t('common.status')}</span>
-                  <div className="flex items-center space-x-2">
+                <button type="button" className="vz-secondary">
+
+                  <span className="flex items-center space-x-2">
                     <svg 
                       width="17" 
                       height="17" 
@@ -1330,8 +1330,8 @@ export function MarkStatus(props: {
                       <path d="M7 12l3 3 7-7" />
                     </svg>
                     <span className="text-xs font-bold">{t('common.complete')}</span>
-                  </div>
-                </div>
+                  </span>
+                </button>
               }
               functionToExecute={unmarkActivityAsCompleteFront}
               status="warning"
@@ -1351,14 +1351,17 @@ export function MarkStatus(props: {
       ) : (
         <div className="flex items-center space-x-2">
           <div className="relative">
-            <div
-              className={`${isLoading ? 'opacity-90' : ''} bg-gray-800 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition-all duration-200 ${isLoading ? 'cursor-not-allowed' : 'hover:bg-gray-700'}`}
+            <button
+              type="button"
+              disabled={isLoading}
+              aria-busy={isLoading}
+              className="vz-primary"
               onClick={!isLoading ? markActivityAsCompleteFront : undefined}
             >
-              <span className="text-[10px] font-bold mb-1 uppercase">{t('common.status')}</span>
-              <div className="flex items-center space-x-2">
+
+              <span className="flex items-center space-x-2">
                 {isLoading ? (
-                  <div className="animate-spin">
+                  <span className="animate-spin">
                     <svg 
                       width="17" 
                       height="17" 
@@ -1371,7 +1374,7 @@ export function MarkStatus(props: {
                     >
                       <path d="M21 12a9 9 0 11-6.219-8.56" />
                     </svg>
-                  </div>
+                  </span>
                 ) : (
                   <svg 
                     width="17" 
@@ -1386,9 +1389,9 @@ export function MarkStatus(props: {
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                   </svg>
                 )}
-                <span className="text-xs font-bold min-w-[90px]">{isLoading ? t('activities.marking') : t('activities.mark_as_complete')}</span>
-              </div>
-            </div>
+                <span className="text-sm font-semibold">{isLoading ? t('activities.marking') : t('activities.mark_as_complete')}</span>
+              </span>
+            </button>
             {showUnmarkedTooltip && (
               <MiniInfoTooltip
                 icon={infoIcon}

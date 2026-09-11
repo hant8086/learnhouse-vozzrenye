@@ -2,7 +2,6 @@
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import TrailCourseCard from '@components/Pages/Trail/TrailCourseCard'
-import TypeOfContentTitle from '@components/Objects/StyledElements/Titles/TypeOfContentTitle'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import { useTrail } from '@/hooks/queries/useTrail'
 import React, { useEffect, useState } from 'react'
@@ -67,8 +66,8 @@ function Trail(params: any) {
     <FeatureGate feature="courses" orgslug={orgslug} context="public">
     <GeneralWrapperStyled>
       <div className="flex flex-col space-y-2 mb-6">
-        <div className="flex items-center justify-between">
-          <TypeOfContentTitle title={t('courses.progress')} type="tra" />
+        <div className="vz-catalog-header flex-wrap">
+          <h1 className="vz-page-heading">{t('courses.progress')}</h1>
           {trail?.runs?.length > 0 && (
             <ConfirmationModal
               confirmationButtonText={isQuittingAll ? t('courses.quitting_courses', { progress: quittingProgress }) : t('courses.quit_all_courses')}
@@ -97,7 +96,7 @@ function Trail(params: any) {
 
         {!trail ? (
           <div className="animate-pulse">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="vz-course-grid">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="rounded-xl overflow-hidden">
                   {/* Progress thumbnail */}
@@ -126,7 +125,7 @@ function Trail(params: any) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="vz-course-grid">
             {trail.runs.map((run: any) => (
               <TrailCourseCard
                 key={run.course.course_uuid}

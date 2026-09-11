@@ -1,7 +1,6 @@
 import React from 'react'
 import UserAvatar from '../../UserAvatar'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
-import { useMediaQuery } from 'usehooks-ts'
 import { Rss, PencilLine, TentTree } from 'lucide-react'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -46,21 +45,21 @@ interface CourseAuthorsProps {
   authors: Author[]
 }
 
-const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: boolean }) => {
+const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
   const { t } = useTranslation()
   const displayedAvatars = authors.slice(0, 3)
   const displayedNames = authors.slice(0, 2)
   const remainingCount = Math.max(0, authors.length - 3)
   
-  // Keep the identity row useful without letting it consume the whole mobile card.
-  const avatarSize = isMobile ? 36 : 86
-  const borderSize = isMobile ? "border-2" : "border-4"
+  // Keep the identity row useful without letting it consume the whole access card.
+  const avatarSize = 36
+  const borderSize = "border-2"
 
   return (
-    <div className={`flex ${isMobile ? 'items-start gap-3 px-0 py-0' : 'flex-col items-center space-y-4 px-2 py-2'}`}>
-      <div className={`text-[12px] text-neutral-400 font-semibold ${isMobile ? 'sr-only' : 'self-start'}`}>{t('courses.authors_and_updates')}</div>
+    <div className={`flex items-start gap-3`}>
+      <div className={`text-[12px] text-neutral-400 font-semibold sr-only`}>{t('courses.authors_and_updates')}</div>
       
-      <div className={`flex ${isMobile ? 'shrink-0 -space-x-2' : 'justify-center -space-x-6'} relative`}>
+      <div className={`flex shrink-0 -space-x-2 relative`}>
         {displayedAvatars.map((author, index) => (
           <div
             key={author.user.user_uuid}
@@ -86,11 +85,11 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
             style={{ zIndex: 0 }}
           >
             <div 
-              className={`flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full ${isMobile ? 'border-2' : 'border-4'} border-white shadow-sm`}
+              className={`flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full border-2 border-white shadow-sm`}
               style={{ 
                 width: `${avatarSize}px`, 
                 height: `${avatarSize}px`,
-                fontSize: isMobile ? '14px' : '16px'
+                fontSize: '14px'
               }}
             >
               +{remainingCount}
@@ -99,8 +98,8 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
         )}
       </div>
 
-      <div className={`${isMobile ? 'min-w-0 flex-1 text-left' : 'mt-2 text-center'}`}>
-        <div className={`${isMobile ? 'truncate text-sm' : 'text-sm'} font-medium text-neutral-800`}>
+      <div className={`min-w-0 flex-1 text-left`}>
+        <div className={`text-sm break-words font-medium text-neutral-800`}>
           {authors.length === 1 ? (
             <span>
               {authors[0].user.first_name && authors[0].user.last_name
@@ -125,7 +124,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
             </>
           )}
         </div>
-        <div className={`text-xs text-neutral-500 mt-0.5 ${isMobile ? 'hidden' : ''}`}>
+        <div className={`text-xs text-neutral-500 mt-0.5 hidden`}>
           {authors.length === 1 ? (
             <span>@{authors[0].user.username}</span>
           ) : (
@@ -209,7 +208,7 @@ const UpdatesSection = () => {
   )
 }
 
-const NewUpdateForm = ({ setSelectedView }: { setSelectedView: (view: string) => void }) => {
+const NewUpdateForm = ({ setSelectedView }: { setSelectedView: (_view: string) => void }) => {
   const { t } = useTranslation()
   const org = useOrg() as any
   const course = useCourse() as any
@@ -399,7 +398,6 @@ const DeleteUpdateButton = ({ update }: any) => {
 }
 
 const CourseAuthors = ({ authors }: CourseAuthorsProps) => {
-  const isMobile = useMediaQuery('(max-width: 768px)')
 
   // Filter active authors and sort by role priority
   const sortedAuthors = [...authors]
@@ -416,7 +414,7 @@ const CourseAuthors = ({ authors }: CourseAuthorsProps) => {
 
   return (
     <div className="antialiased">
-      <MultipleAuthors authors={sortedAuthors} isMobile={isMobile} />
+      <MultipleAuthors authors={sortedAuthors} />
       <UpdatesSection />
     </div>
   )

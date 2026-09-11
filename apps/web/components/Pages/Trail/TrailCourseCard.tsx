@@ -56,7 +56,7 @@ function TrailCourseCard(props: TrailCourseCardProps) {
   }
 
   async function quitCourse(course_uuid: string) {
-    let activity = await removeCourse(course_uuid, props.orgslug, access_token)
+    await removeCourse(course_uuid, props.orgslug, access_token)
     await revalidateTags(['courses'], props.orgslug)
     router.refresh()
     if (orgID) {
@@ -94,12 +94,12 @@ function TrailCourseCard(props: TrailCourseCardProps) {
   const courseLink = getUriWithOrg(props.orgslug, '/course/' + courseid)
 
   return (
-    <div className="group relative flex flex-col bg-white rounded-xl nice-shadow overflow-hidden w-full transition-all duration-300 hover:scale-[1.01]" onMouseEnter={handleMouseEnter}>
+    <div className="vz-course-card vz-personal-card group relative flex flex-col bg-card overflow-hidden w-full" onMouseEnter={handleMouseEnter}>
       {/* Dropdown Menu */}
       <div className="absolute top-2 right-2 z-20">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all shadow-md">
+            <button aria-label={t('design.course_options', { name: course.name })} className="vz-secondary size-11 !p-0">
               <MoreVertical size={18} className="text-gray-700" />
             </button>
           </DropdownMenuTrigger>
@@ -125,7 +125,7 @@ function TrailCourseCard(props: TrailCourseCardProps) {
       {/* Thumbnail */}
       <Link
         href={courseLink}
-        className="block relative aspect-video overflow-hidden bg-gray-50"
+        className="vz-course-cover block relative aspect-video overflow-hidden bg-gray-50"
       >
         {props.course.thumbnail_image && org?.org_uuid ? (
           <img
@@ -135,7 +135,7 @@ function TrailCourseCard(props: TrailCourseCardProps) {
               props.course.thumbnail_image
             )}
             alt={course.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full w-full text-gray-300 gap-2">
@@ -146,16 +146,16 @@ function TrailCourseCard(props: TrailCourseCardProps) {
         <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-200/80">
           <div
             className={`h-full ${course_progress === 100 ? 'bg-green-500' : 'bg-teal-500'}`}
-            style={{ width: `${course_progress}%` }}
+            style={{ width: `${Math.min(100, course_progress)}%` }}
           />
         </div>
       </Link>
 
       {/* Content */}
-      <div className="p-3 flex flex-col space-y-1.5">
+      <div className="vz-course-body">
         <Link
           href={courseLink}
-          className="text-base font-bold text-gray-900 leading-tight hover:text-black transition-colors line-clamp-1"
+          className="vz-course-title"
         >
           {course.name}
         </Link>
@@ -169,29 +169,29 @@ function TrailCourseCard(props: TrailCourseCardProps) {
           </span>
         </div>
 
-        <div className="pt-1.5 flex items-center justify-between border-t border-gray-100">
+        <div className="vz-course-meta">
           {/* Certificate or Progress indicator */}
           {course_progress === 100 ? (
             isLoadingCertificate ? (
               <div className="flex items-center gap-1.5 text-gray-400">
                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-500"></div>
-                <span className="text-[10px] font-bold uppercase tracking-wider">{t('common.loading')}</span>
+                <span className="text-xs font-medium">{t('common.loading')}</span>
               </div>
             ) : courseCertificate ? (
               <div className="flex items-center gap-1.5 text-yellow-600">
                 <Award size={12} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">{t('certificate.certificate')}</span>
+                <span className="text-xs font-medium">{t('certificate.certificate')}</span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 text-green-600">
                 <Award size={12} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">{t('common.completed')}</span>
+                <span className="text-xs font-medium">{t('common.completed')}</span>
               </div>
             )
           ) : (
             <div className="flex items-center gap-1.5 text-gray-500">
               <BookOpen size={12} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">{t('courses.course_progress')}</span>
+              <span className="text-xs font-medium">{t('courses.course_progress')}</span>
             </div>
           )}
 
@@ -200,7 +200,7 @@ function TrailCourseCard(props: TrailCourseCardProps) {
               href={getUriWithOrg(props.orgslug, `/certificates/${courseCertificate.certificate_user.user_certification_uuid}/verify`)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider"
+              className="vz-course-cta"
             >
               {t('certificate.verify')}
               <ExternalLink className="w-3 h-3" />
@@ -208,7 +208,7 @@ function TrailCourseCard(props: TrailCourseCardProps) {
           ) : (
             <Link
               href={courseLink}
-              className="text-[10px] font-bold text-gray-400 hover:text-gray-900 transition-colors uppercase tracking-wider"
+              className="vz-course-cta"
             >
               {t('courses.continue_learning')}
             </Link>

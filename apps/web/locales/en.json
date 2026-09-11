@@ -6070,5 +6070,13 @@
     "back_to_articles": "Back to articles",
     "org_error": "Organization context is not available",
     "no_search_results": "No articles match your search."
+  },
+  "design": {
+    "catalog_intro": "Explore a subject. Choose a module and learn at your own pace.",
+    "open_module": "Open module",
+    "skip_content": "Skip to content",
+    "clear_search": "Clear search",
+    "menu": "Menu",
+    "course_options": "Actions for {{name}}"
   }
 }

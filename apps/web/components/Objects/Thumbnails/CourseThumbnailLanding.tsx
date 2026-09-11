@@ -130,7 +130,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
       queryClient.invalidateQueries({ queryKey: queryKeys.courses.list(orgslug) })
       toast.success(t('courses.course_deleted_success'))
       router.refresh()
-    } catch (error) {
+    } catch {
       toast.error(t('courses.course_deleted_error'))
     } finally {
       toast.dismiss(toastId)
@@ -144,28 +144,28 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
   const tagColors = normalizeTagColors(course.extra_metadata?.tag_colors)
 
   return (
-    <div className="relative m-2 flex w-full max-w-sm shrink-0 flex-col overflow-hidden bg-white vz-frame vz-frame-interactive sm:min-w-[280px]">
+    <div className="vz-course-card relative flex w-full flex-col overflow-hidden bg-card sm:min-w-[280px]">
       <AdminEditOptions
         course={course}
         orgslug={orgslug}
         deleteCourse={deleteCourse}
       />
       <Link prefetch={false} href={customLink ? customLink : getUriWithOrg(orgslug, `/course/${removeCoursePrefix(course.course_uuid)}`)}>
-        <div className="inset-0 ring-1 ring-inset ring-black/10 rounded-t-xl w-full aspect-[3/2] overflow-hidden bg-gray-50">
+        <div className="vz-course-cover w-full aspect-[16/9] overflow-hidden bg-muted">
           <img src={thumbnailImage} alt={course.name} className="h-full w-full object-contain" />
         </div>
       </Link>
-      <div className='flex flex-col w-full p-4 space-y-3'>
+      <div className='vz-course-body flex flex-col w-full p-4 space-y-3'>
         <div className="space-y-2">
-          <h2 className="font-bold text-gray-800 leading-tight text-base min-h-[2.75rem] line-clamp-2">{course.name}</h2>
+          <h2 className="vz-course-title font-semibold text-foreground leading-tight text-base line-clamp-2">{course.name}</h2>
           {course.is_paid === true && (
             <span className="inline-flex w-fit rounded-full bg-gray-900 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
               {t('courses.pro', 'Pro')}
             </span>
           )}
-          <p className='text-xs text-gray-700 leading-normal min-h-[3.75rem] line-clamp-3'>{course.description}</p>
+          <p className='vz-course-description text-sm text-muted-foreground leading-relaxed line-clamp-2'>{course.description}</p>
           {courseTags.length > 0 && (
-            <div className="flex flex-wrap gap-1" aria-label={t('courses.tags')}>
+            <div className="vz-course-tags flex flex-wrap gap-1" aria-label={t('courses.tags')}>
               {courseTags.map((tag) => (
                 <span key={tag} style={getTagColorStyle(tag, tagColors)} className="rounded-full border px-2 py-0.5 text-[9px] font-medium">
                   {tag}
@@ -175,10 +175,10 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
           )}
         </div>
         
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="vz-course-meta flex flex-wrap items-center justify-between gap-2">
           {course.update_date && (
-            <div className="inline-flex h-5 min-w-[140px] items-center justify-center px-2 rounded-md bg-gray-100/80 border border-gray-200">
-              <span className="text-[10px] font-medium text-gray-600 truncate">
+            <div className="inline-flex items-center">
+              <span className="vz-course-date">
                 {t('common.updated')} {new Date(course.update_date).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
@@ -220,7 +220,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
         <Link 
           prefetch 
           href={customLink ? customLink : getUriWithOrg(orgslug, `/course/${removeCoursePrefix(course.course_uuid)}`)}
-          className="inline-flex items-center justify-center w-full px-3 py-1.5 bg-black text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors"
+          className="vz-secondary w-full"
         >
           {t('courses.start_learning')}
         </Link>

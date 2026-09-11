@@ -123,9 +123,9 @@ const CourseClient = (props: any) => {
           </div>
 
           {/* Main content: left 3/4 + right 1/4 sidebar */}
-          <div className="flex flex-col md:flex-row gap-8 pt-2">
+          <div className="vz-course-hero">
             {/* Left column */}
-            <div className="w-full md:w-3/4 space-y-4">
+            <div className="vz-course-summary space-y-4">
               {/* Thumbnail */}
               <div className="bg-gray-200 rounded-lg w-full h-[200px] md:h-[400px]" />
               {/* About text block */}
@@ -148,7 +148,7 @@ const CourseClient = (props: any) => {
           </div>
 
           {/* Chapter list */}
-          <div className="w-full my-5 mb-10">
+          <div className="vz-course-section w-full mb-10">
             <div className="h-7 bg-gray-200 rounded w-40 mb-5" />
             <div className="bg-white shadow-md shadow-gray-300/25 outline outline-1 outline-neutral-200/40 rounded-lg overflow-hidden">
               {Array.from({ length: 3 }).map((_, chIdx) => (
@@ -333,11 +333,11 @@ const CourseClient = (props: any) => {
                 { label: course.name }
               ]} />
             </div>
-            <div className="flex flex-col items-start justify-between gap-3 pb-4 md:flex-row md:items-center">
+            <div className="vz-course-heading flex flex-col items-start justify-between gap-3 pb-4 md:flex-row md:items-center">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 md:text-3xl">{course.name}</h1>
+                <h1 className="vz-page-heading">{course.name}</h1>
                 {parseCourseTags(course.tags).length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5" aria-label={t('courses.tags', 'Теги')}>
+                  <div className="vz-course-tags mt-3 flex flex-wrap gap-1.5" aria-label={t('courses.tags', 'Теги')}>
                     {parseCourseTags(course.tags).map((tag: string) => (
                       <span key={tag} className="rounded-full border px-2.5 py-1 text-xs font-semibold" style={getTagColorStyle(tag, normalizeTagColors(course.extra_metadata?.tag_colors))}>
                         {tag}
@@ -353,8 +353,8 @@ const CourseClient = (props: any) => {
               />
             </div>
 
-            <div className="flex flex-col md:flex-row gap-8 pt-2">
-              <div className="w-full md:w-3/4 space-y-4">
+            <div className="vz-course-hero">
+              <div className="vz-course-summary space-y-4">
                 {(() => {
                   const hasVideo = Boolean(course.thumbnail_video);
                   const hasImage = Boolean(course.thumbnail_image);
@@ -363,7 +363,7 @@ const CourseClient = (props: any) => {
 
                   if (showVideo && course.thumbnail_video) {
                     return (
-                      <div className="vz-frame vz-frame-interactive relative aspect-[3/2] w-full overflow-hidden">
+                      <div className="vz-course-media vz-frame relative aspect-[16/9] w-full overflow-hidden">
                         {course.thumbnail_type === 'both' && hasVideo && hasImage && (
                           <div className="absolute top-3 right-3 z-10">
                             <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1 flex space-x-1">
@@ -411,7 +411,7 @@ const CourseClient = (props: any) => {
                     );
                   } else if (showImage && course.thumbnail_image) {
                     return (
-                      <div className="vz-frame vz-frame-interactive relative aspect-[3/2] w-full overflow-hidden bg-gray-50">
+                      <div className="vz-course-media vz-frame relative aspect-[16/9] w-full overflow-hidden bg-gray-50">
                         <img
                           src={getCourseThumbnailMediaDirectory(org?.org_uuid, course?.course_uuid, course?.thumbnail_image)}
                           alt={course.name}
@@ -451,7 +451,7 @@ const CourseClient = (props: any) => {
                   } else {
                     return (
                       <div
-                        className="vz-frame relative aspect-[3/2] w-full overflow-hidden bg-gray-50"
+                        className="vz-course-media vz-frame relative aspect-[16/9] w-full overflow-hidden bg-gray-50"
                       >
                         <img src="/empty_thumbnail.png" alt={course.name} className="h-full w-full object-contain" />
                       </div>
@@ -479,12 +479,12 @@ const CourseClient = (props: any) => {
 
                 <div className="course_metadata_left space-y-2">
                   <div className="">
-                    <p className="py-5 whitespace-pre-line break-words w-full leading-relaxed tracking-normal text-pretty hyphens-auto">{course.about}</p>
+                    <p className="vz-course-about py-5 whitespace-pre-line break-words text-pretty">{course.about}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="course_metadata_right w-full md:w-1/4">
+              <div id="course-access" className="course_metadata_right">
                 <RevealGroup className="space-y-4">
                   <RevealItem>
                     <CoursesActions courseuuid={courseuuid} orgslug={orgslug} course={course} trailData={trailData} />
@@ -511,8 +511,8 @@ const CourseClient = (props: any) => {
               return (
                 <div className="w-full">
                   <div className="mb-2 pt-5">
-                    <span className="mono-label">КУРС / РЕЗУЛЬТАТЫ</span>
-                    <h2 className="mt-3 text-xl font-bold text-gray-900 md:text-2xl">{t('courses.what_you_will_learn')}</h2>
+
+                    <h2 className="vz-section-heading">{t('courses.what_you_will_learn')}</h2>
                     <div className="vz-hairline mt-4" />
                   </div>
                   <div className="vz-frame vz-frame-interactive overflow-hidden bg-white px-5 py-5 space-y-2">
@@ -552,26 +552,29 @@ const CourseClient = (props: any) => {
               )
             })()}
 
-            <div className="w-full my-5 mb-10">
+            <div className="vz-course-section w-full mb-10">
               <div className="mb-3 pt-5">
-                <span className="mono-label">КУРС / ПРОГРАММА</span>
-                <h2 className="mt-3 text-xl font-bold text-gray-900 md:text-2xl">{t('courses.course_lessons')}</h2>
+
+                <h2 className="vz-section-heading">{t('courses.course_lessons')}</h2>
                 <div className="vz-hairline mt-4" />
               </div>
-              <div className="vz-frame vz-frame-interactive overflow-hidden bg-white">
+              <div className="vz-curriculum">
                 {(course.chapters ?? []).map((chapter: any, idx: number) => {
                   const isExpanded = expandedChapters[chapter.chapter_uuid] ?? (idx === 0); // Default to expanded for first chapter
                   return (
                     <div key={chapter.chapter_uuid || `chapter-${chapter.name}`} className="">
-                      <div 
-                        className="flex items-start py-4 px-4 outline outline-1 outline-neutral-200/40 font-bold bg-neutral-50 text-neutral-600 cursor-pointer hover:bg-neutral-100 transition-colors"
+                      <button
+                        type="button"
+                        aria-expanded={isExpanded}
+                        aria-controls={`chapter-${chapter.chapter_uuid}`}
+                        className="vz-chapter-toggle"
                         onClick={() => setExpandedChapters(prev => ({
                           ...prev,
                           [chapter.chapter_uuid]: !isExpanded
                         }))}
                       >
                         {/* Chevron on the far left, vertically centered with the title */}
-                        <div className="flex flex-col justify-center mr-3 pt-1">
+                        <span className="flex flex-col justify-center mr-3 pt-1">
                           <svg 
                             className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
                             fill="none" 
@@ -580,29 +583,29 @@ const CourseClient = (props: any) => {
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
-                        </div>
+                        </span>
                         {/* Title and badge column */}
-                        <div className="flex flex-col items-start w-full">
-                          <div className="flex items-center flex-wrap mb-1 w-full min-w-0">
+                        <span className="flex flex-col items-start w-full">
+                          <span className="flex items-center flex-wrap mb-1 w-full min-w-0">
                             {/* Numbered badge */}
                             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 text-xs font-semibold mr-2 border border-neutral-300 flex-shrink-0">
                               {idx + 1}
                             </span>
-                            <h3 className="text-lg font-bold leading-tight truncate min-w-0 sm:text-base md:text-lg" style={{lineHeight: '1.2'}}>{chapter.name}</h3>
+                            <span className="vz-chapter-title min-w-0">{chapter.name}</span>
                             {chapter.is_locked && (
                               <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-semibold">
                                 <Lock size={10} />
                                 {t('course.locked', 'Заблокировано')}
                               </span>
                             )}
-                          </div>
-                          <div className="flex items-center space-x-1 text-sm text-neutral-400 font-normal">
+                          </span>
+                          <span className="flex items-center space-x-1 text-sm text-neutral-400 font-normal">
                             <Layers size={16} className="mr-1" />
                             <span>{chapter.activities.length} {t('activities.activities')}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className={`transition-all duration-200 ${isExpanded ? 'block' : 'hidden'}`}>
+                          </span>
+                        </span>
+                      </button>
+                      <div id={`chapter-${chapter.chapter_uuid}`} className={`transition-all duration-200 ${isExpanded ? 'block' : 'hidden'}`}>
                         <div className="">
                           {chapter.activities.map((activity: any) => {
                             const locked = !!activity.is_locked
@@ -625,7 +628,7 @@ const CourseClient = (props: any) => {
                                   )}
                                 </div>
                                 <div className="flex flex-col grow">
-                                  <div className="flex items-center space-x-2 w-full">
+                                  <div className="flex flex-wrap items-center gap-2 w-full">
                                     <p className={`font-semibold transition-colors ${locked ? 'text-neutral-400' : 'text-neutral-600 group-hover:text-neutral-800'}`}>{activity.name}</p>
                                     {locked && (
                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-semibold">
@@ -634,7 +637,7 @@ const CourseClient = (props: any) => {
                                       </span>
                                     )}
                                     {!locked && isActivityCurrent(activity) && (
-                                      <div className="flex items-center space-x-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full text-xs font-semibold animate-pulse">
+                                      <div className="flex items-center space-x-1 text-primary bg-accent px-2 py-0.5 rounded-md text-xs font-medium">
                                         <span>{t('activities.current')}</span>
                                       </div>
                                     )}

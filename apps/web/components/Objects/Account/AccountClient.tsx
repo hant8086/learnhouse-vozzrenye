@@ -82,9 +82,9 @@ const AccountClient = ({ orgslug, org_id, subpage }: AccountClientProps) => {
         </div>
 
         {/* Layout - Sidebar Left, Content Right */}
-        <div className="flex flex-col md:flex-row gap-6 pt-2">
+        <div className="vz-account flex flex-col md:flex-row gap-6 pt-2">
           {/* Left Sidebar - User Info (Desktop only) */}
-          <div className="hidden md:block w-full md:w-72 lg:w-80 flex-shrink-0">
+          <div className="hidden md:block w-full md:w-56 lg:w-64 flex-shrink-0">
             <div className="sticky top-24">
               <AccountSidebar orgslug={orgslug} currentSubpage={subpage} />
             </div>

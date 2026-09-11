@@ -85,7 +85,7 @@ export default function AuthBrandingPanel({ org, welcomeText, title, subtitle }:
   return (
     <div className="relative h-full w-full">
       {/* Inset rounded card (platform-style) */}
-      <div className="absolute inset-16 rounded-2xl overflow-hidden">
+      <div className="vz-auth-artwork absolute inset-16 rounded-2xl overflow-hidden">
         {/* Base layer: org's chosen background (gradient | custom | unsplash) */}
         <div className="absolute inset-0" style={getBackgroundStyle()} />
 

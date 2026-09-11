@@ -28,9 +28,9 @@ interface LandingCustomProps {
 
 function LandingSectionHeading({ eyebrow, title }: { eyebrow: string; title: ReactNode }) {
   return (
-    <header className="mb-6">
+    <header className="vz-home-section-heading mb-6">
       <span className="mono-label">{eyebrow}</span>
-      <h2 className="mt-3 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">{title}</h2>
+      <h2 className="vz-section-heading">{title}</h2>
       <div className="vz-hairline mt-4" />
     </header>
   )
@@ -154,7 +154,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
         return (
           <div 
             key={`text-image-${section.title}`}
-            className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
+            className="vz-home-section"
           >
             <div className={`vz-frame vz-frame-interactive flex flex-col items-center gap-8 bg-white p-6 md:flex-row md:gap-12 md:p-8 lg:p-12 ${
               section.flow === 'right' ? 'md:flex-row-reverse' : ''
@@ -200,7 +200,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
         return (
           <div 
             key={`logos-${section.type}`}
-            className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
+            className="vz-home-section"
           >
             {section.title && (
               <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / СЕТЬ" title={section.title} />
@@ -224,7 +224,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
         return (
           <div 
             key={`people-${section.title}`}
-            className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
+            className="vz-home-section"
           >
           <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / КОМАНДА" title={section.title} />
             <div className="flex flex-wrap justify-center gap-x-20 gap-y-8">
@@ -254,12 +254,12 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             </div>
           </div>
         )
-      case 'featured-courses':
+      case 'featured-courses': {
         if (!allCourses) {
           return (
             <div 
               key={`featured-courses-${section.title}`}
-              className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
+              className="vz-home-section"
             >
               <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / ИЗБРАННЫЕ КУРСЫ" title={section.title} />
               <div className="text-center py-6 text-gray-500">{t('courses.loading_courses')}</div>
@@ -275,10 +275,10 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
         return (
           <div 
             key={`featured-courses-${section.title}`}
-            className="py-16 mx-2 sm:mx-4 lg:mx-16 w-full"
+            className="vz-home-section"
           >
             <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / ИЗБРАННЫЕ КУРСЫ" title={section.title} />
-            <RevealGroup className="grid grid-cols-1 gap-6 w-full sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <RevealGroup className="vz-course-grid">
               {featuredCourses.map((course: any) => (
                 <RevealItem key={course.course_uuid} className="flex w-full justify-center">
                   <CourseThumbnailLanding course={course} orgslug={orgslug} />
@@ -292,6 +292,7 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
             </RevealGroup>
           </div>
         )
+      }
       case 'showcase':
         return <LandingShowcase key={`showcase-${section.greetingHeading}`} section={section} orgslug={orgslug} />
       default:
@@ -300,12 +301,12 @@ function LandingCustom({ landing, orgslug }: LandingCustomProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-16 h-full">
+    <div className="vz-home flex flex-col items-center w-full mx-auto h-full">
       {visibleSections.map((section) => renderSection(section))}
       {allCourses && getPublishedCatalogTail(allCourses, editorialCourseIds).length > 0 && (
         <section className="w-full py-16">
           <LandingSectionHeading eyebrow="ОРГАНИЗАЦИЯ / КАТАЛОГ КУРСОВ" title={t('courses.courses')} />
-          <RevealGroup className="grid grid-cols-1 gap-6 w-full sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <RevealGroup className="vz-course-grid">
             {getPublishedCatalogTail(allCourses, editorialCourseIds)
               .map((course: any) => (
                 <RevealItem key={`catalog-${course.course_uuid}`} className="flex w-full justify-center">

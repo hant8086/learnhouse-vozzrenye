@@ -1,4 +1,5 @@
 import '../styles/globals.css'
+import '../styles/learner.css'
 import React from 'react'
 import type { Metadata } from 'next'
 import Providers from '@components/Providers'
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
 }
 
 const wixMadeforText = Wix_Madefor_Text({
-  subsets: ['latin'],
+  subsets: ['latin', 'cyrillic'],
   display: 'swap',
   variable: '--font-default',
 })

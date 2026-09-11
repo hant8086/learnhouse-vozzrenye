@@ -27,7 +27,7 @@ export function AccountSidebar({ orgslug, currentSubpage }: AccountSidebarProps)
   return (
     <div className="space-y-4">
       {/* User Info Card */}
-      <div className="bg-white nice-shadow rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         {/* User Profile Header */}
         <div className="p-4 border-b border-gray-100">
           <div className="flex flex-col items-center text-center">
@@ -63,14 +63,15 @@ export function AccountSidebar({ orgslug, currentSubpage }: AccountSidebarProps)
               return (
                 <Link
                   key={item.id}
+                  aria-current={isActive ? 'page' : undefined}
                   href={getUriWithOrg(orgslug, `/account/${item.id}`)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-gray-900 text-white'
+                      ? 'bg-accent text-accent-foreground'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon size={18} className={isActive ? 'text-white' : 'text-gray-500'} />
+                  <Icon size={18} className={isActive ? 'text-accent-foreground' : 'text-muted-foreground'} />
                   <span className="text-sm font-medium">{t(item.labelKey)}</span>
                 </Link>
               )

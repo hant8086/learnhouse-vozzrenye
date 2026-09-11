@@ -4,7 +4,6 @@ import Modal from '@components/Objects/StyledElements/Modal/Modal'
 import React, { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
-import TypeOfContentTitle from '@components/Objects/StyledElements/Titles/TypeOfContentTitle'
 import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import NewCourseButton from '@components/Objects/StyledElements/Buttons/NewCourseButton'
@@ -152,7 +151,7 @@ function Courses(props: CourseProps) {
             {/* Search bar placeholder */}
             <div className="h-10 bg-gray-200 rounded-lg w-full sm:w-80 mb-4" />
             {/* Course card grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="vz-course-grid">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="rounded-xl overflow-hidden">
                   {/* Thumbnail area */}
@@ -176,11 +175,11 @@ function Courses(props: CourseProps) {
     <div className="w-full">
       <GeneralWrapperStyled>
         <div className="flex flex-col space-y-2 mb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <TypeOfContentTitle title={t('courses.courses')} type="cou" />
-              <div className="vz-hairline" />
-            </div>
+          <div className="vz-catalog-header">
+            <header>
+              <h1 className="vz-page-heading">{t('courses.courses')}</h1>
+              <p className="vz-page-intro">{t('design.catalog_intro')}</p>
+            </header>
             <AuthenticatedClientElement
               checkMethod="roles"
               action="create"
@@ -211,7 +210,7 @@ function Courses(props: CourseProps) {
 
           {/* Search and Usergroup Filter */}
           {allCourses.length > 0 && (
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <div className="vz-catalog-tools">
               <div className="relative w-full sm:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
@@ -220,12 +219,13 @@ function Courses(props: CourseProps) {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   aria-label={t('courses.search_courses')}
                   placeholder={t('courses.search_courses')}
-                  className="w-full pl-10 pr-10 py-2.5 bg-white nice-shadow rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 border-0"
+                  className="vz-field w-full pl-10 pr-10 py-2.5 text-sm"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label={t('design.clear_search')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center text-muted-foreground hover:text-foreground"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -238,9 +238,10 @@ function Courses(props: CourseProps) {
                   <div className="relative">
                     <Users className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                     <select
+                      aria-label={t('courses.usergroup_filter.all_courses')}
                       value={selectedUsergroupId}
                       onChange={(e) => handleUsergroupChange(e.target.value)}
-                      className="pl-8 pr-8 py-2.5 bg-white nice-shadow rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 border-0 appearance-none cursor-pointer min-w-[160px]"
+                      className="vz-field pl-8 pr-8 py-2.5 text-sm appearance-none cursor-pointer min-w-[160px]"
                     >
                       <option value="">{t('courses.usergroup_filter.all_courses')}</option>
                       {usergroups.map((ug: any) => (
@@ -252,6 +253,8 @@ function Courses(props: CourseProps) {
                   </div>
                   <button
                     onClick={() => setShowUsergroupInfo(!showUsergroupInfo)}
+                    aria-label={t('courses.usergroup_filter.info_title')}
+                    aria-expanded={showUsergroupInfo}
                     className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-md hover:bg-gray-100"
                   >
                     <Info className="w-3.5 h-3.5" />
@@ -276,11 +279,12 @@ function Courses(props: CourseProps) {
 
           <div>
             {catalogGroups.map(({ section, courses }) => (
-              <section key={section?.key ?? 'other'} className="mb-10">
-                <h2 className="mb-4 text-2xl font-bold tracking-tight text-gray-900">
-                  {section?.title ?? t('courses.other', 'Other')}
-                </h2>
-                <RevealGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <section key={section?.key ?? 'other'} className="mb-12">
+                <div className="vz-section-title">
+                  <h2 className="vz-section-heading">{section?.title ?? t('courses.other', 'Other')}</h2>
+                  <span className="vz-section-count">{courses.length}</span>
+                </div>
+                <RevealGroup className="vz-course-grid">
                   {courses.map((course: any, index: number) => (
                     <RevealItem key={course.course_uuid} className="flex h-full">
                       <CourseThumbnail course={course} orgslug={orgslug} isPriority={index < 3} />
@@ -341,7 +345,7 @@ function Courses(props: CourseProps) {
                 {!isAuthenticated && (
                   <Link
                     href={getUriWithOrg(orgslug, '/login')}
-                    className="inline-flex items-center gap-2 justify-center px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
+                    className="vz-primary"
                   >
                     <LogIn size={16} />
                     {t('auth.sign_in', 'Sign in')}

@@ -1,6 +1,6 @@
 'use client';
-import { use, useEffect, type ReactNode } from "react";
-import '@styles/globals.css'
+import { use, useEffect, type ReactNode, type CSSProperties } from "react";
+import { useTranslation } from 'react-i18next'
 import Watermark from '@components/Objects/Watermark'
 import { SessionGate } from '@components/Contexts/LHSessionContext'
 import { OrgMenu } from '@components/Objects/Menus/OrgMenu'
@@ -18,15 +18,6 @@ import { usePlan } from '@components/Hooks/usePlan'
 import { getGoogleFontUrl, DEFAULT_FONT } from '@/lib/fonts'
 import StaticLegalFooter from '@components/Footers/StaticLegalFooter'
 import { getLandingFooterLinks, normalizeLandingUrl } from '@/lib/landing/footer'
-
-// Helper to convert hex to rgba
-const hexToRgba = (hex: string, alpha: number): string => {
-  if (!hex || hex.length < 7) return 'transparent'
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
 
 function OrgFooter() {
   const org = useOrg() as any
@@ -66,8 +57,8 @@ function OrgFooter() {
 
 function LayoutContent({ children, orgslug }: { children: ReactNode; orgslug: string }) {
   const org = useOrg() as any
-  const primaryColor = org?.config?.config?.customization?.general?.color || org?.config?.config?.general?.color || ''
   const customFont = org?.config?.config?.customization?.general?.font || org?.config?.config?.general?.font || ''
+  const { t } = useTranslation()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   // chrome=none strips the org navigation/footer so this route can be embedded
@@ -116,18 +107,19 @@ function LayoutContent({ children, orgslug }: { children: ReactNode; orgslug: st
 
   return (
     <div
-      className="flex flex-col min-h-screen"
+      className="vz-learner flex flex-col min-h-dvh"
       style={{
-        backgroundColor: primaryColor ? hexToRgba(primaryColor, 0.05) : 'transparent',
-        ...(customFont ? { fontFamily: `'${customFont}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` } : {}),
-      }}
+        backgroundColor: 'var(--vz-page)',
+        ...(customFont ? { '--font-sans': `'${customFont}', system-ui, sans-serif`, fontFamily: `'${customFont}', system-ui, sans-serif` } : {}),
+      } as CSSProperties}
     >
+      <a href="#learner-content" className="vz-skip">{t('design.skip_content')}</a>
       <PageViewTracker />
       {!chromeless && <OrgJoinBanner />}
       {!chromeless && <OrgMenu orgslug={orgslug} />}
       {/* Org-wide 2FA policy: renders nothing unless this user is non-compliant. */}
       {!chromeless && <OrgMFAPolicyGate />}
-      <div className="flex-1 relative" style={{ zIndex: 'var(--z-content)' }}>
+      <div tabIndex={-1} id="learner-content" className="flex-1 relative" style={{ zIndex: 'var(--z-content)' }}>
         {children}
       </div>
       {!isFullBleedPage && !chromeless && <OrgFooter />}
