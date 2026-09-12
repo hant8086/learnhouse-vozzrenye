@@ -318,7 +318,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
               onClick={handleCardOpen}
               className="vz-course-cta"
             >
-              {t('courses.start_learning')}
+              {t('design.open_module')}
             </Link>
           )}
         </div>

@@ -187,7 +187,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
           href={customLink ? customLink : getUriWithOrg(orgslug, `/course/${removeCoursePrefix(course.course_uuid)}`)}
           className="vz-secondary w-full"
         >
-          {t('courses.start_learning')}
+          {t('design.open_module')}
         </Link>
       </div>
     </div>

@@ -427,3 +427,33 @@ html :is(.vz-learner, .vz-auth) .vz-hairline { background: linear-gradient(90deg
 .vz-chapter-menu { max-height: min(70dvh, var(--radix-popover-content-available-height)); border-color: var(--vz-line-strong); border-radius: 12px; }
 .vz-chapter-menu button { min-width: 36px; min-height: 36px; }
 @media (prefers-reduced-motion: reduce) { .vz-chapter-menu { animation: none; transition: none; } }
+
+/* Reading controls: one compact toolbar and a balanced completion row. */
+.vz-reading-toolbar {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  position: relative; z-index: var(--z-interactive); padding: 12px;
+}
+.vz-reader-page[data-reading="true"] > .vz-reading-toolbar { padding: 0 0 16px; }
+.vz-focus-bar .vz-reader-icon-button { width: 44px; height: 44px; border-radius: 8px; }
+.vz-completion-row, .vz-focus-bottom .vz-focus-controls {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px;
+}
+.vz-completion-next-actions, .vz-focus-bottom .vz-focus-next-actions { display: contents; }
+.vz-completion-prev, .vz-focus-prev { grid-column: 1; grid-row: 1; justify-self: start; min-width: 0; }
+.vz-completion-row .vz-focus-actions, .vz-focus-bottom .vz-focus-actions { grid-column: 2; grid-row: 1; justify-self: center; margin: 0; }
+.vz-completion-next, .vz-focus-next-actions > button { grid-column: 3; grid-row: 1; justify-self: end; min-width: 0; margin: 0; }
+/* Cover pixels reach the outer edge. Only the text body carries a border;
+   no border is deducted from the 3:2 image's available height. */
+.vz-learner .vz-course-card { border: 0; }
+.vz-course-card .vz-course-cover { border: 0; flex-shrink: 0; line-height: 0; }
+.vz-course-card .vz-course-cover img { display: block; }
+.vz-course-card .vz-course-body { border: 1px solid var(--vz-line); border-top: 0; border-radius: 0 0 .875rem .875rem; }
+.vz-course-card:is(:hover,:focus-within) .vz-course-body { border-color: color-mix(in srgb, var(--vz-signal) 50%, var(--vz-line)); }
+@media (max-width: 767px) {
+  .vz-completion-row, .vz-focus-bottom .vz-focus-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  .vz-completion-row .vz-focus-actions, .vz-focus-bottom .vz-focus-actions { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+  .vz-completion-next, .vz-focus-next-actions > button { grid-column: 2; grid-row: 1; }
+}
+
+.vz-completion-prev > div, .vz-completion-next > div { max-width: 100%; }
+.vz-course-card > a:has(.vz-course-cover) { display: block; line-height: 0; flex-shrink: 0; }

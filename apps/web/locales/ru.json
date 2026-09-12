@@ -144,7 +144,7 @@
         "status": "Функция отключена",
         "enable_feature": "Перейти к настройкам",
         "names": {
-          "courses": "Курсы",
+          "courses": "Модули",
           "communities": "Сообщества",
           "podcasts": "Подкасты",
           "payments": "Платежи",
@@ -401,7 +401,7 @@
   },
   "courses": {
     "my_courses": "Мои курсы",
-    "courses": "Курсы",
+    "courses": "Модули",
     "no_courses": "Курсов пока нет",
     "create_courses_placeholder": "Создайте курсы, чтобы добавить контент",
     "loading_courses": "Загрузка курсов...",
@@ -1114,7 +1114,7 @@
     "search_suggestions": "Поисковые подсказки",
     "quick_results": "Быстрые результаты",
     "view_all_results": "Посмотреть все результаты",
-    "course": "Курс",
+    "course": "Модуль",
     "user": "Пользователь",
     "start_heading": "Что вы ищете?",
     "start_subtitle": "Ищите по всем пространствам этой организации в одном месте.",
@@ -1125,7 +1125,7 @@
     "next": "Далее",
     "types": {
       "all": "Все",
-      "courses": "Курсы",
+      "courses": "Модули",
       "users": "Участники",
       "communities": "Сообщества",
       "discussions": "Обсуждения",
@@ -1326,7 +1326,7 @@
             "description": "Добавьте организационные принадлежности"
           },
           "courses": {
-            "label": "Курсы",
+            "label": "Модули",
             "description": "Отобразите созданные вами курсы"
           }
         },
@@ -1410,7 +1410,7 @@
             "add_affiliation": "Добавить принадлежность"
           },
           "courses": {
-            "title": "Курсы",
+            "title": "Модули",
             "info": "Ваши созданные курсы будут автоматически отображаться в этом разделе."
           }
         },
@@ -1463,7 +1463,7 @@
     "home": {
       "cards": {
         "courses": {
-          "title": "Курсы",
+          "title": "Модули",
           "description": "Создание и управление курсами, главами и активностями"
         },
         "organization": {
@@ -1486,7 +1486,7 @@
       "analytics": "Аналитика",
       "members": "Участники",
       "settings": "Настройки",
-      "courses": "Курсы",
+      "courses": "Модули",
       "communities": "Сообщества",
       "podcasts": "Подкасты",
       "boards": "Доски",
@@ -1529,7 +1529,7 @@
       "includes_purchased": "Включая {{count}} купленных"
     },
     "courses": {
-      "title": "Курсы",
+      "title": "Модули",
       "rights_guide": "Руководство по правам",
       "create_course": "Создать курс",
       "create_new_course": "Создать новый курс",
@@ -1567,7 +1567,7 @@
         "retry_button": "Повторить"
       },
       "overview_top": {
-        "course_label": "Курс",
+        "course_label": "Модуль",
         "rights_guide_button": "Руководство по правам"
       },
       "settings": {
@@ -2535,7 +2535,7 @@
           },
           "courses": {
             "description": "Включить курсы и отслеживание прогресса",
-            "title": "Курсы"
+            "title": "Модули"
           },
           "podcasts": {
             "description": "Включить создание подкастов и аудио контента",
@@ -2576,7 +2576,7 @@
         "resources": {
           "all": "Все ресурсы",
           "user": "Пользователь",
-          "course": "Курс",
+          "course": "Модуль",
           "org": "Организация"
         },
         "date_ranges": {
@@ -2659,7 +2659,7 @@
             "description": "Добавьте секцию для выделения членов команды"
           },
           "featured_courses": {
-            "label": "Курсы",
+            "label": "Модули",
             "description": "Добавьте секцию для демонстрации выбранных курсов"
           },
           "showcase": {
@@ -2811,7 +2811,7 @@
           },
           "placeholders": {
             "value": "12+",
-            "stat_label": "Курсы",
+            "stat_label": "Модули",
             "feature_title": "Название преимущества",
             "feature_description": "Что получает учащийся",
             "step_title": "Название шага",
@@ -3000,7 +3000,7 @@
       },
       "usage": {
         "plan_resource_usage": "План и использование ресурсов",
-        "courses": "Курсы",
+        "courses": "Модули",
         "members_label": "Участники",
         "admin_seats": "Места админов",
         "unlimited": "Безлимитно",
@@ -3120,8 +3120,8 @@
         "back_to_students": "Назад к студентам",
         "no_behavioral": "Нет поведенческих данных (аналитика может быть не настроена для этого периода).",
         "ranges": { "d30": "30 дней", "d90": "90 дней", "y1": "1 год" },
-        "kpi": { "courses": "Курсы", "completed": "{{count}} завершено", "avg_progress": "Средний прогресс", "time_spent": "Затраченное время", "assignments": "Задания", "avg_grade": "средняя {{grade}}", "certificates": "Сертификаты", "connections": "Подключения", "last": "последнее {{date}}" },
-        "tabs": { "connections": "Подключения", "courses": "Курсы", "assignments": "Задания", "code": "Код", "community": "Сообщество", "certificates": "Сертификаты", "behavior": "Поведение" },
+        "kpi": { "courses": "Модули", "completed": "{{count}} завершено", "avg_progress": "Средний прогресс", "time_spent": "Затраченное время", "assignments": "Задания", "avg_grade": "средняя {{grade}}", "certificates": "Сертификаты", "connections": "Подключения", "last": "последнее {{date}}" },
+        "tabs": { "connections": "Подключения", "courses": "Модули", "assignments": "Задания", "code": "Код", "community": "Сообщество", "certificates": "Сертификаты", "behavior": "Поведение" },
         "identity": { "verified": "Подтверждён", "unverified": "Не подтверждён", "via": "через {{method}}" },
         "connections": { "title": "Подключения", "empty": "Пока нет записанных подключений." },
         "courses": { "title": "Прогресс по курсам", "empty": "Не записан ни на один курс.", "activities": "{{done}}/{{total}} активностей", "enrolled": "Записан {{date}}" },
@@ -3492,7 +3492,7 @@
             "permissions": {
               "title": "Разрешения",
               "sections": {
-                "courses": "Курсы",
+                "courses": "Модули",
                 "users": "Пользователи",
                 "usergroups": "Группы пользователей",
                 "organizations": "Организации",
@@ -3557,7 +3557,7 @@
               "sections": {
                 "activities": "Занятия",
                 "coursechapters": "Главы курсов",
-                "courses": "Курсы",
+                "courses": "Модули",
                 "dashboard": "Панель управления",
                 "organizations": "Организации",
                 "roles": "Роли",
@@ -3588,7 +3588,7 @@
           "resources": {
             "activities": "Активности",
             "coursechapters": "Главы курса",
-            "courses": "Курсы",
+            "courses": "Модули",
             "dashboard": "Панель управления",
             "organizations": "Организации",
             "roles": "Роли",
@@ -3601,7 +3601,7 @@
     "assignments": {
       "home": {
         "title": "Задания",
-        "course_label": "Курс",
+        "course_label": "Модуль",
         "assignment_label": "Задание",
         "course_editor": "Редактор курса",
         "editor": "Редактор",
@@ -4028,7 +4028,7 @@
       "type_to_search": "Введите не менее 2 символов для поиска контента",
       "groups": {
         "pages": "Страницы",
-        "courses": "Курсы",
+        "courses": "Модули",
         "users": "Пользователи",
         "communities": "Сообщества",
         "discussions": "Обсуждения",
@@ -4496,7 +4496,7 @@
       "views": "Просмотры",
       "enrollments": "Записи",
       "completions": "Завершения",
-      "course": "Курс",
+      "course": "Модуль",
       "date": "Дата",
       "user": "Пользователь",
       "type": "Тип",
@@ -4532,7 +4532,7 @@
       "activity": "Активность",
       "avg_time": "Среднее время",
       "activities": "Активности",
-      "courses": "Курсы",
+      "courses": "Модули",
       "enrollments": "Зачисления",
       "completions": "Завершения"
     },
@@ -5624,7 +5624,7 @@
     "next_payment": "Следующий платёж",
     "status": "Статус",
     "usage": "Использование",
-    "courses": "Курсы",
+    "courses": "Модули",
     "members": "Участники",
     "admin_seats": "Места администраторов",
     "ai_credits": "AI-кредиты",

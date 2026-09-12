@@ -33,8 +33,6 @@ import ActivityShareDropdown from '@components/Pages/Activity/ActivityShareDropd
 import FixedActivitySecondaryBar from '@components/Pages/Activity/FixedActivitySecondaryBar'
 import CourseEndView from '@components/Pages/Activity/CourseEndView'
 import { motion, AnimatePresence } from 'motion/react'
-import { Breadcrumbs } from '@components/Objects/Breadcrumbs/Breadcrumbs'
-import { BookCopy } from 'lucide-react'
 import MiniInfoTooltip from '@components/Objects/MiniInfoTooltip'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import ActivityGate from '@components/Objects/Courses/ActivityGate'
@@ -603,7 +601,7 @@ function ActivityClient(props: ActivityClientProps) {
                     style={{ zIndex: 'var(--z-modal-content)' }}
                   >
                     <div className="container mx-auto px-4 py-2">
-                      <div className="flex items-center justify-between h-14">
+                      <div className="flex items-center justify-between h-12">
                         {/* Progress Indicator - Moved to left */}
                         <motion.div 
                           initial={isInitialRender.current ? false : { opacity: 0, x: -20 }}
@@ -644,39 +642,6 @@ function ActivityClient(props: ActivityClientProps) {
                           </div>
                         </motion.div>
 
-                        {/* Center Course Info */}
-                        <motion.div 
-                          initial={isInitialRender.current ? false : { opacity: 0, y: -20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.1 }}
-                          className="flex items-center space-x-4"
-                        >
-                          <div className="flex">
-                            <Link
-                              href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
-                            >
-                              <img
-                                className="w-[60px] h-[34px] rounded-md drop-shadow-md"
-                                src={course.thumbnail_image
-                                  ? getCourseThumbnailMediaDirectory(
-                                      org?.org_uuid,
-                                      course.course_uuid,
-                                      course.thumbnail_image
-                                    )
-                                  : '/empty_thumbnail.png'
-                                }
-                                alt=""
-                              />
-                            </Link>
-                          </div>
-                          <div className="flex flex-col -space-y-1">
-                            <p className="font-bold text-[#d4dce3] text-sm">{t('search.course')} </p>
-                            <h1 className="font-bold text-[#f4f7f8] text-lg first-letter:uppercase">
-                              {course.name}
-                            </h1>
-                          </div>
-                        </motion.div>
-
                         {/* Minimize and Chapters - Moved to right */}
                         <motion.div
                           initial={isInitialRender.current ? false : { opacity: 0, x: 20 }}
@@ -696,7 +661,7 @@ function ActivityClient(props: ActivityClientProps) {
                               />
                             </div>
                           )}
-                          <ActivityChapterDropdown
+                          <ActivityChapterDropdown compact
                             course={course}
                             currentActivityId={activity ? (activity.activity_uuid ? activity.activity_uuid.replace('activity_', '') : activityid.replace('activity_', '')) : activityid.replace('activity_', '')}
                             orgslug={orgslug}
@@ -706,7 +671,8 @@ function ActivityClient(props: ActivityClientProps) {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setIsFocusMode(false)}
-                            className="vz-focus-button bg-[#17212b] nice-shadow p-2 rounded-full cursor-pointer hover:bg-[#24313d]"
+                            className="vz-reader-icon-button"
+                            aria-label={t('activities.exit_focus_mode')}
                             title={t('activities.exit_focus_mode')}
                           >
                             <Minimize2 size={16} className="text-[#d4dce3]" />
@@ -832,13 +798,6 @@ function ActivityClient(props: ActivityClientProps) {
                   />
                 ) : (
                   <div className="vz-reader space-y-4 pt-0 relative">
-                    <div className="pt-2 pb-3 sm:pb-6">
-                      <Breadcrumbs items={[
-                        { label: t('courses.courses'), href: getUriWithOrg(orgslug, '/courses'), icon: <BookCopy size={14} /> },
-                        { label: course.name, href: getUriWithOrg(orgslug, `/course/${courseuuid}`) },
-                        { label: displayName }
-                      ]} />
-                    </div>
                     <div className="space-y-3 sm:space-y-4 activity-info-section relative" style={{ zIndex: 'var(--z-content)' }}>
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                           <div className="flex space-x-4 sm:space-x-6 items-center">
@@ -966,12 +925,7 @@ function ActivityClient(props: ActivityClientProps) {
                                 {activity.activity_type != 'TYPE_ASSIGNMENT' && (
                                   <>
                                     <AIActivityAsk activity={activity} />
-                                    <ActivityChapterDropdown
-                                      course={course}
-                                      currentActivityId={activity.activity_uuid ? activity.activity_uuid.replace('activity_', '') : activityid.replace('activity_', '')}
-                                      orgslug={orgslug}
-                                      trailData={trailData}
-                                    />
+
                                     {contributorStatus === 'ACTIVE' && activity.activity_type == 'TYPE_DYNAMIC' && (
                                       <Link
                                         href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}/activity/${activityid}/edit`}
@@ -1006,19 +960,12 @@ function ActivityClient(props: ActivityClientProps) {
                           ) : (
                             <div className="flex gap-6">
                               <div data-reading={activity.activity_type === 'TYPE_DYNAMIC'} className={`vz-reader-page flex-1 min-w-0 ${activity.activity_type === 'TYPE_SCORM' ? 'rounded-xl overflow-hidden' : ''} ${bgColor} relative isolate`} style={{ zIndex: 'var(--z-base)' }}>
-                                <button
-                                  onClick={() => setIsFocusMode(true)}
-                                  className={`absolute ${activity.activity_type === 'TYPE_SCORM' ? 'top-2 right-2' : 'top-4 right-4'} flex bg-card hover:bg-muted p-2 rounded-md border border-border cursor-pointer transition-all duration-200 group overflow-hidden pointer-events-auto`}
-                                  style={{ zIndex: 'var(--z-interactive)' }}
-                                  title={t('activities.focus_mode')}
-                                >
-                                  <div className="flex items-center">
-                                    <Maximize2 size={16} className="text-gray-700" />
-                                    <span className="text-xs font-bold text-gray-700 hidden sm:inline ml-2 whitespace-nowrap">
-                                      {t('activities.focus_mode')}
-                                    </span>
-                                  </div>
-                                </button>
+                                <div className="vz-reading-toolbar">
+                                  <ActivityChapterDropdown compact course={course} currentActivityId={activity.activity_uuid?.replace('activity_', '') || activityid.replace('activity_', '')} orgslug={orgslug} trailData={trailData} />
+                                  <button type="button" onClick={() => setIsFocusMode(true)} className="vz-reader-icon-button" aria-label={t('activities.focus_mode')} title={t('activities.focus_mode')}>
+                                    <Maximize2 size={18} />
+                                  </button>
+                                </div>
                                 {activityContent}
                               </div>
                               <Suspense fallback={null}>
@@ -1031,15 +978,15 @@ function ActivityClient(props: ActivityClientProps) {
 
                       {/* Activity Actions below the content box */}
                       {activity && activity.published == true && activity.content.paid_access != false && (
-                        <div className="vz-reader-actions flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 w-full gap-2 sm:gap-0">
-                          <div className="order-1 sm:order-none">
+                        <div className="vz-reader-actions vz-completion-row mt-4 w-full">
+                          <div className="vz-completion-prev">
                             <PreviousActivityButton
                               course={course}
                               currentActivityId={activity.id}
                               orgslug={orgslug}
                             />
                           </div>
-                          <div className="flex items-center justify-between sm:justify-end space-x-2 order-2 sm:order-none">
+                          <div className="vz-completion-next-actions">
                             <ActivityActions
                               activity={activity}
                               activityid={activityid}
@@ -1049,11 +996,13 @@ function ActivityClient(props: ActivityClientProps) {
                               showNavigation={false}
                               trailData={trailData}
                             />
-                            <NextActivityButton
-                              course={course}
-                              currentActivityId={activity.id}
-                              orgslug={orgslug}
-                            />
+                            <div className="vz-completion-next">
+                              <NextActivityButton
+                                course={course}
+                                currentActivityId={activity.id}
+                                orgslug={orgslug}
+                              />
+                            </div>
                           </div>
                         </div>
                       )}

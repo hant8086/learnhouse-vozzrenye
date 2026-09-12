@@ -66,3 +66,14 @@ Visual references: the user's `vozzrenye-landing/docs/design/ORG-DESIGN-SYSTEM.m
 - The mobile secondary navigation includes reading mode and a compact chapter selector. The selector uses the existing Radix Popover for viewport collision handling, focus return and Escape dismissal.
 
 This iteration is code only. Push, build and infrastructure are owned by the user. Verify on their preview: 3:2 image edges, sticky contents in normal/focus modes, dark contents contrast, multiline Russian breadcrumbs and mobile controls at 320/390/768px. Include keyboard and reduced-motion checks.
+
+## Reader simplification — 12 September 2026
+
+- Reader breadcrumbs are removed. The existing course identity below the header stays available.
+- Focus header contains progress and compact controls, without repeated course/chapter title. Chapter and focus controls are equal 44px icon buttons with accessible labels.
+- Normal reading places those two controls beside each other in a dedicated toolbar above content.
+- Completion sits in the true center between previous/next controls on desktop; on mobile it occupies its own centered row below navigation.
+- Standalone Russian course/module navigation labels use «Модуль» / «Модули». Catalog and landing card actions use «Открыть модуль».
+- Card borders belong to the text body, not the cover wrapper: original 3:2 artwork reaches the card edges without a second inset border or cropping.
+
+Server visual acceptance remains pending. Check long Russian titles, equal control sizes, completion centering and cover edges at 320/390/768/1440px in both themes. This is a code-only iteration; no push or build.
