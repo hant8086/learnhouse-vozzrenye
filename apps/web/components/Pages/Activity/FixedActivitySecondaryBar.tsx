@@ -1,17 +1,21 @@
 'use client'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
 import { getUriWithOrg } from '@services/config/config'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState, useRef, useMemo, memo } from 'react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useTranslation } from 'react-i18next'
+import ActivityChapterDropdown from './ActivityChapterDropdown'
+import { useJoinBannerVisible, JOIN_BANNER_HEIGHT } from '@components/Objects/Banners/OrgJoinBanner'
 
 interface FixedActivitySecondaryBarProps {
   course: any
   currentActivityId: string
   orgslug: string
   activity: any
+  onEnterFocusMode: () => void
+  trailData?: any
 }
 
 // Memoized navigation buttons component
@@ -34,10 +38,10 @@ const NavigationButtons = memo(({
   const isLastActivity =
     allActivities.length > 0 && currentIndex === allActivities.length - 1;
   return (
-    <div className="flex items-center space-x-2 sm:space-x-3">
+    <div className="flex items-center space-x-2 md:space-x-3">
       <button
         onClick={() => navigateToActivity(prevActivity)}
-        className={`flex items-center space-x-1 sm:space-x-2 py-1.5 px-1.5 sm:px-2 rounded-md transition-all duration-200 ${
+        className={`flex items-center space-x-1 md:space-x-2 py-1.5 px-1.5 md:px-2 rounded-md transition-all duration-200 ${
           prevActivity 
             ? 'text-gray-700 hover:bg-gray-100' 
             : 'text-gray-300 cursor-not-allowed'
@@ -45,22 +49,22 @@ const NavigationButtons = memo(({
         disabled={!prevActivity}
         title={prevActivity ? `${t('common.previous')}: ${prevActivity.name}` : t('activities.no_previous_activity')}
       >
-        <ChevronLeft size={16} className="shrink-0 sm:w-5 sm:h-5" />
-        <div className="flex flex-col items-start hidden sm:flex">
+        <ChevronLeft size={16} className="shrink-0 md:w-5 md:h-5" />
+        <div className="flex flex-col items-start hidden md:flex">
           <span className="text-xs text-gray-500">{t('common.previous')}</span>
-          <span className="text-sm font-medium text-left truncate max-w-[100px] sm:max-w-[150px]">
+          <span className="text-sm font-medium text-left truncate max-w-[100px] md:max-w-[150px]">
             {prevActivity ? prevActivity.name : t('activities.no_previous_activity')}
           </span>
         </div>
       </button>
 
-      <span className="text-sm font-medium text-gray-500 px-1 sm:px-2">
+      <span className="text-sm font-medium text-gray-500 px-1 md:px-2">
         {currentIndex + 1} {t('common.of')} {allActivities.length}
       </span>
 
       <button
         onClick={() => navigateToActivity(nextActivity)}
-        className={`flex items-center space-x-1 sm:space-x-2 py-1.5 px-1.5 sm:px-2 rounded-md transition-all duration-200`}
+        className={`flex items-center space-x-1 md:space-x-2 py-1.5 px-1.5 md:px-2 rounded-md transition-all duration-200`}
         disabled={!nextActivity && !isLastActivity}
         title={
           nextActivity
@@ -70,9 +74,9 @@ const NavigationButtons = memo(({
               : t('activities.no_next_activity')
         }
       >
-        <div className="flex flex-col items-end hidden sm:flex">
+        <div className="flex flex-col items-end hidden md:flex">
           <span className={`text-xs ${nextActivity ? 'text-gray-500' : 'text-gray-500'}`}>{t('common.next')}</span>
-          <span className="text-sm font-medium text-right truncate max-w-[100px] sm:max-w-[150px]">
+          <span className="text-sm font-medium text-right truncate max-w-[100px] md:max-w-[150px]">
             {nextActivity
               ? nextActivity.name
               : isLastActivity
@@ -80,7 +84,7 @@ const NavigationButtons = memo(({
                 : t('activities.no_next_activity')}
           </span>
         </div>
-        <ChevronRight size={16} className="shrink-0 sm:w-5 sm:h-5" />
+        <ChevronRight size={16} className="shrink-0 md:w-5 md:h-5" />
       </button>
     </div>
   );
@@ -92,9 +96,9 @@ NavigationButtons.displayName = 'NavigationButtons';
 const CourseInfo = memo(({ course, org }: { course: any, org: any }) => {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-shrink">
+    <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-shrink">
       <img
-        className="w-[35px] sm:w-[45px] h-[20px] sm:h-[26px] rounded-md object-cover flex-shrink-0"
+        className="w-[35px] md:w-[45px] h-[20px] md:h-[26px] rounded-md object-cover flex-shrink-0"
         src={`${getCourseThumbnailMediaDirectory(
           org?.org_uuid,
           course.course_uuid,
@@ -102,11 +106,11 @@ const CourseInfo = memo(({ course, org }: { course: any, org: any }) => {
         )}`}
         alt=""
       />
-      <div className="flex flex-col -space-y-0.5 min-w-0 hidden sm:block">
+      <div className="flex flex-col -space-y-0.5 min-w-0 hidden md:block">
         <p className="text-sm font-medium text-gray-500">{t('courses.courses')}</p>
-        <h1 className="font-semibold text-gray-900 text-base truncate">
+        <p className="font-semibold text-gray-900 text-base truncate">
           {course.name}
-        </h1>
+        </p>
       </div>
     </div>
   );
@@ -116,6 +120,9 @@ CourseInfo.displayName = 'CourseInfo';
 
 export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryBarProps): React.ReactNode {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { isVisible: joinBannerVisible } = useJoinBannerVisible();
+  const barTop = 60 + (joinBannerVisible ? JOIN_BANNER_HEIGHT : 0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
   const mainActivityInfoRef = useRef<HTMLDivElement | null>(null);
@@ -198,16 +205,22 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
 
   return (
     <div
-      className={`fixed top-[60px] left-0 right-0 bg-white/90 backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-top ${
+      className={`vz-reader-secondary fixed top-[60px] left-0 right-0 bg-white/90 backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-top ${
         isScrolled ? 'nice-shadow' : ''
       }`}
-      style={{ zIndex: 'var(--z-drag-overlay)' }}
+      style={{ zIndex: 'var(--z-drag-overlay)', top: barTop }}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 py-2">
-          <CourseInfo course={props.course} org={org} />
+          <div className="hidden md:block min-w-0"><CourseInfo course={props.course} org={org} /></div>
           
-          <div className="flex items-center flex-shrink-0">
+          <div className="vz-reader-secondary-actions flex items-center flex-shrink-0">
+            <div className="flex items-center gap-1 md:hidden">
+              <button type="button" className="vz-reader-icon-button" onClick={props.onEnterFocusMode} aria-label={t('activities.focus_mode')} title={t('activities.focus_mode')}>
+                <Maximize2 size={18} />
+              </button>
+              <ActivityChapterDropdown compact course={props.course} currentActivityId={props.currentActivityId} orgslug={props.orgslug} trailData={props.trailData} />
+            </div>
             <NavigationButtons
               prevActivity={prevActivity}
               nextActivity={nextActivity}

@@ -12,12 +12,12 @@ describe('learner surface contracts', () => {
     assert.match(source, /courses\.start_course/)
   })
 
-  it('uses 16:9 contained media for learner course cards and overview', () => {
+  it('uses 3:2 contained media for learner course cards and overview', () => {
     const card = read('../components/Objects/Thumbnails/CourseThumbnail.tsx')
     const landingCard = read('../components/Objects/Thumbnails/CourseThumbnailLanding.tsx')
     const overview = read('../app/orgs/[orgslug]/(withmenu)/course/[courseuuid]/course.tsx')
     for (const source of [card, landingCard, overview]) {
-      assert.match(source, /aspect-\[16\/9\]/)
+      assert.match(source, /aspect-\[3\/2\]/)
       assert.match(source, /object-contain/)
     }
     assert.doesNotMatch(card, /en-US/)

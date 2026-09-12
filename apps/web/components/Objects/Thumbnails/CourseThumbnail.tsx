@@ -207,7 +207,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
         isDashboard={isDashboard}
       />
 
-      <Link prefetch={false} href={courseLink} onClick={handleCardOpen} className={`vz-course-cover block relative ${isDashboard ? 'aspect-[3/2]' : 'aspect-[16/9]'} overflow-hidden bg-gray-50`}>
+      <Link prefetch={false} href={courseLink} onClick={handleCardOpen} className={`vz-course-cover block relative aspect-[3/2] overflow-hidden bg-gray-50`}>
         <img
           src={thumbnailImage}
           alt={course.name}
@@ -265,7 +265,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
 
         <div className="vz-course-meta pt-1.5 flex items-center justify-between border-t border-gray-100">
           <div className="flex items-center gap-2">
-            {displayedAuthors.length > 0 && (
+            {isDashboard && displayedAuthors.length > 0 && (
               <div className="flex -space-x-2 items-center">
                 {displayedAuthors.map((author, index) => (
                   <div 

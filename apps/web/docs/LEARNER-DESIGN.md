@@ -21,7 +21,7 @@ Semantic shadcn HSL channels are global so dialogs and popovers rendered through
 ## Component rules
 
 - Containers: 1280px including desktop gutters of 40px; mobile gutters 20px. Card grids adapt to the number of courses, with a 600px cap on a solitary card.
-- Course cards: 16:9 contained covers (no cropping of existing artwork), two-line titles, readable description and metadata. Dashboard thumbnails retain their previous ratio.
+- Course cards: 3:2 contained covers (no cropping of existing artwork), two-line titles, readable description and metadata. The 3:2 artwork contract applies to the home page, catalog, trail and course overview; the overview has no height cap that could distort this ratio.
 - Navigation: organization identity, theme and mobile disclosure remain available. Desktop navigation and expanded search start at 1024px. Escape closes the mobile menu and returns focus; route changes close it too.
 - Course overview: balanced media/action columns, compact authors, linear progress, curriculum disclosure buttons with keyboard access and wrapping chapter names.
 - Reader: prose width 70ch, 17px body text, 1.8 line height. Video, SCORM and embedded resources keep their available width. Focus mode follows the selected theme and reserves space for mobile controls and safe areas. Completion remains an explicit action, now a native button.
@@ -51,3 +51,18 @@ Review both themes at 390px, 768px, 1024px and 1440px; also check 320px and keyb
 | Shared controls | Mobile menu, Escape/focus return, theme toggle, dialogs/popovers, dashboard/editor smoke check |
 
 Use a test account for completion or account changes. Do not alter real learners' progress for visual verification. Current implementation is pending server visual review and user corrections.
+
+## User refinement — 12 September 2026
+
+Visual references: the user's `vozzrenye-landing/docs/design/ORG-DESIGN-SYSTEM.md` and `DESIGN-SPEC.md`. The applicable language is precision edges, fading hairlines and brief interaction feedback. Preserve the platform's existing two themes and readable semantic colors. No ornamental motion behind lesson text.
+
+- Keep original 3:2 covers entirely visible. Do not substitute 16:9 or crop the artwork.
+- Learner cards and the lesson title area omit author avatars. The course authors panel and author names remain available.
+- Cards gain small opposing corner lines, stronger edge response and a 2px hover lift. Button underlines extend on hover/focus. Reduced motion removes these transforms.
+- The course updates chip contains only the numeric count.
+- Desktop lesson contents stay sticky with their own bounded scroll region. The mobile contents behavior is unchanged. Text and link focus use theme tokens.
+- Contents navigation resolves actual rendered heading IDs and positions, including Cyrillic and repeated headings.
+- Center the chapter/title group and separate its metadata and action row. Breadcrumb labels wrap rather than truncate.
+- The mobile secondary navigation includes reading mode and a compact chapter selector. The selector uses the existing Radix Popover for viewport collision handling, focus return and Escape dismissal.
+
+This iteration is code only. Push, build and infrastructure are owned by the user. Verify on their preview: 3:2 image edges, sticky contents in normal/focus modes, dark contents contrast, multiline Russian breadcrumbs and mobile controls at 320/390/768px. Include keyboard and reduced-motion checks.

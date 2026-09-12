@@ -363,7 +363,7 @@ const CourseClient = (props: any) => {
 
                   if (showVideo && course.thumbnail_video) {
                     return (
-                      <div className="vz-course-media vz-frame relative aspect-[16/9] w-full overflow-hidden">
+                      <div className="vz-course-media vz-frame relative aspect-[3/2] w-full overflow-hidden">
                         {course.thumbnail_type === 'both' && hasVideo && hasImage && (
                           <div className="absolute top-3 right-3 z-10">
                             <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1 flex space-x-1">
@@ -411,7 +411,7 @@ const CourseClient = (props: any) => {
                     );
                   } else if (showImage && course.thumbnail_image) {
                     return (
-                      <div className="vz-course-media vz-frame relative aspect-[16/9] w-full overflow-hidden bg-gray-50">
+                      <div className="vz-course-media vz-frame relative aspect-[3/2] w-full overflow-hidden bg-gray-50">
                         <img
                           src={getCourseThumbnailMediaDirectory(org?.org_uuid, course?.course_uuid, course?.thumbnail_image)}
                           alt={course.name}
@@ -451,7 +451,7 @@ const CourseClient = (props: any) => {
                   } else {
                     return (
                       <div
-                        className="vz-course-media vz-frame relative aspect-[16/9] w-full overflow-hidden bg-gray-50"
+                        className="vz-course-media vz-frame relative aspect-[3/2] w-full overflow-hidden bg-gray-50"
                       >
                         <img src="/empty_thumbnail.png" alt={course.name} className="h-full w-full object-contain" />
                       </div>

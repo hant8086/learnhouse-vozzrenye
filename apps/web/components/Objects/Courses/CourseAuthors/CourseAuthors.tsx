@@ -167,8 +167,8 @@ const UpdatesSection = () => {
             <span className="text-sm font-semibold text-neutral-600">{t('courses.course_updates')}</span>
           </div>
           {updates && updates.length > 0 && (
-            <span className="px-2 py-0.5 text-[11px] font-medium bg-neutral-100 text-neutral-500 rounded-full">
-              {updates.length} {updates.length === 1 ? t('courses.update') : t('courses.updates')}
+            <span className="vz-update-count">
+              {updates.length}
             </span>
           )}
         </div>

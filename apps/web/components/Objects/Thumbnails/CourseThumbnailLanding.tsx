@@ -4,7 +4,7 @@ import AuthenticatedClientElement from '@components/Security/AuthenticatedClient
 import ConfirmationModal from '@components/Objects/StyledElements/ConfirmationModal/ConfirmationModal'
 import { getUriWithOrg } from '@services/config/config'
 import { deleteCourseFromBackend } from '@services/courses/courses'
-import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { revalidateTags } from '@services/utils/ts/requests'
 import { BookMinus, FilePenLine, Settings2, MoreVertical } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -14,7 +14,6 @@ import React from 'react'
 import toast from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
-import UserAvatar from '@components/Objects/UserAvatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,10 +116,6 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
   const session = useLHSession() as any
   const queryClient = useQueryClient()
 
-  const activeAuthors = course.authors?.filter(author => author.authorship_status === 'ACTIVE') || []
-  const displayedAuthors = activeAuthors.slice(0, 3)
-  const hasMoreAuthors = activeAuthors.length > 3
-  const remainingAuthorsCount = activeAuthors.length - 3
 
   const deleteCourse = async () => {
     const toastId = toast.loading(t('courses.deleting_course'))
@@ -151,7 +146,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
         deleteCourse={deleteCourse}
       />
       <Link prefetch={false} href={customLink ? customLink : getUriWithOrg(orgslug, `/course/${removeCoursePrefix(course.course_uuid)}`)}>
-        <div className="vz-course-cover w-full aspect-[16/9] overflow-hidden bg-muted">
+        <div className="vz-course-cover w-full aspect-[3/2] overflow-hidden bg-muted">
           <img src={thumbnailImage} alt={course.name} className="h-full w-full object-contain" />
         </div>
       </Link>
@@ -184,37 +179,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
             </div>
           )}
           
-          {displayedAuthors.length > 0 && (
-            <div className="flex -space-x-4 items-center">
-              {displayedAuthors.map((author, index) => (
-                <div 
-                  key={author.user.user_uuid} 
-                  className="relative"
-                  style={{ zIndex: displayedAuthors.length - index }}
-                >
-                  <UserAvatar
-                    border="border-2"
-                    rounded="rounded-full"
-                    avatar_url={author.user.avatar_image ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image) : ''}
-                    predefined_avatar={author.user.avatar_image ? undefined : 'empty'}
-                    width={32}
-                    showProfilePopup={true}
-                    userId={author.user.id}
-                  />
-                </div>
-              ))}
-              {hasMoreAuthors && (
-                <div 
-                  className="relative -ml-1"
-                  style={{ zIndex: 0 }}
-                >
-                  <div className="flex items-center justify-center w-[32px] h-[32px] text-[11px] font-medium text-gray-600 bg-gray-100 border-2 border-white rounded-full">
-                    +{remainingAuthorsCount}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+
         </div>
 
         <Link 

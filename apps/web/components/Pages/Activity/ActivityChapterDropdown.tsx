@@ -1,5 +1,5 @@
 'use client'
-import { useMediaQuery } from 'usehooks-ts'
+import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
 import { Check, FileText, ListTree, Video, X, StickyNote, Backpack, ArrowRight, Package, Puzzle, Globe } from 'lucide-react'
 import { MarkdownLogo } from '@phosphor-icons/react'
 import { getUriWithOrg } from '@services/config/config'
@@ -11,49 +11,14 @@ interface ActivityChapterDropdownProps {
   course: any
   currentActivityId: string
   orgslug: string
+  compact?: boolean
   trailData?: any
 }
 
 export default function ActivityChapterDropdown(props: ActivityChapterDropdownProps): React.ReactNode {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = React.useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
-  const isMobile = useMediaQuery('(max-width: 768px)');
-
-  // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = props.course.course_uuid?.replace('course_', '');
-
-  // Close dropdown when clicking outside
-  React.useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Close dropdown on Escape key
-  React.useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen]);
-
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
 
   // Function to get the appropriate icon for activity type
   const getActivityTypeIcon = (activityType: string, activitySubType?: string) => {
@@ -99,25 +64,27 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
       <button
-        onClick={toggleDropdown}
+        type="button"
         aria-expanded={isOpen}
-        aria-haspopup="true"
-        className="bg-white rounded-full px-5 nice-shadow flex items-center space-x-2 p-2.5 text-gray-700 hover:bg-gray-50 transition delay-150 duration-300 ease-in-out"
-        aria-label="View all activities"
-        title="View all activities"
+        className={props.compact ? "vz-reader-icon-button" : "vz-secondary"}
+        aria-label={t('courses.chapters')}
+        title={t('courses.chapters')}
       >
         <ListTree size={17} />
-        <span className="text-xs font-bold">{t('courses.chapters')}</span>
+        {!props.compact && <span>{t('courses.chapters')}</span>}
       </button>
+      </PopoverTrigger>
       
-      {isOpen && (
-        <div className={`absolute z-dropdown mt-2 ${isMobile ? 'right-0 w-[90vw] sm:w-72' : 'right-0 w-72'} max-h-[70vh] cursor-pointer overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 py-1 animate-in fade-in duration-200`}>
+      <PopoverContent align="end" sideOffset={8} className="vz-chapter-menu w-80 p-0" aria-label={t('courses.course_content')}>
+
           <div className="px-3 py-1.5 border-b border-gray-100 flex justify-between items-center">
             <h3 className="text-sm font-semibold text-gray-800">{t('courses.course_content')}</h3>
             <button 
               onClick={() => setIsOpen(false)}
+              aria-label={t('common.close')}
               className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 cursor-pointer"
             >
               <X size={14} />
@@ -129,7 +96,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
               <div key={chapter.id} className="mb-1">
                 <div className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 border-y border-gray-100 flex items-center">
                   <div className="flex items-center space-x-1.5">
-                    <div className="bg-gray-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    <div className="bg-gray-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
                       {index + 1}
                     </div>
                     <span>{chapter.name}</span>
@@ -182,14 +149,14 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
                                   {activity.name}
                                 </p>
                                 {isCurrent && (
-                                  <div className="flex items-center space-x-1 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full text-[10px] font-medium animate-pulse">
+                                  <div className="flex items-center space-x-1 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full text-xs font-medium animate-pulse">
                                     <span>{t('activities.current')}</span>
                                   </div>
                                 )}
                               </div>
                               <div className="flex items-center space-x-1 mt-0.5 text-neutral-400">
                                 {getActivityTypeIcon(activity.activity_type, activity.activity_sub_type)}
-                                <span className="text-[10px] font-medium">
+                                <span className="text-xs font-medium">
                                   {getActivityTypeLabel(activity.activity_type, activity.activity_sub_type)}
                                 </span>
                               </div>
@@ -206,8 +173,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
               </div>
             ))}
           </div>
-        </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 } 

@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { markActivityAsComplete, unmarkActivityAsComplete } from '@services/courses/activity'
 import { usePathname, useRouter } from 'next/navigation'
 import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
-import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useOrg, useOrgMembership } from '@components/Contexts/OrgContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -39,7 +39,6 @@ import MiniInfoTooltip from '@components/Objects/MiniInfoTooltip'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import ActivityGate from '@components/Objects/Courses/ActivityGate'
 import ActivityIndicators from '@components/Pages/Courses/ActivityIndicators'
-import UserAvatar from '@components/Objects/UserAvatar'
 import { useTranslation } from 'react-i18next'
 import { useLHAnalytics, AnalyticsEvent } from '@services/analytics'
 
@@ -891,9 +890,9 @@ function ActivityClient(props: ActivityClientProps) {
                           trailData={trailData}
                         />
 
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full gap-3">
-                          <div className="flex flex-1 items-center space-x-3 min-w-0">
-                            <div className="flex flex-col -space-y-1 min-w-0">
+                        <div className="vz-lesson-heading flex flex-col items-center w-full gap-5">
+                          <div className="flex justify-center w-full min-w-0">
+                            <div className="flex flex-col items-center text-center min-w-0">
                               <p className="font-bold text-gray-700 text-xs sm:text-md">
                                 {getChapterNameByActivityId(course, activity?.id) ?? chapterNameFromCourse}
                               </p>
@@ -901,30 +900,7 @@ function ActivityClient(props: ActivityClientProps) {
                                 {displayName}
                               </h1>
                               {/* Authors and Dates Section */}
-                              <div className="flex flex-wrap items-center gap-3 mt-2">
-                                {/* Avatars */}
-                                {course.authors && course.authors.length > 0 && (
-                                  <div className="flex -space-x-3">
-                                    {course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').slice(0, 3).map((author: any, idx: number) => (
-                                      <div key={author.user.user_uuid} className="relative" style={{ zIndex: 10 - idx }}>
-                                        <UserAvatar
-                                          border="border-2"
-                                          rounded="rounded-full"
-                                          avatar_url={author.user.avatar_image ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image) : ''}
-                                          predefined_avatar={author.user.avatar_image ? undefined : 'empty'}
-                                          width={26}
-                                          showProfilePopup={true}
-                                          userId={author.user.id}
-                                        />
-                                      </div>
-                                    ))}
-                                    {course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').length > 3 && (
-                                      <div className="flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full border-2 border-white shadow-sm w-9 h-9 text-xs z-0">
-                                        +{course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').length - 3}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                              <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
                                 {/* Author names */}
                                 {course.authors && course.authors.length > 0 && (
                                   <div className="text-xs text-gray-700 font-medium flex items-center gap-1">
@@ -984,7 +960,7 @@ function ActivityClient(props: ActivityClientProps) {
                               </div>
                             </div>
                           </div>
-                          <div className="hidden sm:flex space-x-2 items-center relative shrink-0" style={{ zIndex: 'var(--z-interactive)' }}>
+                          <div className="hidden sm:flex flex-wrap justify-center gap-2 items-center relative" style={{ zIndex: 'var(--z-interactive)' }}>
                             {activity && activity.published == true && activity.content.paid_access != false && (
                               <AuthenticatedClientElement checkMethod="authentication">
                                 {activity.activity_type != 'TYPE_ASSIGNMENT' && (
@@ -1089,6 +1065,8 @@ function ActivityClient(props: ActivityClientProps) {
                           currentActivityId={activityid}
                           orgslug={orgslug}
                           activity={activity}
+                          onEnterFocusMode={() => setIsFocusMode(true)}
+                          trailData={trailData}
                         />
                       )}
 
