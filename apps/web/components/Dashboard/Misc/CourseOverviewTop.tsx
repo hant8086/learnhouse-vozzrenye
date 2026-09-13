@@ -187,11 +187,12 @@ export function CourseOverviewTop({
           <SaveState orgslug={params.orgslug} />
           <div className="w-px self-stretch bg-neutral-200/80" />
           <button
+            type="button"
             onClick={togglePublishStatus}
             disabled={isPublishing}
-            aria-label={isPublished ? 'Unpublish course' : 'Publish course'}
-            title={isPublished ? 'Click to unpublish' : 'Click to publish'}
-            className={`group px-2.5 sm:px-3.5 py-2 text-sm font-semibold flex items-center space-x-1.5 transition-colors ${
+            aria-label={isPublished ? t('dashboard.courses.click_to_unpublish') : t('dashboard.courses.click_to_publish')}
+            title={isPublished ? t('dashboard.courses.click_to_unpublish') : t('dashboard.courses.click_to_publish')}
+            className={`px-2.5 sm:px-3.5 py-2 text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-colors ${
               isPublished
                 ? 'bg-green-50/70 text-green-700 hover:bg-green-100/70'
                 : 'bg-yellow-50/70 text-yellow-700 hover:bg-yellow-100/70'
@@ -212,17 +213,7 @@ export function CourseOverviewTop({
                   : t('dashboard.courses.unpublished')
               }
             </span>
-            {!isPublishing && (
-              <span className={`hidden sm:inline-flex overflow-hidden max-w-0 group-hover:max-w-[150px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out`}>
-                <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded whitespace-nowrap ${
-                  isPublished
-                    ? 'bg-green-200/80 text-green-800'
-                    : 'bg-yellow-200/80 text-yellow-800'
-                }`}>
-                  {isPublished ? t('dashboard.courses.click_to_unpublish') : t('dashboard.courses.click_to_publish')}
-                </span>
-              </span>
-            )}
+
           </button>
           {isAIEnabled && (
             <>
