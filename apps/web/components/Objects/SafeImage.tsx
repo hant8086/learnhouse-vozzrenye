@@ -11,6 +11,9 @@ const SAFE_PROTOCOLS = ['http:', 'https:', 'blob:'] as const
 export function isValidMediaUrl(url: string): boolean {
   if (!url || typeof url !== 'string') return false
 
+  // Accept root-relative assets, but never protocol-relative URLs or backslashes.
+  if (url.startsWith('/') && !url.startsWith('//') && !url.includes('\\') && !Array.from(url).some(char => char.charCodeAt(0) <= 32 || char.charCodeAt(0) === 127)) return true
+
   // blob: URLs from createObjectURL are safe
   if (url.startsWith('blob:')) return true
 

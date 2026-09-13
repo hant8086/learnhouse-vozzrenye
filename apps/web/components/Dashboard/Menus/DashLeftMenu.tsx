@@ -246,7 +246,7 @@ function DashLeftMenu() {
     <nav
       aria-label="Dashboard sidebar navigation"
       className={cn(
-        "flex flex-col text-white h-screen sticky top-0 z-overlay border-r border-white/[0.08] bg-[#0f0f10] transition-all duration-300",
+        "flex flex-col text-white h-dvh min-h-0 overflow-y-auto overscroll-contain sticky top-0 z-overlay border-r border-white/[0.08] bg-[#0f0f10] transition-all duration-300",
         isCollapsed ? "w-[72px]" : "w-64"
       )}
     >
@@ -329,7 +329,7 @@ function DashLeftMenu() {
       </div>
 
       {/* Main Navigation - Vertically Centered */}
-      <div className="flex-1 flex flex-col justify-center py-4 px-3">
+      <div className="flex-1 shrink-0 flex flex-col py-4 px-3">
         <AdminAuthorization authorizationMode="component">
           <div className="space-y-1">
             <MenuLink

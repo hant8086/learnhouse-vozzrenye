@@ -39,7 +39,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showUnsplashPicker, setShowUnsplashPicker] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('image')
-  const _withUnpublishedActivities = course ? course.withUnpublishedActivities : false
+  const [savedThumbnail, setSavedThumbnail] = useState<{ image?: string; video?: string }>({})
 
   // Set initial active tab based on thumbnailType
   useEffect(() => {
@@ -108,6 +108,8 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
     const blobUrl = URL.createObjectURL(file);
     setLocalThumbnail({ file, url: blobUrl, type });
     await updateThumbnail(file, type);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
   }
 
   const handleUnsplashSelect = async (imageUrl: string) => {
@@ -123,6 +125,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
       const file = new File([blob], `unsplash_${Date.now()}.jpg`, { type: blob.type });
       
       if (!validateFile(file, 'image')) {
+        setIsLoading(false);
         return;
       }
 
@@ -155,22 +158,23 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
         session.data?.tokens?.access_token
       );
       
-      // Invalidate course meta cache
+      if (!res.success) {
+        setLocalThumbnail(null);
+        showError(res.HTTPmessage || 'Failed to update thumbnail');
+        return;
+      }
+      const field = type === 'image' ? 'thumbnail_image' : 'thumbnail_video';
+      const filename = res.data?.[field];
+      if (!filename) throw new Error('Missing saved thumbnail');
+      setSavedThumbnail(previous => ({ ...previous, [type]: filename }));
+      setLocalThumbnail(null);
+      toast.success('Thumbnail updated successfully', { duration: 3000, position: 'top-center' });
+      // Refresh metadata variants, including the authoring projection.
       const cleanUuid = course.courseStructure.course_uuid.replace('course_', '')
       await queryClient.invalidateQueries({ queryKey: queryKeys.courses.meta(cleanUuid) })
       await queryClient.invalidateQueries({ queryKey: queryKeys.courses.list(org.slug) })
-      await new Promise((r) => setTimeout(r, 1500));
-
-      if (res.success === false) {
-        showError(res.HTTPmessage);
-      } else {
-        setLocalThumbnail(null);
-        toast.success('Thumbnail updated successfully', {
-          duration: 3000,
-          position: 'top-center',
-        });
-      }
     } catch (_err) {
+      setLocalThumbnail(null);
       showError('Failed to update thumbnail');
     } finally {
       setIsLoading(false);
@@ -179,19 +183,19 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
 
   const getThumbnailUrl = (type: 'image' | 'video') => {
     if (type === 'image') {
-      return course.courseStructure.thumbnail_image
+      return (savedThumbnail.image || course.courseStructure.thumbnail_image)
         ? getCourseThumbnailMediaDirectory(
             org?.org_uuid,
             course.courseStructure.course_uuid,
-            course.courseStructure.thumbnail_image
+            (savedThumbnail.image || course.courseStructure.thumbnail_image)
           )
         : '/empty_thumbnail.png';
     } else {
-      return course.courseStructure.thumbnail_video
+      return (savedThumbnail.video || course.courseStructure.thumbnail_video)
         ? getCourseThumbnailMediaDirectory(
             org?.org_uuid,
             course.courseStructure.course_uuid,
-            course.courseStructure.thumbnail_video
+            (savedThumbnail.video || course.courseStructure.thumbnail_video)
           )
         : undefined;
     }
@@ -215,7 +219,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
             <SafeImage
               src={localThumbnail.url}
               alt="Course thumbnail preview"
-              className={`${isLoading ? 'animate-pulse' : ''} w-full aspect-video object-cover rounded-lg border border-gray-200`}
+              className={`${isLoading ? 'animate-pulse' : ''} w-full aspect-[3/2] object-contain rounded-lg border border-gray-200`}
             />
           </div>
         );
@@ -239,7 +243,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
           <SafeImage
             src={currentThumbnailUrl}
             alt="Current course thumbnail"
-            className="w-full aspect-video object-cover rounded-lg border border-gray-200"
+            className="w-full aspect-[3/2] object-contain rounded-lg border border-gray-200"
           />
         </div>
       );
