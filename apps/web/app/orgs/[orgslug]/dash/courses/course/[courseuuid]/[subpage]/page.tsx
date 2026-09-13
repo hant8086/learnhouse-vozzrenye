@@ -128,7 +128,7 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
   // false (safe default) until rights finish loading.
   return (
     <div className="h-screen w-full bg-[#f8f8f8] grid grid-rows-[auto_1fr] grid-cols-1">
-      <CourseProvider courseuuid={courseuuid} withUnpublishedActivities={true}>
+      <CourseProvider key={courseuuid} courseuuid={courseuuid} withUnpublishedActivities={true}>
         <div className="pl-4 pr-4 sm:pl-10 sm:pr-10 text-sm tracking-tight bg-[#fcfbfc] z-10 nice-shadow relative min-w-0 overflow-hidden">
           <CourseOverviewTop params={params} />
           <DashTabBar tabs={tabs.map((tab) => {

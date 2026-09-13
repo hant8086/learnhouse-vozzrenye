@@ -63,7 +63,7 @@ function SaveState(props: { orgslug: string }) {
     dispatchCourse({ type: 'setSaveError', payload: null })
 
     // Store the state before saving for potential rollback
-    const _stateBeforeSave = { ...courseStructure }
+    const submitted = { ...courseStructure, ...course.pendingChanges, ...unsyncedChangesRef.current }
 
     const results: SaveResult[] = []
 
@@ -87,7 +87,7 @@ function SaveState(props: { orgslug: string }) {
       try {
         // Merge unsynced changes (changes made before debounce fired) so clicking Save
         // immediately after editing doesn't lose the latest values
-        const dataToSave = courseMetadataPayload(courseStructure, course.pendingChanges ?? {}, unsyncedChangesRef.current)
+        const dataToSave = courseMetadataPayload(submitted, course.pendingChanges ?? {}, unsyncedChangesRef.current)
 
         await updateCourse(
           courseStructure.course_uuid,
@@ -112,6 +112,7 @@ function SaveState(props: { orgslug: string }) {
           )
           results.push({ success: true, operation: 'certification' })
 
+          delete submitted._certificationData
           // Clear certification temp data after successful save
           dispatchCourse({
             type: 'mergePendingChanges',
@@ -138,8 +139,7 @@ function SaveState(props: { orgslug: string }) {
       await revalidateTags(['courses'], props.orgslug)
 
       // Mark as saved
-      dispatchCourse({ type: 'setIsSaved' })
-      dispatchCourse({ type: 'commitChanges' })
+      dispatchCourse({ type: 'metadataSaved', payload: submitted })
 
       // Refresh router to update any server components
       router.refresh()

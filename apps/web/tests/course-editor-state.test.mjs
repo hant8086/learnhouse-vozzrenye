@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { equalFormValue, courseMetadataPayload } from '../lib/courses/editorState.ts'
+import { equalFormValue, courseMetadataPayload, acknowledgeMetadataSave } from '../lib/courses/editorState.ts'
 
 describe('module editor persistence', () => {
   test('opening or reloading a cloned Formik form does not create edits', () => {
@@ -18,5 +18,23 @@ describe('module editor persistence', () => {
   })
   test('explicit type edits and immediate text edits survive save', () => {
     expect(courseMetadataPayload({ name: 'Old', _certificationData: {} }, { thumbnail_type: 'video' }, { name: 'New' })).toEqual({ name: 'New', thumbnail_type: 'video' })
+  })
+})
+
+describe('save acknowledgement', () => {
+  test('immediate save retains a value that has not reached the debounce yet', () => {
+    const result = acknowledgeMetadataSave({ name: 'Old' }, {}, { name: 'New' }, { name: 'New' })
+    expect(result.courseStructure.name).toBe('New')
+    expect(result.isSaved).toBe(true)
+  })
+  test('a later edit stays dirty when an earlier request finishes', () => {
+    const result = acknowledgeMetadataSave({ name: 'Old' }, { name: 'Sent' }, { name: 'Later' }, { name: 'Sent' })
+    expect(result.courseStructure.name).toBe('Later')
+    expect(result.pendingChanges).toEqual({ name: 'Later' })
+    expect(result.isSaved).toBe(false)
+  })
+  test('a concurrent cover upload is not reverted by metadata acknowledgement', () => {
+    const result = acknowledgeMetadataSave({ name: 'Old', thumbnail_image: 'new.jpg' }, {}, { name: 'New' }, { name: 'New', thumbnail_image: 'old.jpg' })
+    expect(result.courseStructure.thumbnail_image).toBe('new.jpg')
   })
 })

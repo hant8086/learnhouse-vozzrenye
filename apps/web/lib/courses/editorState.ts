@@ -22,3 +22,21 @@ export function courseMetadataPayload(structure: Record<string, unknown>, pendin
       !Object.prototype.hasOwnProperty.call(unsynced, 'thumbnail_type')) delete payload.thumbnail_type
   return payload
 }
+
+/** Acknowledge only edits included in the request, retaining newer edits. */
+export function acknowledgeMetadataSave(
+  structure: Record<string, unknown>,
+  pending: Record<string, unknown>,
+  unsynced: Record<string, unknown>,
+  submitted: Record<string, unknown>,
+) {
+  const outstanding = { ...pending, ...unsynced }
+  const remaining = Object.fromEntries(Object.entries(outstanding).filter(([key, value]) =>
+    !equalFormValue(value, submitted[key])))
+  return {
+    courseStructure: { ...structure, ...outstanding },
+    pendingChanges: remaining,
+    unsyncedChanges: {},
+    isSaved: Object.keys(remaining).length === 0,
+  }
+}

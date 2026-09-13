@@ -40,7 +40,6 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showUnsplashPicker, setShowUnsplashPicker] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('image')
-  const [savedThumbnail, setSavedThumbnail] = useState<{ image?: string; video?: string }>({})
 
   // Set initial active tab based on thumbnailType
   useEffect(() => {
@@ -168,7 +167,6 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
       const filename = res.data?.[field];
       if (!filename) throw new Error('Missing saved thumbnail');
       dispatchCourse({ type: 'thumbnailSaved', payload: { [field]: filename, thumbnail_type: res.data.thumbnail_type } });
-      setSavedThumbnail(previous => ({ ...previous, [type]: filename }));
       setLocalThumbnail(null);
       toast.success('Thumbnail updated successfully', { duration: 3000, position: 'top-center' });
       // Refresh metadata variants, including the authoring projection.
@@ -185,19 +183,19 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
 
   const getThumbnailUrl = (type: 'image' | 'video') => {
     if (type === 'image') {
-      return (savedThumbnail.image || course.courseStructure.thumbnail_image)
+      return course.courseStructure.thumbnail_image
         ? getCourseThumbnailMediaDirectory(
             org?.org_uuid,
             course.courseStructure.course_uuid,
-            (savedThumbnail.image || course.courseStructure.thumbnail_image)
+            course.courseStructure.thumbnail_image
           )
         : '/empty_thumbnail.png';
     } else {
-      return (savedThumbnail.video || course.courseStructure.thumbnail_video)
+      return course.courseStructure.thumbnail_video
         ? getCourseThumbnailMediaDirectory(
             org?.org_uuid,
             course.courseStructure.course_uuid,
-            (savedThumbnail.video || course.courseStructure.thumbnail_video)
+            course.courseStructure.thumbnail_video
           )
         : undefined;
     }

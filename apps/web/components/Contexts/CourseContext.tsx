@@ -1,4 +1,5 @@
 'use client'
+import { acknowledgeMetadataSave } from '@/lib/courses/editorState'
 import { getCourseMetadata } from '@services/courses/courses'
 import React, { createContext, useContext, useEffect, useReducer, useMemo, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -77,6 +78,7 @@ export interface CourseState {
 
 export type CourseAction =
   | { type: 'setCourseStructure'; payload: any }
+  | { type: 'metadataSaved'; payload: Record<string, unknown> }
   | { type: 'thumbnailSaved'; payload: { thumbnail_image?: string; thumbnail_video?: string; thumbnail_type?: string } }
   | { type: 'setCourseOrder'; payload: any }
   | { type: 'updateField'; payload: { field: string; value: any } } // New: granular field update
@@ -297,6 +299,9 @@ export function useCourseFieldSync(componentId: string) {
 
 function courseReducer(state: CourseState, action: CourseAction): CourseState {
   switch (action.type) {
+    case 'metadataSaved':
+      return { ...state, ...acknowledgeMetadataSave(state.courseStructure, state.pendingChanges, state.unsyncedChanges, action.payload) }
+
     case 'thumbnailSaved':
       return {
         ...state,
