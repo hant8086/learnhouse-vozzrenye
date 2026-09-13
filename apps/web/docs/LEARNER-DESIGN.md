@@ -77,3 +77,10 @@ This iteration is code only. Push, build and infrastructure are owned by the use
 - Card borders belong to the text body, not the cover wrapper: original 3:2 artwork reaches the card edges without a second inset border or cropping.
 
 Server visual acceptance remains pending. Check long Russian titles, equal control sizes, completion centering and cover edges at 320/390/768/1440px in both themes. This is a code-only iteration; no push or build.
+
+
+## Landing sequence and card framing
+
+The featured-course editor shows selected modules as a numbered list with keyboard-accessible up/down buttons. It persists the canonical ID array through the existing landing save; the public renderer already respects this sequence and filters unpublished/missing courses. Legacy object references are normalized before editing. New selections append to the end.
+
+Cards use one continuous outer border around cover and body. Images remain contained at 3:2 with zero cover padding/border; the text body has no separate border. This supersedes the earlier body-only frame experiment.

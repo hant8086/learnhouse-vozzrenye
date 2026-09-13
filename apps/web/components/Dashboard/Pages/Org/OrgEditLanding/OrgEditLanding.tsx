@@ -1,7 +1,9 @@
 'use client'
 import React from 'react'
+import { moveLandingCourse } from '@/lib/landing/courseOrder'
+import { getFeaturedCourseRefs } from '@/lib/landing/audienceProjection'
 import { LandingObject, LandingSection, LandingHeroSection, LandingTextAndImageSection, LandingLogos, LandingPeople, LandingBackground, LandingButton, LandingImage, LandingFeaturedCourses, LandingShowcase } from './landing_types'
-import { Plus, Trash2, GripVertical, LayoutTemplate, ImageIcon, Users, Award, Edit, Link, Upload, Save, BookOpen, TextIcon } from 'lucide-react'
+import { Plus, Trash2, ArrowUp, ArrowDown, GripVertical, LayoutTemplate, ImageIcon, Users, Award, Edit, Link, Upload, Save, BookOpen, TextIcon } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Input } from "@components/ui/input"
 import { Textarea } from "@components/ui/textarea"
@@ -510,7 +512,7 @@ const OrgEditLanding = () => {
 
 interface SectionEditorProps {
   section: LandingSection
-  onChange: (section: LandingSection) => void
+  onChange: (_section: LandingSection) => void
 }
 
 const SectionEditor: React.FC<SectionEditorProps> = ({ section, onChange }) => {
@@ -534,7 +536,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({ section, onChange }) => {
 
 const HeroSectionEditor: React.FC<{
   section: LandingHeroSection
-  onChange: (section: LandingHeroSection) => void
+  onChange: (_section: LandingHeroSection) => void
 }> = ({ section, onChange }) => {
   const { t } = useTranslation()
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1173,7 +1175,7 @@ const HeroSectionEditor: React.FC<{
 }
 
 interface ImageUploaderProps {
-  onImageUploaded: (imageUrl: string) => void
+  onImageUploaded: (_imageUrl: string) => void
   className?: string
   buttonText?: string
   id: string
@@ -1243,7 +1245,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded, classNam
 
 const TextAndImageSectionEditor: React.FC<{
   section: LandingTextAndImageSection
-  onChange: (section: LandingTextAndImageSection) => void
+  onChange: (_section: LandingTextAndImageSection) => void
 }> = ({ section, onChange }) => {
   const { t } = useTranslation()
   return (
@@ -1344,7 +1346,7 @@ const TextAndImageSectionEditor: React.FC<{
 
 const LogosSectionEditor: React.FC<{
   section: LandingLogos
-  onChange: (section: LandingLogos) => void
+  onChange: (_section: LandingLogos) => void
 }> = ({ section, onChange }) => {
   const { t } = useTranslation()
   return (
@@ -1446,7 +1448,7 @@ const LogosSectionEditor: React.FC<{
 
 const PeopleSectionEditor: React.FC<{
   section: LandingPeople
-  onChange: (section: LandingPeople) => void
+  onChange: (_section: LandingPeople) => void
 }> = ({ section, onChange }) => {
   const { t } = useTranslation()
   return (
@@ -1588,9 +1590,10 @@ const PeopleSectionEditor: React.FC<{
 
 const FeaturedCoursesEditor: React.FC<{
   section: LandingFeaturedCourses
-  onChange: (section: LandingFeaturedCourses) => void
+  onChange: (_section: LandingFeaturedCourses) => void
 }> = ({ section, onChange }) => {
   const { t } = useTranslation()
+  const selectedIds = getFeaturedCourseRefs(section)
   const org = useOrg() as any
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
@@ -1621,6 +1624,42 @@ const FeaturedCoursesEditor: React.FC<{
           />
         </div>
 
+        <div className="space-y-2">
+          <Label>{t('dashboard.organization.landing.courses_editor.order_title')}</Label>
+          <p className="text-sm text-gray-500">{t('dashboard.organization.landing.courses_editor.order_hint')}</p>
+          {selectedIds.length > 0 ? (
+            <ol className="space-y-2" aria-label={t('dashboard.organization.landing.courses_editor.order_title')}>
+              {selectedIds.map((id, index) => {
+                const name = courses?.find((course: any) => course.course_uuid === id)?.name || id
+                return (
+                  <li key={id} className="flex items-center gap-3 rounded-lg border p-3">
+                    <span className="w-6 shrink-0 text-center text-sm tabular-nums text-gray-500">{index + 1}</span>
+                    <span className="min-w-0 flex-1 break-words text-sm font-medium">{name}</span>
+                    <div className="flex shrink-0 gap-1">
+                      <Button type="button" variant="outline" className="h-11 w-11 p-0"
+                        disabled={index === 0}
+                        aria-label={t('dashboard.organization.landing.courses_editor.move_up', { name })}
+                        title={t('dashboard.organization.landing.courses_editor.move_up', { name })}
+                        onClick={() => onChange({ ...section, courses: moveLandingCourse(selectedIds, id, -1) })}>
+                        <ArrowUp className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                      <Button type="button" variant="outline" className="h-11 w-11 p-0"
+                        disabled={index === selectedIds.length - 1}
+                        aria-label={t('dashboard.organization.landing.courses_editor.move_down', { name })}
+                        title={t('dashboard.organization.landing.courses_editor.move_down', { name })}
+                        onClick={() => onChange({ ...section, courses: moveLandingCourse(selectedIds, id, 1) })}>
+                        <ArrowDown className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          ) : (
+            <p className="rounded-lg border border-dashed p-4 text-sm text-gray-500">{t('dashboard.organization.landing.courses_editor.order_empty')}</p>
+          )}
+        </div>
+
         {/* Course Selection */}
         <div>
           <Label>{t('dashboard.organization.landing.courses_editor.select_courses')}</Label>
@@ -1649,16 +1688,16 @@ const FeaturedCoursesEditor: React.FC<{
                       </div>
                     </div>
                     <Button
-                      variant={section.courses.includes(course.course_uuid) ? "default" : "outline"}
+                      variant={selectedIds.includes(course.course_uuid) ? "default" : "outline"}
                       onClick={() => {
-                        const newCourses = section.courses.includes(course.course_uuid)
-                          ? section.courses.filter(id => id !== course.course_uuid)
-                          : [...section.courses, course.course_uuid]
+                        const newCourses = selectedIds.includes(course.course_uuid)
+                          ? selectedIds.filter(id => id !== course.course_uuid)
+                          : [...selectedIds, course.course_uuid]
                         onChange({ ...section, courses: newCourses })
                       }}
-                      className={section.courses.includes(course.course_uuid) ? "bg-black hover:bg-black/90" : ""}
+                      className={selectedIds.includes(course.course_uuid) ? "bg-black hover:bg-black/90" : ""}
                     >
-                      {section.courses.includes(course.course_uuid) ? t('dashboard.organization.landing.courses_editor.selected') : t('dashboard.organization.landing.courses_editor.select')}
+                      {selectedIds.includes(course.course_uuid) ? t('dashboard.organization.landing.courses_editor.selected') : t('dashboard.organization.landing.courses_editor.select')}
                     </Button>
                   </div>
                 ))}
@@ -1718,7 +1757,7 @@ const SHOWCASE_STEPS = ['greeting', 'features', 'path', 'courses', 'offer'] as c
 
 const ShowcaseSectionEditor: React.FC<{
   section: LandingShowcase
-  onChange: (section: LandingShowcase) => void
+  onChange: (_section: LandingShowcase) => void
 }> = ({ section, onChange }) => {
   const { t } = useTranslation()
   const org = useOrg() as any
