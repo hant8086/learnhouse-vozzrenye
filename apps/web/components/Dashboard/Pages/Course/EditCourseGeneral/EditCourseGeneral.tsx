@@ -1,4 +1,5 @@
 'use client'
+import { equalFormValue } from '@/lib/courses/editorState';
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
@@ -60,7 +61,7 @@ const validate = (values: any, t: any) => {
           errors.learnings = t('dashboard.courses.general.form.learnings_empty_text');
         }
       }
-    } catch (e) {
+    } catch (_e) {
       errors.learnings = t('dashboard.courses.general.form.learnings_invalid_json');
     }
   }
@@ -68,9 +69,9 @@ const validate = (values: any, t: any) => {
   return errors;
 };
 
-function EditCourseGeneral(props: EditCourseStructureProps) {
+function EditCourseGeneral(_props: EditCourseStructureProps) {
   const { t } = useTranslation()
-  const [error, setError] = useState('');
+  const [error] = useState('');
 
   // Use the new field sync hook
   const {
@@ -101,7 +102,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
         }]);
       }
       return JSON.stringify([{ id: 'default-1', text: '', emoji: '📝' }]);
-    } catch (e) {
+    } catch (_e) {
       if (typeof learnings === 'string') {
         return JSON.stringify([{
           id: 'default-1',
@@ -138,7 +139,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
   const formik = useFormik({
     initialValues,
     validate: (values) => validate(values, t),
-    onSubmit: async values => {
+    onSubmit: async _values => {
       // The actual save is handled by SaveState component
       // This is just for form validation purposes
     },
@@ -154,7 +155,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
     // When enableReinitialize triggers, both update together → no false diff.
     const changes: any = {};
     Object.keys(formik.values).forEach(key => {
-      if (formik.values[key] !== formik.initialValues[key]) {
+      if (!equalFormValue(formik.values[key], formik.initialValues[key])) {
         changes[key] = formik.values[key];
       }
     });

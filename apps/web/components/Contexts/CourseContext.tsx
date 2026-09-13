@@ -8,7 +8,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 
 // Debounce manager for coordinating saves across components
 class DebounceManager {
-  private debounces: Map<string, { timer: NodeJS.Timeout; fn: () => void }> = new Map()
+  private debounces: Map<string, { timer: ReturnType<typeof setTimeout>; fn: () => void }> = new Map()
   private listeners: Set<() => void> = new Set()
 
   register(key: string, fn: () => void, delay: number) {
@@ -77,6 +77,7 @@ export interface CourseState {
 
 export type CourseAction =
   | { type: 'setCourseStructure'; payload: any }
+  | { type: 'thumbnailSaved'; payload: { thumbnail_image?: string; thumbnail_video?: string; thumbnail_type?: string } }
   | { type: 'setCourseOrder'; payload: any }
   | { type: 'updateField'; payload: { field: string; value: any } } // New: granular field update
   | { type: 'mergePendingChanges'; payload: Partial<any> } // New: merge pending changes
@@ -161,10 +162,9 @@ export function CourseProvider({
         const lastServerDataStr = JSON.stringify(lastServerDataRef.current)
 
         if (serverDataStr !== lastServerDataStr) {
-          lastServerDataRef.current = courseStructureData
-
           // Only auto-sync from server if we don't have unsaved local changes (e.g. drag-drop reorder)
           if (state.isSaved) {
+            lastServerDataRef.current = courseStructureData
             dispatch({
               type: 'syncFromServer',
               payload: { data: courseStructureData, timestamp: Date.now() }
@@ -297,6 +297,17 @@ export function useCourseFieldSync(componentId: string) {
 
 function courseReducer(state: CourseState, action: CourseAction): CourseState {
   switch (action.type) {
+    case 'thumbnailSaved':
+      return {
+        ...state,
+        courseStructure: {
+          ...state.courseStructure,
+          ...action.payload,
+          ...state.pendingChanges,
+          ...state.unsyncedChanges,
+        },
+      }
+
     case 'setCourseStructure':
       return {
         ...state,
@@ -317,7 +328,7 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
         isSaved: false,
       }
 
-    case 'mergePendingChanges':
+    case 'mergePendingChanges': {
       // Merge new changes with existing pending changes and courseStructure
       const mergedStructure = {
         ...state.courseStructure,
@@ -332,6 +343,8 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
           ...action.payload,
         },
       }
+
+    }
 
     case 'setUnsyncedChanges':
       return {

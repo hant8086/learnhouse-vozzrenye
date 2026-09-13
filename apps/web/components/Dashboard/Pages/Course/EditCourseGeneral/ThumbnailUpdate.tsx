@@ -1,4 +1,4 @@
-import { useCourse } from '@components/Contexts/CourseContext'
+import { useCourse, useCourseDispatch } from '@components/Contexts/CourseContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { updateCourseThumbnail } from '@services/courses/courses'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
@@ -32,6 +32,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const course = useCourse() as any
+  const dispatchCourse = useCourseDispatch()
   const session = useLHSession() as any;
   const org = useOrg() as any
   const queryClient = useQueryClient()
@@ -166,6 +167,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
       const field = type === 'image' ? 'thumbnail_image' : 'thumbnail_video';
       const filename = res.data?.[field];
       if (!filename) throw new Error('Missing saved thumbnail');
+      dispatchCourse({ type: 'thumbnailSaved', payload: { [field]: filename, thumbnail_type: res.data.thumbnail_type } });
       setSavedThumbnail(previous => ({ ...previous, [type]: filename }));
       setLocalThumbnail(null);
       toast.success('Thumbnail updated successfully', { duration: 3000, position: 'top-center' });

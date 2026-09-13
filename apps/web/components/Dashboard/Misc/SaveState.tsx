@@ -1,4 +1,5 @@
 'use client'
+import { courseMetadataPayload } from '@/lib/courses/editorState'
 import { updateCourseOrderStructure } from '@services/courses/chapters'
 import { revalidateTags } from '@services/utils/ts/requests'
 import {
@@ -86,8 +87,7 @@ function SaveState(props: { orgslug: string }) {
       try {
         // Merge unsynced changes (changes made before debounce fired) so clicking Save
         // immediately after editing doesn't lose the latest values
-        const dataToSave = { ...courseStructure, ...unsyncedChangesRef.current }
-        delete dataToSave._certificationData // Don't send certification temp data to course endpoint
+        const dataToSave = courseMetadataPayload(courseStructure, course.pendingChanges ?? {}, unsyncedChangesRef.current)
 
         await updateCourse(
           courseStructure.course_uuid,
@@ -201,6 +201,8 @@ function SaveState(props: { orgslug: string }) {
     isSaving,
     courseStructure,
     course.courseOrder,
+    course.pendingChanges,
+    org?.id,
     queryClient,
     session.data?.tokens?.access_token,
     debounceManager,
