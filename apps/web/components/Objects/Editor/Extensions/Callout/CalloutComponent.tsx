@@ -18,58 +18,35 @@ const CALLOUT_TYPES: Record<
   {
     label: string
     Icon: React.ElementType
-    bg: string
-    text: string
-    iconColor: string
-    ring: string
   }
 > = {
   info: {
     label: 'Info',
     Icon: Info,
-    bg: 'bg-gray-100',
-    text: 'text-gray-700',
-    iconColor: 'text-gray-500',
-    ring: 'ring-gray-200',
   },
   warning: {
     label: 'Warning',
     Icon: Warning,
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-900',
-    iconColor: 'text-yellow-600',
-    ring: 'ring-yellow-300',
   },
   tip: {
     label: 'Tip',
     Icon: Lightbulb,
-    bg: 'bg-green-50',
-    text: 'text-green-900',
-    iconColor: 'text-green-500',
-    ring: 'ring-green-200',
   },
   success: {
     label: 'Success',
     Icon: CheckCircle,
-    bg: 'bg-teal-50',
-    text: 'text-teal-900',
-    iconColor: 'text-teal-500',
-    ring: 'ring-teal-200',
   },
   error: {
     label: 'Error',
     Icon: XCircle,
-    bg: 'bg-red-50',
-    text: 'text-red-900',
-    iconColor: 'text-red-500',
-    ring: 'ring-red-200',
   },
 }
 
 function resolveType(node: any): CalloutType {
   if (node.type.name === 'calloutInfo') return 'info'
   if (node.type.name === 'calloutWarning') return 'warning'
-  return (node.attrs?.type as CalloutType) || 'info'
+  const type = node.attrs?.type
+  return Object.prototype.hasOwnProperty.call(CALLOUT_TYPES, type) ? type as CalloutType : 'info'
 }
 
 function CalloutComponent(props: any) {
@@ -126,7 +103,8 @@ function CalloutComponent(props: any) {
   return (
     <NodeViewWrapper>
       <div
-        className={`w-full flex relative my-4 items-start rounded-xl shadow-inner gap-3 py-3 px-4 ${config.bg} ${config.text} ${isEditable ? 'ring-1 ring-inset ring-black/[0.06]' : ''}`}
+        data-callout-type={calloutType}
+        className="vz-callout w-full flex relative my-4 items-start rounded-xl gap-3 py-3 px-4"
         contentEditable={isEditable || undefined}
         suppressContentEditableWarning={true}
       >
@@ -142,13 +120,13 @@ function CalloutComponent(props: any) {
                 e.stopPropagation()
                 setShowPicker((v) => !v)
               }}
-              className={`${config.iconColor} mt-[3px] hover:opacity-70 transition-opacity cursor-pointer`}
+              className={`vz-callout-icon mt-[3px] hover:opacity-70 transition-opacity cursor-pointer`}
               title="Change callout type"
             >
               <Icon size={18} weight="fill" />
             </button>
           ) : (
-            <span className={`${config.iconColor} mt-[3px] block`}>
+            <span className={`vz-callout-icon mt-[3px] block`}>
               <Icon size={18} weight="fill" />
             </span>
           )}
@@ -158,7 +136,7 @@ function CalloutComponent(props: any) {
             <div
               ref={pickerRef}
               contentEditable={false}
-              className="absolute top-8 left-0 z-50 bg-white rounded-xl shadow-lg ring-1 ring-black/10 py-1.5 min-w-[140px] overflow-hidden"
+              className="vz-callout-picker absolute top-8 left-0 z-50 bg-popover text-popover-foreground rounded-xl shadow-lg ring-1 ring-black/10 py-1.5 min-w-[140px] overflow-hidden"
             >
               {(Object.entries(CALLOUT_TYPES) as [CalloutType, typeof CALLOUT_TYPES[CalloutType]][]).map(
                 ([type, cfg]) => {
@@ -175,11 +153,11 @@ function CalloutComponent(props: any) {
                       }}
                       className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors ${
                         isActive
-                          ? `${cfg.bg} ${cfg.text} font-medium`
-                          : 'text-gray-600 hover:bg-gray-50'
+                          ? `bg-accent text-accent-foreground font-medium`
+                          : 'text-muted-foreground hover:bg-accent'
                       }`}
                     >
-                      <PickerIcon size={15} weight="fill" className={isActive ? cfg.iconColor : 'text-gray-400'} />
+                      <PickerIcon size={15} weight="fill" className="vz-callout-icon" />
                       {cfg.label}
                     </button>
                   )

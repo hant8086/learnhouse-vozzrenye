@@ -6077,6 +6077,8 @@
     "no_search_results": "No articles match your search."
   },
   "design": {
+    "lesson_count_one": "{{count}} lesson",
+    "lesson_count_other": "{{count}} lessons",
     "catalog_intro": "Explore a subject. Choose a module and learn at your own pace.",
     "open_module": "Open module",
     "skip_content": "Skip to content",

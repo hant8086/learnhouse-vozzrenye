@@ -35,9 +35,9 @@ function ClientAdminLayout({
                             this node", taking the whole page with it. The dashboard is
                             already translated by i18n, so opting it out costs nothing.
                             Public course pages stay translatable. */}
-                        <div translate="no" className="notranslate flex flex-col lg:flex-row">
+                        <div translate="no" className="vz-admin notranslate flex flex-col lg:flex-row">
                             {!isMobile && <DashLeftMenu />}
-                            <div className="flex flex-col w-full min-w-0 relative isolate pb-24 lg:pb-0">
+                            <div className="vz-admin-main flex flex-col w-full min-w-0 relative isolate pb-24 lg:pb-0">
                                 {children}
                                 <OnboardingTracker />
                             </div>

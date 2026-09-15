@@ -10,8 +10,7 @@ import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/Ge
 import {
   getCourseThumbnailMediaDirectory,
 } from '@services/media/media'
-import { ArrowRight, Backpack, Check, File, StickyNote, Video, Square, Image as ImageIcon, Layers, BookCopy, Lock, Globe, Package, Puzzle } from 'lucide-react'
-import { MarkdownLogo } from '@phosphor-icons/react'
+import { ArrowRight, Check, Video, Square, Image as ImageIcon, Layers, BookCopy, Lock } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
 import { useMediaQuery } from 'usehooks-ts'
@@ -229,48 +228,6 @@ const CourseClient = (props: any) => {
     }))
 
     setLearnings(learningItems)
-  }
-
-  const getActivityTypeLabel = (activityType: string, activitySubType?: string) => {
-    if (activitySubType === 'SUBTYPE_DYNAMIC_MARKDOWN') return t('activities.markdown')
-    if (activitySubType === 'SUBTYPE_DYNAMIC_EMBED') return t('activities.embed')
-    switch (activityType) {
-      case 'TYPE_VIDEO':
-        return t('activities.video')
-      case 'TYPE_DOCUMENT':
-        return t('activities.document')
-      case 'TYPE_DYNAMIC':
-        return t('activities.page')
-      case 'TYPE_ASSIGNMENT':
-        return t('activities.assignment')
-      case 'TYPE_SCORM':
-        return t('activities.scorm')
-      case 'TYPE_CUSTOM':
-        return t('activities.custom')
-      default:
-        return t('activities.learning_material')
-    }
-  }
-
-  const getActivityTypeIcon = (activityType: string, activitySubType?: string, size: number = 10) => {
-    if (activitySubType === 'SUBTYPE_DYNAMIC_MARKDOWN') return <MarkdownLogo size={size} />
-    if (activitySubType === 'SUBTYPE_DYNAMIC_EMBED') return <Globe size={size} />
-    switch (activityType) {
-      case 'TYPE_VIDEO':
-        return <Video size={size} />
-      case 'TYPE_DOCUMENT':
-        return <File size={size} />
-      case 'TYPE_DYNAMIC':
-        return <StickyNote size={size} />
-      case 'TYPE_ASSIGNMENT':
-        return <Backpack size={size} />
-      case 'TYPE_SCORM':
-        return <Package size={size} />
-      case 'TYPE_CUSTOM':
-        return <Puzzle size={size} />
-      default:
-        return <Layers size={size} />
-    }
   }
 
   const _getActivityTypeBadgeColor = (activityType: string) => {
@@ -601,7 +558,7 @@ const CourseClient = (props: any) => {
                           </span>
                           <span className="flex items-center space-x-1 text-sm text-neutral-400 font-normal">
                             <Layers size={16} className="mr-1" />
-                            <span>{chapter.activities.length} {t('activities.activities')}</span>
+                            <span>{t('design.lesson_count', { count: chapter.activities.length })}</span>
                           </span>
                         </span>
                       </button>
@@ -642,10 +599,7 @@ const CourseClient = (props: any) => {
                                       </div>
                                     )}
                                   </div>
-                                  <div className="flex items-center space-x-1.5 mt-0.5 text-neutral-400">
-                                    {getActivityTypeIcon(activity.activity_type, activity.activity_sub_type, 10)}
-                                    <span className="text-xs font-medium">{getActivityTypeLabel(activity.activity_type, activity.activity_sub_type)}</span>
-                                  </div>
+
                                 </div>
                                 <div className={`transition-colors ${locked ? 'text-neutral-200' : 'text-neutral-300 group-hover:text-neutral-400 cursor-pointer'}`}>
                                   <ArrowRight size={14} />

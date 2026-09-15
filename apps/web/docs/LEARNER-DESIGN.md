@@ -84,3 +84,14 @@ Server visual acceptance remains pending. Check long Russian titles, equal contr
 The featured-course editor shows selected modules as a numbered list with keyboard-accessible up/down buttons. It persists the canonical ID array through the existing landing save; the public renderer already respects this sequence and filters unpublished/missing courses. Legacy object references are normalized before editing. New selections append to the end.
 
 Cards use one continuous outer border around cover and body. Images remain contained at 3:2 with zero cover padding/border; the text body has no separate border. This supersedes the earlier body-only frame experiment.
+
+
+## Admin theme and mobile reader refinement — 15 September 2026
+
+Dashboard desktop/mobile menus expose the existing persisted theme switch. Authoring CSS uses semantic page/surface/ink/border variables, corrects hardcoded light dashboard surfaces, forms and status labels, and styles editor toolbar/canvas, slash menu, drag controls and Radix surfaces. Code/media colors remain separate. Browser acceptance across real admin screens remains required.
+
+Callouts share explicit light/dark background, text, accent and border roles; Info is blue, warning amber, tip violet, success green and error rose. All ten text/background pairs exceed 8:1 arithmetic contrast (not a browser accessibility audit). Unknown callout type falls back to Info. Existing legacy node renderers use the same component.
+
+Course overview retains updates only, with bordered update entries and wrapping titles. Curriculum chapter counts use localized lesson plurals and lesson cards omit type subtitles. Mobile prose gutters are 8px outside + 12px inside. Mobile focus footer appears when the end marker intersects its own scrolling viewport and uses icon navigation plus completion in one row; desktop footer remains available. Visibility does not change content geometry. Keep enough bottom safe-area clearance for the footer.
+
+Server checks: both themes on dashboard/settings, editor/menus/dialogs and callouts; mobile 320/390px short/long lessons, reach end then scroll up, completion/last lesson navigation, keyboard access. No local app build.

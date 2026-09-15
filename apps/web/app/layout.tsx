@@ -1,5 +1,6 @@
 import '../styles/globals.css'
 import '../styles/learner.css'
+import '../styles/authoring.css'
 import React from 'react'
 import type { Metadata } from 'next'
 import Providers from '@components/Providers'

@@ -21,9 +21,9 @@ export default function ThemeToggle() {
   const isDark = themeReady && resolvedTheme === 'dark'
   const label = themeReady
     ? isDark
-      ? 'Switch to light theme'
-      : 'Switch to dark theme'
-    : 'Toggle theme'
+      ? 'Включить светлую тему'
+      : 'Включить тёмную тему'
+    : 'Переключить тему'
 
   // No `dark:` variants on the button below, on purpose. The dark theme is
   // built by REVERSING the neutral ramp under `html.dark` (gray-50 becomes the

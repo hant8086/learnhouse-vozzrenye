@@ -1,0 +1,102 @@
+/* Authoring uses the same semantic surfaces as the learner UI. */
+.vz-admin { min-height: 100dvh; background: var(--vz-page); color: var(--vz-text); }
+.vz-admin-main {
+  --color-paper: var(--vz-page); --color-paper-bright: var(--vz-surface);
+  --color-paper-raised: var(--vz-surface); --color-paper-deep: var(--vz-raised);
+  --color-ink: var(--vz-text); --color-ink-soft: var(--vz-muted); --color-ink-faint: var(--vz-muted);
+  --color-line: var(--vz-line); --color-line-strong: var(--vz-line-strong);
+  background: var(--vz-page); color: var(--vz-text);
+}
+html.dark { color-scheme: dark; }
+html:not(.dark) { color-scheme: light; }
+.vz-admin-theme button { color: #d8e5ee; }
+.vz-admin-theme button:hover { color: #fff; background: #26333e; }
+html.dark .vz-admin-main :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea, select) {
+  background-color: var(--vz-surface); color: var(--vz-text); border-color: var(--vz-line-strong);
+}
+.vz-admin-main :is(input, textarea)::placeholder { color: var(--vz-muted); opacity: 1; }
+.vz-admin-main :is(button, a, input, textarea, select):focus-visible { outline: 2px solid var(--vz-signal); outline-offset: 2px; }
+html.dark .vz-admin-main .nice-shadow { box-shadow: 0 0 0 1px var(--vz-line); }
+html.dark .vz-admin-main :is(.bg-white, [class~='bg-[#ffffff]'], [class~='bg-[#fff]'], [class~='bg-[#fcfbfc]']) { background-color: var(--vz-surface); }
+html.dark .vz-admin-main :is([class~='bg-[#f8f8f8]'], [class~='bg-[#f9f9f9]'], [class~='bg-[#fafafa]'], [class~='bg-[#fbfbfb]'], [class~='bg-[#f5f5f5]']) { background-color: var(--vz-page); }
+html.dark .vz-admin-main :is(.text-black, .text-gray-900, .text-neutral-900, .text-zinc-900) { color: var(--vz-text); }
+html.dark .vz-admin-main :is(.text-gray-400, .text-neutral-400, .text-zinc-400, .text-gray-500, .text-neutral-500, .text-zinc-500) { color: var(--vz-muted); }
+html.dark .vz-admin-main :is(.bg-black, .bg-gray-900, .bg-neutral-900):not(.ProseMirror *) { background-color: #24434c; color: #edfaff; }
+html.dark .vz-admin-main :is(.border-gray-200, .border-neutral-200, .border-gray-100, .border-neutral-100) { border-color: var(--vz-line); }
+html.dark .vz-admin-main :is(.ProseMirror, .tiptap) { color: var(--vz-text); caret-color: var(--vz-signal); }
+html.dark .vz-admin-main :is(.ProseMirror, .tiptap) :is(h1,h2,h3,h4,strong,li):not(.vz-callout *) { color: inherit; }
+html.dark .vz-admin-main :is(.ProseMirror, .tiptap) :is(th,td) { border-color: var(--vz-line-strong); }
+html.dark .vz-admin-main :is(.ProseMirror, .tiptap) th { background: var(--vz-raised); }
+html.dark .vz-admin-main :is(.ProseMirror, .tiptap) blockquote { border-color: var(--vz-signal); color: var(--vz-muted); }
+html.dark body:has(.vz-admin) :is([role='dialog'], [role='menu'], [role='listbox'], [data-radix-popper-content-wrapper]) {
+  --color-paper: var(--vz-surface); --color-ink: var(--vz-text);
+  color: var(--vz-text);
+}
+html.dark body:has(.vz-admin) :is([role='dialog'], [role='menu'], [role='listbox']) { background-color: var(--vz-surface); border-color: var(--vz-line); }
+/* Status controls: softly tinted surfaces with readable labels. */
+html.dark .vz-admin-main :is([class*='bg-blue-50'], [class*='bg-blue-100']) { background-color: #142f43; }
+html.dark .vz-admin-main :is(.text-blue-600,.text-blue-700,.text-blue-800,.text-blue-900) { color: #a9dafa; }
+html.dark .vz-admin-main :is([class*='bg-cyan-50'], [class*='bg-cyan-100']) { background-color: #12343b; }
+html.dark .vz-admin-main :is(.text-cyan-600,.text-cyan-700,.text-cyan-800,.text-cyan-900) { color: #a2e4eb; }
+html.dark .vz-admin-main :is([class*='bg-green-50'], [class*='bg-green-100']) { background-color: #163329; }
+html.dark .vz-admin-main :is(.text-green-600,.text-green-700,.text-green-800,.text-green-900) { color: #b2e7c8; }
+html.dark .vz-admin-main :is([class*='bg-emerald-50'], [class*='bg-emerald-100']) { background-color: #163329; }
+html.dark .vz-admin-main :is(.text-emerald-600,.text-emerald-700,.text-emerald-800,.text-emerald-900) { color: #b2e7c8; }
+html.dark .vz-admin-main :is([class*='bg-teal-50'], [class*='bg-teal-100']) { background-color: #133633; }
+html.dark .vz-admin-main :is(.text-teal-600,.text-teal-700,.text-teal-800,.text-teal-900) { color: #9de3d8; }
+html.dark .vz-admin-main :is([class*='bg-yellow-50'], [class*='bg-yellow-100']) { background-color: #382e19; }
+html.dark .vz-admin-main :is(.text-yellow-600,.text-yellow-700,.text-yellow-800,.text-yellow-900) { color: #f4da98; }
+html.dark .vz-admin-main :is([class*='bg-amber-50'], [class*='bg-amber-100']) { background-color: #382b19; }
+html.dark .vz-admin-main :is(.text-amber-600,.text-amber-700,.text-amber-800,.text-amber-900) { color: #f7d397; }
+html.dark .vz-admin-main :is([class*='bg-red-50'], [class*='bg-red-100']) { background-color: #3c2029; }
+html.dark .vz-admin-main :is(.text-red-600,.text-red-700,.text-red-800,.text-red-900) { color: #ffc0ca; }
+html.dark .vz-admin-main :is([class*='bg-rose-50'], [class*='bg-rose-100']) { background-color: #3c2029; }
+html.dark .vz-admin-main :is(.text-rose-600,.text-rose-700,.text-rose-800,.text-rose-900) { color: #ffc0ca; }
+html.dark .vz-admin-main :is([class*='bg-purple-50'], [class*='bg-purple-100']) { background-color: #302440; }
+html.dark .vz-admin-main :is(.text-purple-600,.text-purple-700,.text-purple-800,.text-purple-900) { color: #dfc2f7; }
+html.dark .vz-admin-main :is([class*='bg-indigo-50'], [class*='bg-indigo-100']) { background-color: #252c46; }
+html.dark .vz-admin-main :is(.text-indigo-600,.text-indigo-700,.text-indigo-800,.text-indigo-900) { color: #c9d3ff; }
+/* Callouts are semantic in both editor and reader, including legacy nodes. */
+.vz-callout { --callout-bg: #eaf5fe; --callout-text: #183d59; --callout-accent: #176da8; --callout-line: #b6d9f0; background: var(--callout-bg); color: var(--callout-text); border: 1px solid var(--callout-line); border-left: 3px solid var(--callout-accent); }
+.vz-callout[data-callout-type='warning'] { --callout-bg: #fff5df; --callout-text: #62450c; --callout-accent: #94650a; --callout-line: #edd296; }
+.vz-callout[data-callout-type='tip'] { --callout-bg: #f3edfc; --callout-text: #50346c; --callout-accent: #7950a7; --callout-line: #d9c6ec; }
+.vz-callout[data-callout-type='success'] { --callout-bg: #e9f7ee; --callout-text: #214f34; --callout-accent: #287348; --callout-line: #b8dfc6; }
+.vz-callout[data-callout-type='error'] { --callout-bg: #fff0f2; --callout-text: #752c3b; --callout-accent: #b23f57; --callout-line: #efc2cb; }
+html.dark .vz-callout { --callout-bg: #172e40; --callout-text: #c8e5f8; --callout-accent: #80c8f5; --callout-line: #345b76; }
+html.dark .vz-callout[data-callout-type='warning'] { --callout-bg: #352c1c; --callout-text: #f4dfb1; --callout-accent: #e4bc66; --callout-line: #695534; }
+html.dark .vz-callout[data-callout-type='tip'] { --callout-bg: #2d233b; --callout-text: #e4d1f7; --callout-accent: #c5a0eb; --callout-line: #58446d; }
+html.dark .vz-callout[data-callout-type='success'] { --callout-bg: #1b3026; --callout-text: #c4ead1; --callout-accent: #8cd6a7; --callout-line: #3b624b; }
+html.dark .vz-callout[data-callout-type='error'] { --callout-bg: #39232c; --callout-text: #f6cbd4; --callout-accent: #f29caf; --callout-line: #6c414e; }
+html .vz-callout .vz-callout-icon { color: var(--callout-accent); }
+html:root .vz-callout .content, html:root .vz-callout .content :is(p,li,strong,em,h1,h2,h3,h4) { color: var(--callout-text); }
+html:root .vz-callout .content a { color: var(--callout-accent); text-decoration: underline; }
+.vz-callout-picker { background: var(--vz-surface); color: var(--vz-text); border: 1px solid var(--vz-line); }
+.vz-course-updates { border-top: 1px solid var(--vz-line); padding-top: 16px; }
+.vz-course-updates h4 { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .vz-learner .vz-wrapper:has(.vz-reader) { padding-inline: 8px; }
+  .vz-reader-page[data-reading='true'] { padding: 16px 12px; }
+  .vz-focus-content { padding-inline: 8px; }
+  .vz-focus-scroll { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .vz-focus-bottom[data-at-end='false'] { visibility: hidden; pointer-events: none; }
+  .vz-focus-bottom .vz-focus-controls { grid-template-columns: 44px minmax(0,1fr) 44px; min-height: 60px; gap: 8px; padding-block: 8px; }
+  .vz-focus-bottom .vz-focus-actions { grid-column: 2; grid-row: 1; width: 100%; }
+  .vz-focus-bottom .vz-focus-next-actions > button { grid-column: 3; }
+  .vz-focus-bottom .vz-focus-nav { width: 44px; height: 44px; justify-content: center; padding: 8px; }
+  .vz-focus-bottom .vz-focus-nav span { display: none; }
+  .vz-focus-bottom .vz-focus-actions > button { width: 100%; justify-content: center; padding: 8px; font-size: 12px; min-height: 44px; }
+}
+.activity-editor-top { background: var(--vz-surface); color: var(--vz-text); outline-color: var(--vz-line); box-shadow: 0 4px 16px #00000012; }
+.activity-editor-content-wrapper { background: var(--vz-surface); color: var(--vz-text); outline-color: var(--vz-line); box-shadow: none; }
+.activity-editor-doc-name, .activity-editor-doc-name svg { color: var(--vz-text); }
+html.dark .activity-editor-content-wrapper .ProseMirror { color: var(--vz-text); }
+html.dark .activity-editor-content-wrapper .ProseMirror :is(h1,h2,h3,h4,strong,li) { color: inherit; }
+html.dark :is(.slash-commands-menu, .editor-drag-handle, .editor-drag-handle .action-btn, .editor-drag-handle .tooltip-text) { background: var(--vz-surface); color: var(--vz-text); border-color: var(--vz-line); }
+html.dark :is(.slash-commands-item:hover, .slash-commands-item.is-selected, .slash-commands-item-icon, .editor-drag-handle .action-btn:hover, .editor-drag-handle .drag-grip:hover) { background: var(--vz-raised); color: var(--vz-text); border-color: var(--vz-line); }
+html.dark .slash-commands-item-title { color: var(--vz-text); }
+html.dark :is(.slash-commands-category-label, .slash-commands-item-description, .editor-drag-handle .drag-grip) { color: var(--vz-muted); }
+html.dark .slash-commands-item.is-selected .slash-commands-item-icon { background: var(--vz-signal-soft); color: var(--vz-signal); }
+
+.vz-course-updates .vz-update-item { border: 1px solid var(--vz-line); border-left: 2px solid var(--vz-signal); background: var(--vz-surface); }
+.vz-course-updates .vz-update-item:hover { background: var(--vz-raised); }
+.vz-course-updates .vz-update-item > div > div > div { flex-wrap: wrap; row-gap: 4px; }

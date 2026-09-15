@@ -1,4 +1,5 @@
 'use client'
+import ThemeToggle from '@components/Objects/Theme/ThemeToggle'
 import { createPortal } from 'react-dom'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { signOut } from '@components/Contexts/AuthContext'
@@ -281,6 +282,7 @@ function DashMobileMenu() {
                 </button>
               </div>
 
+              <div className="vz-admin-theme flex justify-end px-4 py-2"><ThemeToggle /></div>
               {/* User footer */}
               <div className="h-px bg-white/[0.05] mx-4" />
               <div className="px-4 py-3">

@@ -1,6 +1,4 @@
 import React from 'react'
-import UserAvatar from '../../UserAvatar'
-import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { Rss, PencilLine, TentTree } from 'lucide-react'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -43,104 +41,6 @@ interface Author {
 
 interface CourseAuthorsProps {
   authors: Author[]
-}
-
-const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
-  const { t } = useTranslation()
-  const displayedAvatars = authors.slice(0, 3)
-  const displayedNames = authors.slice(0, 2)
-  const remainingCount = Math.max(0, authors.length - 3)
-  
-  // Keep the identity row useful without letting it consume the whole access card.
-  const avatarSize = 36
-  const borderSize = "border-2"
-
-  return (
-    <div className={`flex items-start gap-3`}>
-      <div className={`text-[12px] text-neutral-400 font-semibold sr-only`}>{t('courses.authors_and_updates')}</div>
-      
-      <div className={`flex shrink-0 -space-x-2 relative`}>
-        {displayedAvatars.map((author, index) => (
-          <div
-            key={author.user.user_uuid}
-            className="relative"
-            style={{ zIndex: displayedAvatars.length - index }}
-          >
-            <div className="ring-white">
-              <UserAvatar
-                border={borderSize}
-                rounded='rounded-full'
-                avatar_url={author.user.avatar_image ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image) : ''}
-                predefined_avatar={author.user.avatar_image ? undefined : 'empty'}
-                width={avatarSize}
-                showProfilePopup={true}
-                userId={author.user.id}
-              />
-            </div>
-          </div>
-        ))}
-        {remainingCount > 0 && (
-          <div 
-            className="relative"
-            style={{ zIndex: 0 }}
-          >
-            <div 
-              className={`flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full border-2 border-white shadow-sm`}
-              style={{ 
-                width: `${avatarSize}px`, 
-                height: `${avatarSize}px`,
-                fontSize: '14px'
-              }}
-            >
-              +{remainingCount}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className={`min-w-0 flex-1 text-left`}>
-        <div className={`text-sm break-words font-medium text-neutral-800`}>
-          {authors.length === 1 ? (
-            <span>
-              {authors[0].user.first_name && authors[0].user.last_name
-                ? `${authors[0].user.first_name} ${authors[0].user.last_name}`
-                : `@${authors[0].user.username}`}
-            </span>
-          ) : (
-            <>
-              {displayedNames.map((author, index) => (
-                <span key={author.user.user_uuid}>
-                  {author.user.first_name && author.user.last_name
-                    ? `${author.user.first_name} ${author.user.last_name}`
-                    : `@${author.user.username}`}
-                  {index === 0 && authors.length > 1 && index < displayedNames.length - 1 && " & "}
-                </span>
-              ))}
-              {authors.length > 2 && (
-                <span className="text-neutral-500 ml-1">
-                  & {t('courses.and_x_more', { count: authors.length - 2 })}
-                </span>
-              )}
-            </>
-          )}
-        </div>
-        <div className={`text-xs text-neutral-500 mt-0.5 hidden`}>
-          {authors.length === 1 ? (
-            <span>@{authors[0].user.username}</span>
-          ) : (
-            <>
-              {displayedNames.map((author, index) => (
-                <span key={author.user.user_uuid}>
-                  @{author.user.username}
-                  {index === 0 && authors.length > 1 && index < displayedNames.length - 1 && " & "}
-                </span>
-              ))}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  )
 }
 
 const UpdatesSection = () => {
@@ -324,7 +224,7 @@ const UpdatesListView = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
-          className="group p-3 rounded-lg bg-neutral-50/50 hover:bg-neutral-100/80 transition-colors duration-150"
+          className="vz-update-item group p-3 rounded-lg transition-colors duration-150"
         >
           <div className="flex items-start justify-between">
             <div className="space-y-1 min-w-0 flex-1">
@@ -397,27 +297,10 @@ const DeleteUpdateButton = ({ update }: any) => {
   )
 }
 
-const CourseAuthors = ({ authors }: CourseAuthorsProps) => {
-
-  // Filter active authors and sort by role priority
-  const sortedAuthors = [...authors]
-    .filter(author => author.authorship_status === 'ACTIVE')
-    .sort((a, b) => {
-      const rolePriority: Record<string, number> = {
-        'CREATOR': 0,
-        'MAINTAINER': 1,
-        'CONTRIBUTOR': 2,
-        'REPORTER': 3
-      };
-      return rolePriority[a.authorship] - rolePriority[b.authorship];
-    });
-
-  return (
-    <div className="antialiased">
-      <MultipleAuthors authors={sortedAuthors} />
-      <UpdatesSection />
-    </div>
-  )
-}
+const CourseAuthors = (_props: CourseAuthorsProps) => (
+  <section className="vz-course-updates antialiased">
+    <UpdatesSection />
+  </section>
+)
 
 export default CourseAuthors

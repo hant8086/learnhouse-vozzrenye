@@ -260,6 +260,18 @@ function ActivityClient(props: ActivityClientProps) {
   const [assignment, setAssignment] = React.useState(null) as any;
   const [_markStatusButtonActive, setMarkStatusButtonActive] = React.useState(false);
   const [isFocusMode, setIsFocusMode] = React.useState(false);
+  const focusScrollRef = useRef<HTMLDivElement>(null);
+  const focusEndRef = useRef<HTMLDivElement>(null);
+  const [isFocusEndVisible, setIsFocusEndVisible] = React.useState(false);
+  useEffect(() => {
+    if (!isFocusMode || !focusScrollRef.current || !focusEndRef.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsFocusEndVisible(entry.isIntersecting);
+    }, { root: focusScrollRef.current, threshold: 0 });
+    observer.observe(focusEndRef.current);
+    return () => observer.disconnect();
+  }, [isFocusMode, activityid]);
+
   const isInitialRender = useRef(true);
   const { contributorStatus } = useContributorStatus(courseuuid);
   const router = useRouter();
@@ -683,7 +695,7 @@ function ActivityClient(props: ActivityClientProps) {
                   </motion.div>
 
                   {/* Focus Mode Content */}
-                  <div className="vz-focus-scroll pt-16 pb-20 h-full overflow-auto">
+                  <div ref={focusScrollRef} className="vz-focus-scroll pt-16 pb-20 h-full overflow-auto">
                     <div className="vz-focus-content container mx-auto px-4">
                       {activity && activity.published == true && (
                         <>
@@ -704,6 +716,7 @@ function ActivityClient(props: ActivityClientProps) {
                           )}
                         </>
                       )}
+                      <div ref={focusEndRef} className="h-px" aria-hidden="true" />
                     </div>
                   </div>
 
@@ -714,6 +727,7 @@ function ActivityClient(props: ActivityClientProps) {
                       animate={{ y: 0 }}
                       exit={{ y: 100 }}
                       transition={{ duration: 0.3 }}
+                      data-at-end={isFocusEndVisible}
                       className="vz-focus-bar vz-focus-bottom fixed bottom-0 left-0 right-0 bg-[#080d12]/95 backdrop-blur-xl border-t border-[#24313d]"
                       style={{ zIndex: 'var(--z-modal-content)' }}
                     >
@@ -721,6 +735,7 @@ function ActivityClient(props: ActivityClientProps) {
                         <div className="vz-focus-controls flex items-center justify-between h-16">
                           <div className="vz-focus-prev flex items-center space-x-2">
                             <button
+                              aria-label={prevActivity ? `${t('common.previous')}: ${prevActivity.name}` : t('activities.no_previous_activity')}
                               onClick={() => navigateToActivity(prevActivity)}
                               className={`vz-focus-nav flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
                                 prevActivity
@@ -750,6 +765,7 @@ function ActivityClient(props: ActivityClientProps) {
                               trailData={trailData}
                             />
                             <button
+                              aria-label={nextActivity ? `${t('common.next')}: ${nextActivity.name}` : t('course.finish_course', 'Finish course')}
                               onClick={() => navigateToActivity(nextActivity)}
                               className={`vz-focus-nav flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
                                 nextActivity || isLastActivity

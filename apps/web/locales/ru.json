@@ -471,7 +471,7 @@
     "course_count": "{{count}} курс",
     "course_count_plural": "{{count}} курсов",
     "authors_and_updates": "Авторы и обновления",
-    "course_updates": "Обновления курса",
+    "course_updates": "Обновления модуля",
     "no_updates_yet": "Обновлений пока нет",
     "no_updates_desc": "Обновления этого курса будут появляться здесь",
     "quit_course": "Выйти из курса",
@@ -5923,6 +5923,10 @@
     "no_search_results": "По вашему запросу статей не найдено."
   },
   "design": {
+    "lesson_count_one": "{{count}} урок",
+    "lesson_count_few": "{{count}} урока",
+    "lesson_count_many": "{{count}} уроков",
+    "lesson_count_other": "{{count}} урока",
     "catalog_intro": "Исследуйте направления. Выберите модуль и двигайтесь в своём темпе.",
     "open_module": "Открыть модуль",
     "skip_content": "Перейти к содержимому",

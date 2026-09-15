@@ -1,4 +1,5 @@
 'use client'
+import ThemeToggle from '@components/Objects/Theme/ThemeToggle'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { signOut } from '@components/Contexts/AuthContext'
 import {
@@ -1053,6 +1054,8 @@ function DashLeftMenu() {
         </motion.div>
       )}
 
+      {/* Theme control remains accessible in either sidebar width. */}
+      <div className="vz-admin-theme flex justify-center py-2 shrink-0"><ThemeToggle /></div>
       {/* Bottom Section */}
       <div className="border-t border-white/[0.08] py-3 px-3 shrink-0">
         <div className="space-y-1">
