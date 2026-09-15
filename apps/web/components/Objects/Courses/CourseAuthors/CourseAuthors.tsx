@@ -1,5 +1,5 @@
 import React from 'react'
-import { Rss, PencilLine, TentTree } from 'lucide-react'
+import { Crown, Rss, PencilLine, TentTree } from 'lucide-react'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -40,6 +40,7 @@ interface Author {
 }
 
 interface CourseAuthorsProps {
+  isPaid?: boolean
   authors: Author[]
 }
 
@@ -297,10 +298,19 @@ const DeleteUpdateButton = ({ update }: any) => {
   )
 }
 
-const CourseAuthors = (_props: CourseAuthorsProps) => (
-  <section className="vz-course-updates antialiased">
-    <UpdatesSection />
-  </section>
-)
+const CourseAuthors = ({ isPaid }: CourseAuthorsProps) => {
+  const { t } = useTranslation()
+  return (
+    <section className="vz-course-updates antialiased">
+      {isPaid && (
+        <div className="vz-pro-note">
+          <span className="vz-pro-badge"><Crown size={12} aria-hidden="true" />{t('courses.pro', 'Pro')}</span>
+          <p>{t('design.pro_access_note')}</p>
+        </div>
+      )}
+      <UpdatesSection />
+    </section>
+  )
+}
 
 export default CourseAuthors

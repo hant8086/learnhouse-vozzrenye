@@ -479,7 +479,7 @@
     "course_completion": "Завершение курса",
     "course_completed_exclamation": "Курс завершен!",
     "what_you_will_learn": "Что вы узнаете",
-    "course_lessons": "Уроки курса",
+    "course_lessons": "Уроки этого модуля",
     "share_course": "Поделиться курсом",
     "copy_link": "Копировать ссылку",
     "unlock_certificate_message": "Выполните все задания, чтобы получить сертификат",
@@ -5923,6 +5923,8 @@
     "no_search_results": "По вашему запросу статей не найдено."
   },
   "design": {
+    "full_version_access": "Доступно в полной версии",
+    "pro_access_note": "Этот модуль — часть полной программы обучения. Доступ ко всем его урокам входит в приобретение полной версии.",
     "lesson_count_one": "{{count}} урок",
     "lesson_count_few": "{{count}} урока",
     "lesson_count_many": "{{count}} уроков",

@@ -6077,6 +6077,8 @@
     "no_search_results": "No articles match your search."
   },
   "design": {
+    "full_version_access": "Available in the full version",
+    "pro_access_note": "This module is part of the full learning program. Access to all its lessons is included with purchase of the full version.",
     "lesson_count_one": "{{count}} lesson",
     "lesson_count_other": "{{count}} lessons",
     "catalog_intro": "Explore a subject. Choose a module and learn at your own pace.",

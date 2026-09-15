@@ -12,7 +12,7 @@ import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import { getCourseMetadata } from '@services/courses/courses'
-import { BookMinus, FilePenLine, Settings2, MoreVertical, Copy, Download, CheckSquare, Square, Lock } from 'lucide-react'
+import { Lock, Crown, BookMinus, FilePenLine, Settings2, MoreVertical, Copy, Download, CheckSquare, Square } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import Link from 'next/link'
 import React from 'react'
@@ -240,11 +240,7 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
           >
             {course.name}
           </Link>
-          {course.is_paid === true && (
-            <span className="ml-2 shrink-0 rounded-full bg-gray-900 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
-              {t('courses.pro', 'Pro')}
-            </span>
-          )}
+
         </div>
         
         {course.description && (
@@ -264,7 +260,10 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
         )}
 
         <div className="vz-course-meta pt-1.5 flex items-center justify-between border-t border-gray-100">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+          {course.is_paid === true && (
+            <span className="vz-pro-badge"><Crown size={12} aria-hidden="true" />{t('courses.pro', 'Pro')}</span>
+          )}
             {isDashboard && displayedAuthors.length > 0 && (
               <div className="flex -space-x-2 items-center">
                 {displayedAuthors.map((author, index) => (
@@ -308,8 +307,8 @@ function CourseThumbnail({ course, orgslug, customLink, isDashboard = false, isS
               onClick={handleCardOpen}
               className="vz-course-cta"
             >
-              <Lock className="w-3 h-3" />
-              {t('courses.pro', 'Pro')}
+              <Crown className="w-3 h-3" aria-hidden="true" />
+              {t('design.open_module')}
             </Link>
           ) : (
             <Link

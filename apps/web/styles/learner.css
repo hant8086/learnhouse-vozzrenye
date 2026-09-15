@@ -455,3 +455,10 @@ html :is(.vz-learner, .vz-auth) .vz-hairline { background: linear-gradient(90deg
 
 .vz-completion-prev > div, .vz-completion-next > div { max-width: 100%; }
 .vz-course-card > a:has(.vz-course-cover) { display: block; line-height: 0; flex-shrink: 0; }
+
+/* Quiet full-program access markers, separate from course descriptions. */
+html .vz-pro-badge { display: inline-flex; align-items: center; gap: 5px; width: fit-content; flex-shrink: 0; padding: 4px 8px; border-radius: 6px; border: 1px solid #decd9e; background: #faf4e4; color: #705417; font-size: 11px; font-weight: 600; line-height: 1.35; }
+html.dark .vz-pro-badge { border-color: #675936; background: #302a1d; color: #ead398; }
+.vz-pro-badge svg { flex-shrink: 0; }
+.vz-pro-note { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--vz-line); }
+.vz-pro-note p { margin: 0; color: var(--vz-muted); font-size: 13px; line-height: 1.6; }

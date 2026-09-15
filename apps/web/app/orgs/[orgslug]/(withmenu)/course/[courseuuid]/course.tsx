@@ -10,7 +10,7 @@ import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/Ge
 import {
   getCourseThumbnailMediaDirectory,
 } from '@services/media/media'
-import { ArrowRight, Check, Video, Square, Image as ImageIcon, Layers, BookCopy, Lock } from 'lucide-react'
+import { Crown, ArrowRight, Check, Video, Square, Image as ImageIcon, Layers, BookCopy } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
 import { useMediaQuery } from 'usehooks-ts'
@@ -451,7 +451,7 @@ const CourseClient = (props: any) => {
                     {/* Authors & Updates Box */}
                     <div className="vz-frame vz-frame-interactive overflow-hidden bg-white p-4">
                       <CourseProvider courseuuid={course.course_uuid}>
-                        <CourseAuthors authors={course.authors} />
+                        <CourseAuthors authors={course.authors} isPaid={course.is_paid === true} />
                       </CourseProvider>
                     </div>
                   </RevealItem>
@@ -550,9 +550,9 @@ const CourseClient = (props: any) => {
                             </span>
                             <span className="vz-chapter-title min-w-0">{chapter.name}</span>
                             {chapter.is_locked && (
-                              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-semibold">
-                                <Lock size={10} />
-                                {t('course.locked', 'Заблокировано')}
+                              <span className="vz-pro-badge ml-2">
+                                <Crown size={12} aria-hidden="true" />
+                                {t('design.full_version_access')}
                               </span>
                             )}
                           </span>
@@ -571,7 +571,7 @@ const CourseClient = (props: any) => {
                                 <div className="flex items-center">
                                   {locked ? (
                                     <div className="text-rose-400">
-                                      <Lock size={14} className="stroke-[2]" />
+                                      <Crown size={14} className="stroke-[2]" />
                                     </div>
                                   ) : isActivityDone(activity) ? (
                                     <div className="relative cursor-pointer">
@@ -588,9 +588,9 @@ const CourseClient = (props: any) => {
                                   <div className="flex flex-wrap items-center gap-2 w-full">
                                     <p className={`font-semibold transition-colors ${locked ? 'text-neutral-400' : 'text-neutral-600 group-hover:text-neutral-800'}`}>{activity.name}</p>
                                     {locked && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-semibold">
-                                        <Lock size={10} />
-                                        {t('course.locked', 'Заблокировано')}
+                                      <span className="vz-pro-badge">
+                                        <Crown size={12} aria-hidden="true" />
+                                        {t('design.full_version_access')}
                                       </span>
                                     )}
                                     {!locked && isActivityCurrent(activity) && (

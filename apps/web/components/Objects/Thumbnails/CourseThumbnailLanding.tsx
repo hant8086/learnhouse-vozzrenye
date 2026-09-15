@@ -6,7 +6,7 @@ import { getUriWithOrg } from '@services/config/config'
 import { deleteCourseFromBackend } from '@services/courses/courses'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { revalidateTags } from '@services/utils/ts/requests'
-import { BookMinus, FilePenLine, Settings2, MoreVertical } from 'lucide-react'
+import { Crown, BookMinus, FilePenLine, Settings2, MoreVertical } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -153,11 +153,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
       <div className='vz-course-body flex flex-col w-full p-4 space-y-3'>
         <div className="space-y-2">
           <h2 className="vz-course-title font-semibold text-foreground leading-tight text-base line-clamp-2">{course.name}</h2>
-          {course.is_paid === true && (
-            <span className="inline-flex w-fit rounded-full bg-gray-900 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
-              {t('courses.pro', 'Pro')}
-            </span>
-          )}
+
           <p className='vz-course-description text-sm text-muted-foreground leading-relaxed line-clamp-2'>{course.description}</p>
           {courseTags.length > 0 && (
             <div className="vz-course-tags flex flex-wrap gap-1" aria-label={t('courses.tags')}>
@@ -171,6 +167,9 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({ course, orgslug, customLi
         </div>
         
         <div className="vz-course-meta flex flex-wrap items-center justify-between gap-2">
+          {course.is_paid === true && (
+            <span className="vz-pro-badge"><Crown size={12} aria-hidden="true" />{t('courses.pro', 'Pro')}</span>
+          )}
           {course.update_date && (
             <div className="inline-flex items-center">
               <span className="vz-course-date">
